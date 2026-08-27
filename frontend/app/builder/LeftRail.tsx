@@ -1,17 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useBuilderStore, RoleType } from '@/store/builderStore';
 import { Button } from '@/components/ui/Button';
 
 export function LeftRail() {
   const { agents, selectedAgentId, selectAgent, addAgent } = useBuilderStore();
-  const [showRolePicker, setShowRolePicker] = useState(false);
-
-  const handleAddAgent = (role: RoleType) => {
-    addAgent(role);
-    setShowRolePicker(false);
-  };
 
   return (
     <div 
@@ -88,53 +82,10 @@ export function LeftRail() {
       </div>
 
       <div style={{ padding: '16px', borderTop: '1px solid var(--border)', position: 'relative' }}>
-        {showRolePicker ? (
-          <div style={{ 
-            position: 'absolute', 
-            bottom: '64px', 
-            left: '16px', 
-            right: '16px',
-            backgroundColor: 'var(--surface-raised)',
-            border: '1px solid var(--border-strong)',
-            borderRadius: '8px',
-            padding: '8px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
-            zIndex: 10
-          }}>
-            <span className="text-caption" style={{ padding: '4px 8px' }}>Select archetype:</span>
-            {(['Technical', 'Hiring manager', 'Product', 'Customer', 'Behavioural', 'Custom'] as RoleType[]).map(r => (
-              <button 
-                key={r}
-                onClick={() => handleAddAgent(r)}
-                style={{ 
-                  textAlign: 'left', 
-                  padding: '8px', 
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  backgroundColor: 'transparent',
-                  color: 'var(--text-primary)'
-                }}
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--border)'}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-              >
-                {r}
-              </button>
-            ))}
-            <button 
-              onClick={() => setShowRolePicker(false)}
-              style={{ textAlign: 'left', padding: '8px', color: 'var(--text-secondary)', cursor: 'pointer', backgroundColor: 'transparent' }}
-            >
-              Cancel
-            </button>
-          </div>
-        ) : null}
-
         <Button 
           variant="secondary" 
           className="w-full" 
-          onClick={() => setShowRolePicker(true)}
+          onClick={() => addAgent('Custom')}
         >
           + Add agent
         </Button>

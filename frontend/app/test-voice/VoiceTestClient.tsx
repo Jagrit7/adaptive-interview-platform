@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAgoraVoiceClient } from "@/hooks/useAgoraVoiceClient";
 
-const APP_ID = "02bcecea17334c6dad96219c276fbd38";
+const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID!;
 const BACKEND_URL = "http://localhost:8000";
 
 export default function VoiceTestClient() {

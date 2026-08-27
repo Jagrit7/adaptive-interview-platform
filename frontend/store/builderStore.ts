@@ -4,6 +4,7 @@ export type RoleType = 'Technical' | 'Hiring manager' | 'Product' | 'Customer' |
 
 export interface Agent {
   id: string;
+  isNew?: boolean;
   identity: {
     name: string;
     role: RoleType;
@@ -71,7 +72,7 @@ interface BuilderState {
   saveProject: () => void;
 }
 
-const roleColors: Record<RoleType, string> = {
+export const roleColors: Record<RoleType, string> = {
   'Technical': 'var(--accent-indigo)',
   'Product': 'var(--accent-amber)',
   'Hiring manager': 'var(--accent-teal)',
@@ -80,7 +81,7 @@ const roleColors: Record<RoleType, string> = {
   'Custom': 'var(--text-primary)'
 };
 
-const defaultSystemPrompts: Record<RoleType, string> = {
+export const defaultSystemPrompts: Record<RoleType, string> = {
   'Technical': 'You are a Senior Software Engineer conducting a technical interview. Focus on system design, data structures, and algorithms.',
   'Product': 'You are a Product Manager evaluating business sense, product intuition, and cross-functional collaboration.',
   'Hiring manager': 'You are the Hiring Manager. You focus on team fit, long-term potential, and leadership principles.',
@@ -101,6 +102,7 @@ export const useBuilderStore = create<BuilderState>((set) => ({
   addAgent: (role = 'Technical') => set((state) => {
     const newAgent: Agent = {
       id: crypto.randomUUID(),
+      isNew: true,
       identity: {
         name: `New ${role} Agent`,
         role: role,
