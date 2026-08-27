@@ -5,8 +5,6 @@ import { useRouter } from "next/navigation";
 import { EditableText } from "@/components/ui/EditableText";
 import { Card } from "@/components/ui/Card";
 import { Waveform } from "@/components/ui/Waveform";
-import { GlassDashboardPreview } from "@/components/ui/GlassDashboardPreview";
-
 const RECIPE_ACCENTS = [
   "var(--accent-indigo)",
   "var(--accent-amber)",
@@ -53,8 +51,6 @@ export default function HomePage() {
             isHero
           />
         </div>
-
-        <GlassDashboardPreview />
 
         <div
           className="flex gap-6 w-full"
