@@ -1,0 +1,161 @@
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --accent: {{ brand_theme.topbar_mark }};
+    --text-main: {{ brand_theme.text_main }};
+    --text-muted: {{ brand_theme.text_muted }};
+    --bg-start: {{ brand_theme.bg_start }};
+    --bg-end: {{ brand_theme.bg_end }};
+    --topbar-bg: {{ brand_theme.topbar_bg }};
+    --topbar-text: {{ brand_theme.topbar_text }};
+    --topbar-mark: {{ brand_theme.topbar_mark }};
+  }
+  html, body { min-height: 100%; }
+  body {
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%);
+    color: var(--text-main);
+  }
+  .topbar {
+    margin: 0 0 28px;
+    padding: 10px 22px;
+    background: var(--topbar-bg);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.28);
+  }
+  .topbar-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--topbar-text);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.5rem;
+    letter-spacing: -0.02em;
+    font-family: "Raleway", ui-sans-serif, system-ui, sans-serif;
+  }
+  .topbar-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--topbar-mark);
+    font-size: 1.05rem;
+  }
+  .topbar-logo { display: block; height: 24px; width: auto; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 32px 20px; }
+  .auth-shell { max-width: 460px; margin: 48px auto 0; }
+  .card {
+    background: white;
+    border-radius: 18px;
+    padding: 24px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.08);
+  }
+  .label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  h1 { font-size: 28px; margin-bottom: 8px; }
+  p, .subtitle { color: var(--text-muted); margin-bottom: 24px; font-size: 14px; }
+  form { display: grid; gap: 12px; margin-bottom: 20px; }
+  label { font-size: 14px; font-weight: 500; }
+  input, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #bfd0c3;
+    border-radius: 12px;
+    font-size: 16px;
+    background: white;
+  }
+  .btn-primary,
+  .btn-submit,
+  .btn-verify {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  .btn-primary:disabled,
+  .btn-submit:disabled,
+  .btn-verify:disabled {
+    background: #9ab7a8;
+    cursor: not-allowed;
+  }
+  .btn-google {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 16px;
+    background: white;
+    border: 1px solid #bfd0c3;
+    border-radius: 12px;
+    font-size: 16px;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text-main);
+    transition: background 0.2s;
+    font-weight: 600;
+  }
+  .btn-google:hover { background: #f8fbf9; }
+  .btn-google svg { width: 20px; height: 20px; }
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-muted);
+    font-size: 13px;
+    margin: 24px 0 20px;
+  }
+  .divider::before, .divider::after {
+    content: "";
+    height: 1px;
+    background: #dbe6dd;
+    flex: 1;
+  }
+  .error {
+    background: #fef2f2;
+    color: #dc2626;
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    margin-bottom: 16px;
+    display: none;
+    text-align: left;
+  }
+  .phone-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 12px;
+    align-items: end;
+  }
+  .field-help {
+    margin-top: -6px;
+    margin-bottom: 16px;
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  @media (max-width: 800px) {
+    .wrap { padding: 18px 16px; }
+    .auth-shell { margin-top: 8px; }
+    .card { padding: 18px; }
+  }
+  @media (max-width: 575.98px) {
+    .topbar { margin-bottom: 10px; padding: 10px 16px; }
+    .wrap { padding-top: 10px; }
+    .auth-shell { margin-top: 0; }
+    .card { padding: 16px; }
+    .phone-row { grid-template-columns: 1fr; }
+  }
+</style>

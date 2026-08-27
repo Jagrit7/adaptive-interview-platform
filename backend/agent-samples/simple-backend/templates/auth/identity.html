@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>{{ brand_name }} | Verify Your Identity</title>
+  {% include 'auth/_head.html' %}
+</head>
+<body>
+  {% include 'auth/_topbar.html' %}
+  <div class="wrap">
+    <div class="auth-shell">
+      <div class="card">
+        <div class="label">{{ brand_name }}</div>
+        <h1>Verify your identity</h1>
+        <p class="subtitle">Confirm your details so we can send the code to the right phone.</p>
+
+        <div id="error" class="error"></div>
+
+        <form id="identity-form" onsubmit="return handleSubmit(event)">
+          <label for="name">First Name</label>
+          <input type="text" id="name" name="name" required autocomplete="given-name" placeholder="">
+
+          {% if collect_phone %}
+            <label for="phone">Phone Number</label>
+            <div class="phone-row">
+              <div>
+                <label for="phone_country_code">Country</label>
+                <select id="phone_country_code" name="phone_country_code">
+                  {% for phone_country in phone_countries %}
+                    <option value="{{ phone_country.code }}">{{ phone_country.label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div>
+                <label for="phone">Number</label>
+                <input type="tel" id="phone" name="phone" required autocomplete="tel" placeholder="7700900111 or 07700900111">
+              </div>
+            </div>
+            <div class="field-help">Only United States and United Kingdom phone numbers are supported right now.</div>
+          {% else %}
+            <div class="field-help">We will send the verification code to the phone number on your account.</div>
+          {% endif %}
+
+          <button type="submit" class="btn-submit" id="submit-btn">Continue</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function handleSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submit-btn');
+      const errorEl = document.getElementById('error');
+      errorEl.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+
+      const form = document.getElementById('identity-form');
+      const formData = new FormData(form);
+
+      try {
+        const res = await fetch('{{ tenant_path("/auth/send-code") }}', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        });
+        const data = await res.json();
+
+        if (data.success && data.redirect) {
+          window.location.href = data.redirect;
+          return;
+        }
+        errorEl.textContent = data.error || 'Something went wrong.';
+        errorEl.style.display = 'block';
+      } catch (err) {
+        errorEl.textContent = 'Network error. Please try again.';
+        errorEl.style.display = 'block';
+      }
+      btn.disabled = false;
+      btn.textContent = 'Continue';
+      return false;
+    }
+  </script>
+</body>
+</html>

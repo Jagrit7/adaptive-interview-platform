@@ -1,0 +1,23 @@
+{
+    "name": "AgoraDynamicKey-rust",
+    "image": "rust:1.79",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "swellaby.rust-pack",
+                "swellaby.vscode-rust-test-adapter"
+            ],
+            "settings": {
+                "[rust]": {
+                    "editor.defaultFormatter": "rust-lang.rust-analyzer",
+                    "editor.formatOnSave": true
+                }
+            }
+        }
+    },
+    "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
+    "workspaceFolder": "/app",
+    "postCreateCommand": {
+        "install rustfmt": "rustup component add rustfmt"
+    }
+}

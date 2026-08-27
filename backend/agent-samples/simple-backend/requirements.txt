@@ -1,0 +1,2 @@
+# Core dependencies (shared by both Lambda and local server)
+# No external dependencies - uses Python stdlib only

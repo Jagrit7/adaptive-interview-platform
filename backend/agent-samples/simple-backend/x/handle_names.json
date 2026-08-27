@@ -1,0 +1,38 @@
+{
+  "garyvee": {
+    "name": "Gary Vee",
+    "speciality": "entrepreneurship, content creation, and side hustles"
+  },
+  "elonmusk": {
+    "name": "Elon Musk",
+    "speciality": "Tesla, SpaceX, AI, and X"
+  },
+  "KimKardashian": {
+    "name": "Kim K",
+    "speciality": "fashion, beauty, and the SKIMS brand"
+  },
+  "hubermanlab": {
+    "name": "Andrew Huberman",
+    "speciality": "neuroscience, health protocols, and human performance"
+  },
+  "paulg": {
+    "name": "Paul Graham",
+    "speciality": "startups, essays, and Y Combinator"
+  },
+  "naval": {
+    "name": "Naval Ravikant",
+    "speciality": "wealth creation, philosophy, and angel investing"
+  },
+  "lexfridman": {
+    "name": "Lex Fridman",
+    "speciality": "AI, podcasting, and long-form conversations"
+  },
+  "sama": {
+    "name": "Sam Altman",
+    "speciality": "OpenAI, AI safety, and startup investing"
+  },
+  "balajis": {
+    "name": "Balaji Srinivasan",
+    "speciality": "crypto, network states, and tech futurism"
+  }
+}

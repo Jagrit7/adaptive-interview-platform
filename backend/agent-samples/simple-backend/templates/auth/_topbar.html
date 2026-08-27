@@ -1,0 +1,16 @@
+<div class="topbar">
+  <a class="topbar-link" href="{{ tenant_path('/') }}" aria-label="Go to home page">
+    <span class="topbar-mark">
+      {% if brand_theme.logo_url %}
+        <img
+          src="{{ tenant_path(brand_theme.logo_url) if brand_theme.logo_url.startswith('/img/') else brand_theme.logo_url }}"
+          alt=""
+          class="topbar-logo"
+        >
+      {% else %}
+        <i class="{{ brand_theme.icon_class }}" aria-hidden="true"></i>
+      {% endif %}
+    </span>
+    <span>{{ brand_theme.wordmark }}</span>
+  </a>
+</div>

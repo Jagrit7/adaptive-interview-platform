@@ -1,0 +1,217 @@
+{
+  "recipe_id": "sde_panel",
+  "recipe_name": "SDE Interview Panel",
+  "agents": [
+    {
+      "id": "tech-dsa",
+      "name": "Technical Interviewer (DSA)",
+      "role": "technical",
+      "accent_color": "#6E56CF",
+      "avatar": "auto",
+
+      "voice": {
+        "vendor": "minimax",
+        "voice_id": "English_captivating_female1",
+        "language": "en-US"
+      },
+
+      "behavior": {
+        "system_prompt": "You are a technical interviewer assessing a candidate's data structures and algorithms skills. Ask one problem at a time, let the candidate think and code, and probe their approach, complexity analysis, and edge cases before moving on.",
+        "greeting_message": "Hi, ready to get started with a DSA question?",
+        "failure_message": "Sorry, could you repeat that?"
+      },
+
+      "interview_logic": {
+        "difficulty_min": "medium",
+        "difficulty_max": "hard",
+        "seed_questions_ref": "seed_questions.json#dsa",
+        "follow_up_aggressiveness": "probing",
+        "max_turns_before_handoff": 5
+      },
+
+      "skills": {
+        "role_play_mode": false,
+        "loop_until_satisfied": true,
+        "contradiction_probing": true,
+        "interrupt_sensitivity": "balanced"
+      },
+
+      "tools": {
+        "code_execution": true
+      },
+
+      "turn_taking": {
+        "can_open": true,
+        "handoff_triggers": ["dsa_competency_covered"],
+        "priority_weight": "high"
+      },
+
+      "scoring_input": {
+        "competencies": ["algorithmic_thinking", "complexity_analysis", "code_correctness"]
+      }
+    },
+
+    {
+      "id": "tech-sysdesign",
+      "name": "Technical Interviewer (System Design)",
+      "role": "technical",
+      "accent_color": "#4C6EF5",
+      "avatar": "auto",
+
+      "voice": {
+        "vendor": "minimax",
+        "voice_id": "English_expressive_male1",
+        "language": "en-US"
+      },
+
+      "behavior": {
+        "system_prompt": "You are a technical interviewer assessing system design skills. Present a design problem, then probe the candidate's reasoning on scalability, data modeling, consistency tradeoffs, and failure handling. Push back on vague or unjustified choices.",
+        "greeting_message": "Let's move to a system design question now.",
+        "failure_message": "Sorry, could you say that again?"
+      },
+
+      "interview_logic": {
+        "difficulty_min": "medium",
+        "difficulty_max": "hard",
+        "seed_questions_ref": "seed_questions.json#system_design",
+        "follow_up_aggressiveness": "probing",
+        "max_turns_before_handoff": 5
+      },
+
+      "skills": {
+        "role_play_mode": false,
+        "loop_until_satisfied": true,
+        "contradiction_probing": true,
+        "interrupt_sensitivity": "balanced"
+      },
+
+      "tools": {},
+
+      "turn_taking": {
+        "can_open": false,
+        "handoff_triggers": ["system_design_competency_covered"],
+        "priority_weight": "high"
+      },
+
+      "scoring_input": {
+        "competencies": ["scalability_reasoning", "data_modeling", "tradeoff_justification"]
+      }
+    },
+
+    {
+      "id": "tech-aiml",
+      "name": "Technical Interviewer (AI/ML)",
+      "role": "technical",
+      "accent_color": "#E8A33D",
+      "avatar": "auto",
+
+      "voice": {
+        "vendor": "minimax",
+        "voice_id": "English_captivating_female1",
+        "language": "en-US"
+      },
+
+      "behavior": {
+        "system_prompt": "You are a technical interviewer assessing AI/ML fundamentals. Ask about classical ML concepts, deep learning basics, and evaluation metrics relevant to the candidate's stated experience. Ask them to justify model or metric choices, not just define terms.",
+        "greeting_message": "Now let's talk about your AI/ML background.",
+        "failure_message": "Sorry, could you repeat that?"
+      },
+
+      "interview_logic": {
+        "difficulty_min": "easy",
+        "difficulty_max": "hard",
+        "seed_questions_ref": "seed_questions.json#aiml",
+        "follow_up_aggressiveness": "moderate",
+        "max_turns_before_handoff": 5
+      },
+
+      "skills": {
+        "role_play_mode": false,
+        "loop_until_satisfied": true,
+        "contradiction_probing": true,
+        "interrupt_sensitivity": "balanced"
+      },
+
+      "tools": {},
+
+      "turn_taking": {
+        "can_open": false,
+        "handoff_triggers": ["aiml_competency_covered"],
+        "priority_weight": "medium"
+      },
+
+      "scoring_input": {
+        "competencies": ["ml_fundamentals", "metric_justification", "practical_application"]
+      }
+    },
+
+    {
+      "id": "hr-behavioral",
+      "name": "HR Interviewer (Behavioural & Communication)",
+      "role": "behavioural",
+      "accent_color": "#C2418C",
+      "avatar": "auto",
+
+      "voice": {
+        "vendor": "minimax",
+        "voice_id": "English_expressive_male1",
+        "language": "en-US"
+      },
+
+      "behavior": {
+        "system_prompt": "You are an HR interviewer assessing behavioural fit and communication. Ask about past experiences using situational/STAR-style prompts. Evaluate clarity, ownership, and specificity of examples, not just content.",
+        "greeting_message": "Let's talk a bit about your experience and how you work.",
+        "failure_message": "Sorry, could you say that again?"
+      },
+
+      "interview_logic": {
+        "difficulty_min": "n/a",
+        "difficulty_max": "n/a",
+        "seed_questions_ref": "seed_questions.json#behavioural",
+        "follow_up_aggressiveness": "light",
+        "max_turns_before_handoff": 4
+      },
+
+      "skills": {
+        "role_play_mode": false,
+        "loop_until_satisfied": false,
+        "contradiction_probing": true,
+        "interrupt_sensitivity": "gentle"
+      },
+
+      "tools": {},
+
+      "turn_taking": {
+        "can_open": false,
+        "handoff_triggers": ["behavioural_competency_covered"],
+        "priority_weight": "medium"
+      },
+
+      "scoring_input": {
+        "competencies": ["star_structure", "ownership_language", "communication_clarity"]
+      }
+    }
+  ],
+
+  "scorer": {
+    "satisfaction_threshold": 3,
+    "scale": ["weak", "adequate", "strong"],
+    "competencies": [
+      { "id": "algorithmic_thinking", "owner_agent": "tech-dsa", "weight": 1.0 },
+      { "id": "complexity_analysis", "owner_agent": "tech-dsa", "weight": 1.0 },
+      { "id": "code_correctness", "owner_agent": "tech-dsa", "weight": 1.2 },
+
+      { "id": "scalability_reasoning", "owner_agent": "tech-sysdesign", "weight": 1.2 },
+      { "id": "data_modeling", "owner_agent": "tech-sysdesign", "weight": 1.0 },
+      { "id": "tradeoff_justification", "owner_agent": "tech-sysdesign", "weight": 1.0 },
+
+      { "id": "ml_fundamentals", "owner_agent": "tech-aiml", "weight": 1.0 },
+      { "id": "metric_justification", "owner_agent": "tech-aiml", "weight": 1.0 },
+      { "id": "practical_application", "owner_agent": "tech-aiml", "weight": 1.0 },
+
+      { "id": "star_structure", "owner_agent": "hr-behavioral", "weight": 0.8 },
+      { "id": "ownership_language", "owner_agent": "hr-behavioral", "weight": 0.8 },
+      { "id": "communication_clarity", "owner_agent": "hr-behavioral", "weight": 0.8 }
+    ]
+  }
+}

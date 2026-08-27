@@ -1,0 +1,18 @@
+{
+    "name": "AgoraDynamicKey-csharp",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:8.0",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-dotnettools.csharp",
+                "ms-dotnettools.csdevkit",
+                "formulahendry.dotnet-test-explorer"
+            ]
+        }
+    },
+    "workspaceMount": "source=${localWorkspaceFolder},target=/app,type=bind",
+    "workspaceFolder": "/app",
+    "postCreateCommand": {
+        "dotnet restore": "dotnet restore"
+    }
+}

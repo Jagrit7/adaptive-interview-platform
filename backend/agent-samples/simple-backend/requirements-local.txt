@@ -1,0 +1,11 @@
+# Local development dependencies
+-r requirements.txt
+python-dotenv==1.0.0
+flask==3.0.0
+
+# Auth dependencies (optional — only needed when auth is enabled for a profile)
+PyJWT>=2.8.0
+google-auth>=2.29.0
+google-auth-oauthlib>=1.2.0
+twilio>=9.0.0
+cryptography>=42.0.0

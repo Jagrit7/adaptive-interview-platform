@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complete Voice AI Client</title>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://download.agora.io/sdk/release/AgoraRTC_N.js"></script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #0a0a0a;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 60px 20px 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .view {
+      display: none;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    .landing {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 40px;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .landing h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .landing p {
+      text-align: center;
+      opacity: 0.7;
+      margin-bottom: 30px;
+      font-size: 0.9rem;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    .form-group label .required {
+      color: #ff6b6b;
+    }
+
+    .form-group label .optional {
+      opacity: 0.6;
+      font-weight: 400;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .form-group input::placeholder {
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: rgba(59, 130, 246, 0.5);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: #3b82f6;
+      color: #fff;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #2563eb;
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: #dc2626;
+    }
+
+    .in-call {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+      min-height: 80vh;
+      justify-content: center;
+      padding: 0 20px;
+    }
+
+    .in-call-content {
+      width: 100%;
+      max-width: 650px;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .session-title {
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0;
+      opacity: 0.9;
+    }
+
+    .waveform-container {
+      width: 100%;
+      height: 250px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0.05));
+      border-radius: 16px;
+      padding: 16px;
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      position: relative;
+      box-sizing: border-box;
+    }
+
+    .waveform-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .mic-selector {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .mic-button-round {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(59, 130, 246, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .mic-button-round .material-icons {
+      font-size: 24px;
+      color: #fff;
+    }
+
+    .mic-button-round:hover {
+      background: rgba(59, 130, 246, 0.3);
+      transform: scale(1.05);
+    }
+
+    .mic-button-round.muted {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
+    .mic-button-round.muted:hover {
+      background: rgba(239, 68, 68, 0.4);
+    }
+
+    .hang-up-button {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(239, 68, 68, 0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+
+    .hang-up-button .material-icons {
+      font-size: 24px;
+      color: #fff;
+    }
+
+    .hang-up-button:hover {
+      background: rgba(239, 68, 68, 0.4);
+      transform: scale(1.05);
+    }
+
+    .local-mic-container {
+      flex: 1;
+      min-width: 0;
+      height: 56px;
+      display: flex;
+      align-items: center;
+    }
+
+    .local-waveform {
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      display: block;
+      box-sizing: border-box;
+    }
+
+    .device-selector {
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      color: rgba(59, 130, 246, 0.8);
+      font-size: 0.875rem;
+      cursor: pointer;
+      flex: 1;
+      min-width: 0;
+      height: 56px;
+    }
+
+    .device-selector:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .device-selector option {
+      background: #1a1a1a;
+      color: rgba(59, 130, 246, 0.8);
+    }
+
+    .controls-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .error-display {
+      display: none;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      padding: 12px 16px;
+      max-width: 500px;
+      text-align: center;
+      font-size: 0.875rem;
+      color: #fca5a5;
+    }
+
+    .error-display.show {
+      display: block;
+    }
+
+    @media (max-width: 768px) {
+      .in-call {
+        padding: 0 16px;
+      }
+
+      .in-call-content {
+        max-width: 100%;
+      }
+
+      .session-title {
+        font-size: 1.25rem;
+      }
+
+      .waveform-container {
+        height: 180px;
+        padding: 12px;
+      }
+
+      .mic-selector {
+        gap: 8px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .in-call {
+        padding: 0 12px;
+      }
+
+      .session-title {
+        font-size: 1.1rem;
+      }
+
+      .waveform-container {
+        height: 150px;
+      }
+
+      .mic-selector {
+        gap: 6px;
+      }
+
+      .mic-button-round,
+      .hang-up-button {
+        width: 48px;
+        height: 48px;
+      }
+
+      .mic-button-round .material-icons,
+      .hang-up-button .material-icons {
+        font-size: 20px;
+      }
+
+      .local-mic-container,
+      .device-selector {
+        height: 48px;
+      }
+
+      .device-selector {
+        font-size: 0.8rem;
+      }
+    }
+  </style>
+
+  <script>
+    // Configuration
+    let backendUrl = 'http://localhost:8082'
+    let channel = ''
+    let sessionTitle = 'Voice AI Agent'
+    let agentId = null
+    let agoraClient = null
+    let localAudioTrack = null
+    let isMuted = false
+    let currentAgentState = 'not-joined'
+    let localAnalyzer = null
+    let remoteAnalyzer = null
+
+    // DOM elements (initialized after DOM loads)
+    let landingView, inCallView, joinForm, micButton, deviceSelector, leaveButton
+    let errorDisplay, waveformCanvas, micWaveformCanvas, micIcon, sessionTitleElement
+    let mainWaveform, micWaveform
+
+    // === BACKEND API FUNCTIONS ===
+
+    async function callBackend(channel, backendUrl) {
+      try {
+        const url = `${backendUrl}/start-agent?channel=${encodeURIComponent(channel)}`
+        console.log('Calling backend:', url)
+
+        const response = await fetch(url)
+        if (!response.ok) {
+          throw new Error(`Backend returned ${response.status}: ${response.statusText}`)
+        }
+
+        const data = await response.json()
+        console.log('Backend response:', data)
+
+        // Extract agent_id from response if available
+        if (data.agent_response && data.agent_response.response) {
+          try {
+            const agentResponse = JSON.parse(data.agent_response.response)
+            if (agentResponse.agent_id) {
+              agentId = agentResponse.agent_id
+            }
+          } catch (e) {
+            console.log('Could not parse agent_id from response')
+          }
+        }
+
+        return data
+      } catch (error) {
+        console.error('Backend call failed:', error)
+        throw error
+      }
+    }
+
+    // === AGORA FUNCTIONS ===
+
+    async function loadAudioDevices() {
+      try {
+        const devices = await AgoraRTC.getDevices(true)
+        const audioInputs = devices.filter(device => device.kind === 'audioinput')
+        deviceSelector.innerHTML = ''
+
+        if (audioInputs.length === 0) {
+          const option = document.createElement('option')
+          option.textContent = 'No microphones available'
+          deviceSelector.appendChild(option)
+          return
+        }
+
+        audioInputs.forEach(device => {
+          const option = document.createElement('option')
+          option.value = device.deviceId
+          option.textContent = device.label || `Microphone ${device.deviceId.slice(0, 8)}`
+          deviceSelector.appendChild(option)
+        })
+      } catch (error) {
+        console.error('Failed to load audio devices:', error)
+        deviceSelector.innerHTML = '<option>Failed to load devices</option>'
+      }
+    }
+
+    async function joinCall(config) {
+      try {
+        updateAgentState('joining')
+        hideError()
+
+        // Clean up existing client if any
+        if (agoraClient) {
+          try {
+            await agoraClient.leave()
+          } catch (e) {
+            console.log('Error leaving existing client:', e)
+          }
+          agoraClient = null
+        }
+
+        agoraClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp9' })
+
+        agoraClient.on('user-published', async (user, mediaType) => {
+          if (mediaType === 'audio') {
+            await agoraClient.subscribe(user, mediaType)
+            user.audioTrack.play()
+            updateAgentState('listening')
+            setupRemoteAudioAnalysis(user.audioTrack)
+          }
+        })
+
+        agoraClient.on('user-unpublished', (user, mediaType) => {
+          if (mediaType === 'audio') {
+            cleanupRemoteAudioAnalysis()
+            updateAgentState('ambient')
+          }
+        })
+
+        agoraClient.on('user-left', () => {
+          cleanupRemoteAudioAnalysis()
+          updateAgentState('ambient')
+        })
+
+        // Convert empty token to null for Agora SDK
+        const token = config.token || null
+        // Convert UID to integer (Agora SDK requires int when enable_string_uid is false)
+        const uid = parseInt(config.uid)
+        await agoraClient.join(config.appId, config.channel, token, uid)
+
+        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack({
+          encoderConfig: 'high_quality_stereo',
+          AEC: true,
+          ANS: true,
+          AGC: true
+        })
+
+        await agoraClient.publish([localAudioTrack])
+        setupLocalMicAnalysis()
+        await loadAudioDevices()
+        updateAgentState('ambient')
+
+        sessionTitleElement.textContent = config.sessionTitle || 'Voice AI Agent'
+
+        landingView.classList.remove('active')
+        inCallView.classList.add('active')
+
+        setTimeout(() => {
+          mainWaveform.resize()
+          micWaveform.resize()
+        }, 50)
+      } catch (error) {
+        console.error('Failed to join channel:', error)
+        showError(error.message || 'Failed to join channel')
+        updateAgentState('not-joined')
+      }
+    }
+
+    async function leaveCall() {
+      try {
+        cleanupRemoteAudioAnalysis()
+        cleanupLocalMicAnalysis()
+
+        if (localAudioTrack) {
+          localAudioTrack.close()
+          localAudioTrack = null
+        }
+
+        if (agoraClient) {
+          await agoraClient.leave()
+          agoraClient = null
+        }
+
+        updateAgentState('not-joined')
+        isMuted = false
+        micIcon.textContent = 'mic'
+        micButton.classList.remove('muted')
+
+        inCallView.classList.remove('active')
+        landingView.classList.add('active')
+      } catch (error) {
+        console.error('Failed to leave channel:', error)
+        showError(error.message || 'Failed to leave channel')
+      }
+    }
+
+    function toggleMute() {
+      if (!localAudioTrack) return
+
+      isMuted = !isMuted
+      localAudioTrack.setMuted(isMuted)
+
+      micIcon.textContent = isMuted ? 'mic_off' : 'mic'
+      micButton.classList.toggle('muted', isMuted)
+
+      updateAgentState(currentAgentState)
+
+      if (isMuted) {
+        cleanupLocalMicAnalysis()
+      } else {
+        setupLocalMicAnalysis()
+      }
+    }
+
+    async function changeAudioDevice(deviceId) {
+      if (!localAudioTrack || !deviceId) return
+
+      try {
+        await localAudioTrack.setDevice(deviceId)
+        cleanupLocalMicAnalysis()
+        setupLocalMicAnalysis()
+      } catch (error) {
+        console.error('Failed to change audio device:', error)
+        showError('Failed to change microphone')
+      }
+    }
+
+    function updateAgentState(state) {
+      currentAgentState = state
+    }
+
+    function showError(message) {
+      errorDisplay.textContent = message
+      errorDisplay.classList.add('show')
+    }
+
+    function hideError() {
+      errorDisplay.classList.remove('show')
+    }
+
+    // === AUDIO VISUALIZATION ===
+
+    class LiveWaveform {
+      constructor(canvas, options = {}) {
+        this.canvas = canvas
+        this.ctx = canvas.getContext('2d')
+        this.data = []
+        this.animationId = null
+        this.barWidth = options.barWidth || 4
+        this.barGap = options.barGap || 2
+        this.barRadius = options.barRadius || 2
+        this.barColor = options.barColor || 'rgba(59, 130, 246, 0.8)'
+        this.fadeEdges = options.fadeEdges !== undefined ? options.fadeEdges : true
+        this.fadeWidth = options.fadeWidth || 40
+
+        this.setupCanvas()
+        this.startAnimation()
+      }
+
+      setupCanvas() {
+        const resizeCanvas = () => {
+          const dpr = window.devicePixelRatio || 1
+          const rect = this.canvas.getBoundingClientRect()
+
+          if (rect.width > 0 && rect.height > 0) {
+            this.canvas.width = rect.width * dpr
+            this.canvas.height = rect.height * dpr
+            this.ctx.scale(dpr, dpr)
+          }
+        }
+
+        this.resizeCanvas = resizeCanvas
+        setTimeout(resizeCanvas, 0)
+        window.addEventListener('resize', resizeCanvas)
+      }
+
+      resize() {
+        if (this.resizeCanvas) {
+          this.resizeCanvas()
+        }
+      }
+
+      setData(data) {
+        this.data = data
+      }
+
+      startAnimation() {
+        let idleTime = 0
+
+        const animate = () => {
+          const rect = this.canvas.getBoundingClientRect()
+
+          if (rect.width === 0 || rect.height === 0) {
+            this.animationId = requestAnimationFrame(animate)
+            return
+          }
+
+          this.ctx.clearRect(0, 0, rect.width, rect.height)
+
+          const step = this.barWidth + this.barGap
+          const barCount = Math.floor(rect.width / step)
+
+          if (!this.data || this.data.length === 0) {
+            idleTime += 0.03
+            this.data = Array.from({ length: barCount }, (_, i) =>
+              0.05 + Math.sin(idleTime + i * 0.3) * 0.01
+            )
+          }
+
+          const centerY = rect.height / 2
+
+          for (let i = 0; i < barCount; i++) {
+            const dataIndex = Math.floor((i / barCount) * this.data.length)
+            const value = this.data[dataIndex] || 0.05
+            const x = i * step
+            const barHeight = Math.max(4, value * rect.height * 0.8)
+            const y = centerY - barHeight / 2
+
+            this.ctx.fillStyle = this.barColor
+            this.ctx.globalAlpha = 0.4 + value * 0.6
+
+            this.ctx.beginPath()
+            this.ctx.roundRect(x, y, this.barWidth, barHeight, this.barRadius)
+            this.ctx.fill()
+          }
+
+          if (this.fadeEdges && this.fadeWidth > 0) {
+            const gradient = this.ctx.createLinearGradient(0, 0, rect.width, 0)
+            const fadePercent = Math.min(0.3, this.fadeWidth / rect.width)
+
+            gradient.addColorStop(0, 'rgba(255,255,255,1)')
+            gradient.addColorStop(fadePercent, 'rgba(255,255,255,0)')
+            gradient.addColorStop(1 - fadePercent, 'rgba(255,255,255,0)')
+            gradient.addColorStop(1, 'rgba(255,255,255,1)')
+
+            this.ctx.globalCompositeOperation = 'destination-out'
+            this.ctx.fillStyle = gradient
+            this.ctx.fillRect(0, 0, rect.width, rect.height)
+            this.ctx.globalCompositeOperation = 'source-over'
+          }
+
+          this.ctx.globalAlpha = 1
+          this.animationId = requestAnimationFrame(animate)
+        }
+
+        animate()
+      }
+
+      destroy() {
+        if (this.animationId) {
+          cancelAnimationFrame(this.animationId)
+        }
+      }
+    }
+
+    // === AUDIO ANALYSIS ===
+
+    function createAudioAnalyzer(audioTrack, waveform, options = {}) {
+      let context = null
+      let analyser = null
+      let animationId = null
+      const { onVolumeChange, checkMuted } = options
+
+      const setup = () => {
+        try {
+          const AudioContextConstructor = window.AudioContext || window.webkitAudioContext
+          context = new AudioContextConstructor()
+          analyser = context.createAnalyser()
+          analyser.fftSize = 256
+          analyser.smoothingTimeConstant = 0.8
+
+          const mediaStreamTrack = audioTrack.getMediaStreamTrack()
+          const stream = new MediaStream([mediaStreamTrack])
+          const source = context.createMediaStreamSource(stream)
+          source.connect(analyser)
+
+          const dataArray = new Uint8Array(analyser.frequencyBinCount)
+          const update = () => {
+            if (!analyser || (checkMuted && checkMuted())) {
+              waveform.setData([])
+              return
+            }
+
+            analyser.getByteFrequencyData(dataArray)
+            const startFreq = Math.floor(dataArray.length * 0.05)
+            const endFreq = Math.floor(dataArray.length * 0.4)
+            const relevantData = dataArray.slice(startFreq, endFreq)
+            const halfLength = Math.floor(relevantData.length / 2)
+            const normalizedData = []
+
+            for (let i = halfLength - 1; i >= 0; i--) {
+              normalizedData.push(Math.min(1, relevantData[i] / 255))
+            }
+            for (let i = 0; i < halfLength; i++) {
+              normalizedData.push(Math.min(1, relevantData[i] / 255))
+            }
+
+            waveform.setData(normalizedData)
+
+            if (onVolumeChange) {
+              const avgVolume = relevantData.reduce((a, b) => a + b, 0) / relevantData.length
+              onVolumeChange(avgVolume)
+            }
+
+            animationId = requestAnimationFrame(update)
+          }
+          update()
+        } catch (error) {
+          console.error('Failed to setup audio analysis:', error)
+        }
+      }
+
+      const cleanup = () => {
+        if (animationId) {
+          cancelAnimationFrame(animationId)
+          animationId = null
+        }
+        if (context && context.state !== 'closed') {
+          context.close()
+        }
+        context = null
+        analyser = null
+        waveform.setData([])
+      }
+
+      return { setup, cleanup }
+    }
+
+    function setupLocalMicAnalysis() {
+      if (!localAudioTrack || isMuted) {
+        micWaveform.setData([])
+        return
+      }
+      if (localAnalyzer) localAnalyzer.cleanup()
+      localAnalyzer = createAudioAnalyzer(localAudioTrack, micWaveform, {
+        checkMuted: () => isMuted
+      })
+      localAnalyzer.setup()
+    }
+
+    function cleanupLocalMicAnalysis() {
+      if (localAnalyzer) {
+        localAnalyzer.cleanup()
+        localAnalyzer = null
+      }
+    }
+
+    function setupRemoteAudioAnalysis(audioTrack) {
+      if (remoteAnalyzer) remoteAnalyzer.cleanup()
+      remoteAnalyzer = createAudioAnalyzer(audioTrack, mainWaveform, {
+        onVolumeChange: (avgVolume) => {
+          updateAgentState(avgVolume > 25 ? 'talking' : 'listening')
+        }
+      })
+      remoteAnalyzer.setup()
+    }
+
+    function cleanupRemoteAudioAnalysis() {
+      if (remoteAnalyzer) {
+        remoteAnalyzer.cleanup()
+        remoteAnalyzer = null
+      }
+    }
+
+    // === INITIALIZATION ===
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Initialize DOM references
+      landingView = document.getElementById('landing-view')
+      inCallView = document.getElementById('in-call-view')
+      joinForm = document.getElementById('join-form')
+      micButton = document.getElementById('mic-button')
+      deviceSelector = document.getElementById('device-selector')
+      leaveButton = document.getElementById('leave-button')
+      errorDisplay = document.getElementById('error-display')
+      waveformCanvas = document.getElementById('waveform-canvas')
+      micWaveformCanvas = document.getElementById('mic-waveform')
+      micIcon = document.getElementById('mic-icon')
+      sessionTitleElement = document.getElementById('session-title')
+
+      // Initialize waveforms
+      mainWaveform = new LiveWaveform(waveformCanvas, {
+        barWidth: 4,
+        barGap: 2,
+        barRadius: 2,
+        fadeEdges: true,
+        fadeWidth: 40
+      })
+
+      micWaveform = new LiveWaveform(micWaveformCanvas, {
+        barWidth: 2,
+        barGap: 1,
+        barRadius: 1,
+        fadeEdges: false,
+        barColor: 'rgba(59, 130, 246, 0.8)'
+      })
+
+      // Pre-fill from URL parameters
+      const params = new URLSearchParams(window.location.search)
+      if (params.get('backend')) document.getElementById('backendUrl').value = params.get('backend')
+      if (params.get('channel')) document.getElementById('channel').value = params.get('channel')
+      if (params.get('title')) {
+        sessionTitle = params.get('title')
+        document.getElementById('title').value = sessionTitle
+      }
+
+      // Event handlers
+      joinForm.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        backendUrl = document.getElementById('backendUrl').value.trim() || 'http://localhost:8082'
+        channel = document.getElementById('channel').value.trim()
+        sessionTitle = document.getElementById('title').value.trim() || 'Voice AI Agent'
+
+        if (!channel) {
+          showError('Channel name is required')
+          return
+        }
+
+        try {
+          // Update URL with parameters
+          const urlParams = new URLSearchParams()
+          if (backendUrl !== 'http://localhost:8082') urlParams.set('backend', backendUrl)
+          urlParams.set('channel', channel)
+          if (sessionTitle && sessionTitle !== 'Voice AI Agent') urlParams.set('title', sessionTitle)
+
+          const newUrl = `${window.location.pathname}?${urlParams.toString()}`
+          window.history.replaceState({}, '', newUrl)
+
+          // Call backend to start agent and get credentials
+          showError('Calling backend to start agent...')
+          const backendData = await callBackend(channel, backendUrl)
+
+          // Join channel with credentials from backend
+          await joinCall({
+            appId: backendData.appid,
+            channel: backendData.channel,
+            token: backendData.token,
+            uid: backendData.uid,
+            sessionTitle: sessionTitle
+          })
+        } catch (error) {
+          showError(`Failed to start: ${error.message}`)
+        }
+      })
+
+      micButton.addEventListener('click', toggleMute)
+      leaveButton.addEventListener('click', leaveCall)
+      deviceSelector.addEventListener('change', (e) => changeAudioDevice(e.target.value))
+    })
+  </script>
+</head>
+<body>
+  <div class="container">
+    <!-- Landing Page View -->
+    <div id="landing-view" class="view active">
+      <div class="landing">
+        <h1>Complete Voice AI Client</h1>
+        <p>Connect to backend to start agent and join channel</p>
+
+        <form id="join-form">
+          <div class="form-group">
+            <label for="backendUrl">
+              Backend URL <span class="optional">(optional)</span>
+            </label>
+            <input
+              type="text"
+              id="backendUrl"
+              placeholder="http://localhost:8082"
+              value="http://localhost:8082"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="channel">
+              Channel <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="channel"
+              placeholder="Enter channel name"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="title">
+              Title <span class="optional">(optional)</span>
+            </label>
+            <input
+              type="text"
+              id="title"
+              placeholder="Voice AI Agent"
+            />
+          </div>
+
+          <button type="submit" class="btn-primary">
+            Start Agent & Join
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- In-Call View -->
+    <div id="in-call-view" class="view">
+      <div class="in-call">
+        <div class="in-call-content">
+          <h2 id="session-title" class="session-title">Voice AI Agent</h2>
+
+          <div class="waveform-container">
+            <canvas id="waveform-canvas" class="waveform-canvas"></canvas>
+          </div>
+
+          <div class="controls-container">
+            <div class="mic-selector">
+              <button id="mic-button" class="mic-button-round" title="Toggle Mute">
+                <span id="mic-icon" class="material-icons">mic</span>
+              </button>
+
+              <div class="local-mic-container">
+                <canvas id="mic-waveform" class="local-waveform"></canvas>
+              </div>
+
+              <select id="device-selector" class="device-selector">
+                <option>Loading devices...</option>
+              </select>
+
+              <button id="leave-button" class="hang-up-button" title="Leave Channel">
+                <span class="material-icons">call_end</span>
+              </button>
+            </div>
+
+            <div id="error-display" class="error-display"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

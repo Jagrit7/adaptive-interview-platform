@@ -1,0 +1,115 @@
+/* app/globals.css */
+
+:root {
+  /* Core Palette */
+  --bg: #0A0A0C;
+  --surface: #131316;
+  --surface-raised: #1B1B1F;
+  --border: #232327;
+  --border-strong: #333338;
+  --text-primary: #EDEDEF;
+  --text-secondary: #9C9CA3;
+  --text-muted: #5C5C63;
+
+  /* Role Accents */
+  --accent-indigo: #6E56CF;
+  --accent-amber: #E8A33D;
+  --accent-teal: #2DD4BF;
+  --accent-rose: #F2545B;
+  --accent-violet: #C2418C;
+  --accent-slate: #7A7A85;
+
+  /* Typography Variables */
+  --font-body: var(--font-inter), sans-serif;
+  --font-display: var(--font-space), sans-serif;
+  --font-mono-face: var(--font-mono), monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  margin: 0;
+}
+
+input, textarea, button, select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  background: transparent;
+  border: none;
+}
+
+input:focus, textarea:focus, button:focus, select:focus {
+  outline: none;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Utility classes for layout & styles */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.flex { display: flex; }
+.flex-col { flex-direction: column; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 8px; }
+.gap-4 { gap: 16px; }
+.gap-6 { gap: 24px; }
+.gap-8 { gap: 32px; }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+.min-h-screen { min-height: 100vh; }
+
+.text-center { text-align: center; }
+.text-display { font-size: 32px; font-family: var(--font-display); }
+.text-heading { font-size: 20px; font-family: var(--font-display); }
+.text-body { font-size: 14px; }
+.text-caption { font-size: 12px; color: var(--text-secondary); }
+.text-muted { color: var(--text-muted); }
+
+.relative { position: relative; }
+.absolute { position: absolute; }
+.z-0 { z-index: 0; }
+.z-10 { z-index: 10; }
+
+.hidden { display: none; }
+@media (min-width: 768px) {
+  .md\:flex-row { flex-direction: row; }
+  .md\:w-1\/2 { width: 50%; }
+}

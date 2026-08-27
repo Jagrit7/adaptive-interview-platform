@@ -1,0 +1,27 @@
+{
+  "dsa": [
+    { "id": "dsa_1", "topic": "arrays/hashing", "difficulty": "medium", "prompt": "Given an array of integers, find two numbers that add up to a target value. Discuss brute force first, then optimize." },
+    { "id": "dsa_2", "topic": "linked lists/design", "difficulty": "medium", "prompt": "Design a data structure for an LRU cache with O(1) get and put operations." },
+    { "id": "dsa_3", "topic": "trees/recursion", "difficulty": "medium", "prompt": "Given a binary tree, determine if it is height-balanced." },
+    { "id": "dsa_4", "topic": "graphs/BFS", "difficulty": "hard", "prompt": "Given a grid of land and water, count the number of distinct islands." },
+    { "id": "dsa_5", "topic": "dynamic programming", "difficulty": "hard", "prompt": "Given a set of coin denominations, find the minimum number of coins needed to make a target amount." }
+  ],
+  "system_design": [
+    { "id": "sd_1", "topic": "caching/scaling", "difficulty": "medium", "prompt": "Design a URL shortening service. Cover data model, ID generation, and how you'd scale reads vs writes." },
+    { "id": "sd_2", "topic": "rate limiting", "difficulty": "medium", "prompt": "Design a rate limiter for a public API. Discuss algorithm choice and where it lives in the request path." },
+    { "id": "sd_3", "topic": "real-time systems", "difficulty": "hard", "prompt": "Design a chat application supporting group messages and delivery receipts at scale." },
+    { "id": "sd_4", "topic": "feed systems", "difficulty": "hard", "prompt": "Design a news feed system. Discuss fan-out strategies and consistency tradeoffs." }
+  ],
+  "aiml": [
+    { "id": "ml_1", "topic": "fundamentals", "difficulty": "easy", "prompt": "Explain the bias-variance tradeoff and how you'd diagnose which one is hurting a model." },
+    { "id": "ml_2", "topic": "evaluation", "difficulty": "medium", "prompt": "You're evaluating a classifier on an imbalanced dataset. Why might accuracy mislead you, and what would you use instead?" },
+    { "id": "ml_3", "topic": "deep learning", "difficulty": "medium", "prompt": "Explain what overfitting looks like in a neural network's training curves and two ways to address it." },
+    { "id": "ml_4", "topic": "applied", "difficulty": "hard", "prompt": "Walk through how you'd approach building a recommendation system with limited labeled data." }
+  ],
+  "behavioural": [
+    { "id": "bh_1", "prompt": "Tell me about a time you disagreed with a technical decision made by your team. What did you do?" },
+    { "id": "bh_2", "prompt": "Describe a project that didn't go as planned. What was your role in resolving it?" },
+    { "id": "bh_3", "prompt": "Tell me about a time you had to explain something technical to a non-technical stakeholder." },
+    { "id": "bh_4", "prompt": "Describe a situation where you had to push back on scope or a deadline. How did you handle it?" }
+  ]
+}

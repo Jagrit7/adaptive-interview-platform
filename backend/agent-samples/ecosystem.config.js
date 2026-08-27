@@ -1,0 +1,68 @@
+module.exports = {
+  apps: [
+    {
+      name: "simple-backend",
+      script: "/home/ubuntu/agent-samples/simple-backend/start.sh",
+      interpreter: "bash",
+      watch: false,
+      max_memory_restart: "200M",
+    },
+    {
+      name: "react-voice-client",
+      cwd: "/home/ubuntu/agent-samples/react-voice-client",
+      script: "node_modules/.bin/next",
+      args: "start -p 8083",
+      env: {
+        NODE_ENV: "production",
+        PORT: 8083,
+        NEXT_PUBLIC_BASE_PATH: "/react-voice-client",
+        NEXT_PUBLIC_BACKEND_URL: "/simple-backend",
+      },
+      watch: false,
+      max_memory_restart: "500M",
+    },
+    {
+      name: "react-video-client-avatar",
+      cwd: "/home/ubuntu/agent-samples/react-video-client-avatar",
+      script: "node_modules/.bin/next",
+      args: "start -p 8084",
+      env: {
+        NODE_ENV: "production",
+        PORT: 8084,
+        NEXT_PUBLIC_BASE_PATH: "/react-video-client-avatar",
+        NEXT_PUBLIC_BACKEND_URL: "/simple-backend",
+      },
+      watch: false,
+      max_memory_restart: "500M",
+    },
+    {
+      name: "react-video-client-avatar-thymia",
+      cwd: "/home/ubuntu/agent-samples/react-video-client-avatar-thymia",
+      script: "node_modules/.bin/next",
+      args: "start -p 8086",
+      env: {
+        NODE_ENV: "production",
+        PORT: 8086,
+        NEXT_PUBLIC_BASE_PATH: "/react-video-client-avatar-thymia",
+        NEXT_PUBLIC_BACKEND_URL: "/simple-backend",
+        NEXT_PUBLIC_ENABLE_THYMIA: "true",
+        NEXT_PUBLIC_ENABLE_SHEN: "true",
+        NEXT_PUBLIC_DEFAULT_PROFILE: "VIDEO_THYMIA_SHEN",
+      },
+      watch: false,
+      max_memory_restart: "500M",
+    },
+    {
+      name: "server-custom-llm",
+      cwd: "/home/ubuntu/server-custom-llm/node",
+      script: "custom_llm.js",
+      env: {
+        PORT: 8100,
+        THYMIA_ENABLED: "true",
+        SHEN_ENABLED: "true",
+      },
+      watch: false,
+      max_memory_restart: "300M",
+    },
+  ],
+};

@@ -1,0 +1,26 @@
+# Package tarballs
+*.tgz
+
+# npm
+package-lock.json
+
+# Thymia/Shen variants (just .env config on base clients)
+react-video-client-thymia/
+react-voice-client-thymia/
+react-video-client-avatar-thymia/
+
+# Local backups of simple-backend/.env (secrets)
+simple-backend/.env.backup-*
+
+# Symlinks into ../rishi_edt clone — local convenience only.
+# Re-create with the loop in deploy.md ('Sync luma assets').
+/assets/AF.*.png
+/assets/EDT_avatar.png
+/assets/EDT_avatar_option2.png
+/assets/Grey_AF.mtl
+/assets/Grey_AF_draco.glb
+/assets/kitchen_bg.png
+
+# Python bytecode
+__pycache__/
+*.pyc

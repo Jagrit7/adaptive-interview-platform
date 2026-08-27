@@ -1,0 +1,62 @@
+{
+  "algorithmic_thinking": {
+    "weak": "Cannot identify a viable approach without heavy prompting; jumps to code without a plan.",
+    "adequate": "Identifies a correct approach, possibly not optimal, and can explain it when asked.",
+    "strong": "Proposes an optimal or near-optimal approach unprompted and explains the reasoning behind the choice."
+  },
+  "complexity_analysis": {
+    "weak": "Cannot state time/space complexity, or states it incorrectly without correcting when probed.",
+    "adequate": "States correct complexity when asked, may need a hint to get there.",
+    "strong": "States and justifies complexity unprompted, including tradeoffs between alternative approaches."
+  },
+  "code_correctness": {
+    "weak": "Code fails on basic test cases or has fundamental logic errors.",
+    "adequate": "Code is mostly correct, minor bugs or missed edge cases fixable when pointed out.",
+    "strong": "Code is correct on first pass including edge cases, or self-corrects without prompting."
+  },
+  "scalability_reasoning": {
+    "weak": "No consideration of scale; design would not survive beyond a single server.",
+    "adequate": "Identifies obvious scaling bottlenecks when asked, proposes standard fixes (caching, sharding).",
+    "strong": "Proactively designs for scale, discusses specific tradeoffs (consistency vs availability, read vs write optimization) unprompted."
+  },
+  "data_modeling": {
+    "weak": "No clear data model, or model doesn't support the stated requirements.",
+    "adequate": "Reasonable data model that supports core requirements.",
+    "strong": "Data model anticipates edge cases and access patterns, justified against alternatives."
+  },
+  "tradeoff_justification": {
+    "weak": "States design choices without reasoning, or reasoning doesn't hold up when challenged.",
+    "adequate": "Can justify choices when pushed, reasoning is sound but not deeply explored.",
+    "strong": "Proactively surfaces tradeoffs and justifies choices against alternatives unprompted."
+  },
+  "ml_fundamentals": {
+    "weak": "Cannot define core concepts correctly or confuses related terms.",
+    "adequate": "Defines concepts correctly, limited depth on why they matter practically.",
+    "strong": "Explains concepts with correct intuition and practical implications."
+  },
+  "metric_justification": {
+    "weak": "Picks a metric without reasoning, or picks an inappropriate one and doesn't recognize it when probed.",
+    "adequate": "Picks a reasonable metric, can explain why when asked.",
+    "strong": "Justifies metric choice against the specific problem context, discusses limitations of the chosen metric."
+  },
+  "practical_application": {
+    "weak": "Answer stays abstract/textbook, cannot connect to a real scenario.",
+    "adequate": "Can describe a plausible practical approach when asked to apply the concept.",
+    "strong": "Grounds the answer in concrete practical considerations (data limitations, deployment constraints) unprompted."
+  },
+  "star_structure": {
+    "weak": "Answer is vague or unstructured, no clear situation/action/result.",
+    "adequate": "Answer has identifiable structure but is thin on specifics.",
+    "strong": "Clear situation, specific actions taken, and a concrete measurable result."
+  },
+  "ownership_language": {
+    "weak": "Consistently uses 'we' with no personal contribution identified, or deflects responsibility.",
+    "adequate": "Identifies personal role when asked directly.",
+    "strong": "Clearly and unprompted distinguishes personal contribution from team effort."
+  },
+  "communication_clarity": {
+    "weak": "Answer is disorganized or hard to follow, requires significant clarification.",
+    "adequate": "Answer is understandable with minor tangents or rambling.",
+    "strong": "Answer is concise, well-organized, and easy to follow without prompting."
+  }
+}

@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>{{ brand_name }} | Verify</title>
+  {% include 'auth/_head.html' %}
+</head>
+<body>
+  {% include 'auth/_topbar.html' %}
+  <div class="wrap">
+    <div class="auth-shell">
+      <div class="card">
+        <div class="label">{{ brand_name }}</div>
+        <h1>Check your messages</h1>
+        <p class="subtitle">We sent a 6-digit code to your phone.</p>
+
+        <div id="error" class="error"></div>
+
+        <form id="verify-form" onsubmit="return handleVerify(event)">
+          <input id="code" type="text" inputmode="numeric" maxlength="6" name="code" placeholder="123456" required>
+          <button class="btn-verify" id="verify-btn" type="submit">Verify</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const code = document.getElementById('code');
+    code.addEventListener('input', () => {
+      code.value = code.value.replace(/[^0-9]/g, '').slice(0, 6);
+    });
+
+    code.focus();
+
+    async function handleVerify(event) {
+      event.preventDefault();
+      if (code.value.length !== 6) {
+        return showError('Please enter all 6 digits.');
+      }
+
+      const btn = document.getElementById('verify-btn');
+      const errorEl = document.getElementById('error');
+      errorEl.style.display = 'none';
+      btn.disabled = true;
+      btn.textContent = 'Verifying...';
+
+      try {
+        const formData = new FormData();
+        formData.append('pin', code.value);
+        const res = await fetch('{{ tenant_path("/auth/verify-pin") }}', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        });
+        const data = await res.json();
+
+        if (data.success && data.redirect) {
+          window.location.href = data.redirect;
+          return false;
+        }
+        showError(data.error || 'Verification failed.');
+      } catch (_err) {
+        showError('Network error. Please try again.');
+      }
+      btn.disabled = false;
+      btn.textContent = 'Verify';
+      return false;
+    }
+
+    function showError(msg) {
+      const errorEl = document.getElementById('error');
+      errorEl.textContent = msg;
+      errorEl.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
