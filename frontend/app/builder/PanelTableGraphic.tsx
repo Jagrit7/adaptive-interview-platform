@@ -1,6 +1,7 @@
 import React from 'react';
 import { Agent } from '@/store/builderStore';
 import { Waveform } from '@/components/ui/Waveform';
+import { AgentDetailModal } from '@/components/ui/AgentDetailModal';
 
 interface PanelTableGraphicProps {
   agents: Agent[];
@@ -9,6 +10,8 @@ interface PanelTableGraphicProps {
 }
 
 export function PanelTableGraphic({ agents, activeSpeakerId, scale = 1 }: PanelTableGraphicProps) {
+  const [selectedAgent, setSelectedAgent] = React.useState<Agent | null>(null);
+
   // Base dimensions at scale 1
   const width = 600;
   const height = 400;
@@ -49,6 +52,7 @@ export function PanelTableGraphic({ agents, activeSpeakerId, scale = 1 }: PanelT
     return (
       <div 
         key={key}
+        onClick={() => agent && !isPlaceholder && setSelectedAgent(agent)}
         style={{
           position: 'absolute',
           left: `${x}px`,
@@ -57,7 +61,8 @@ export function PanelTableGraphic({ agents, activeSpeakerId, scale = 1 }: PanelT
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '12px'
+          gap: '12px',
+          cursor: (agent && !isPlaceholder) ? 'pointer' : 'default'
         }}
       >
         <div style={{
@@ -68,7 +73,7 @@ export function PanelTableGraphic({ agents, activeSpeakerId, scale = 1 }: PanelT
           border: isPlaceholder ? `2px dashed ${color}` : `2px solid ${color}`,
           backgroundColor: isPlaceholder ? 'transparent' : 'rgba(255, 255, 255, 0.05)',
           boxShadow: isSpeaking && !isPlaceholder ? `0 0 15px 2px ${color}` : 'none',
-          transition: 'box-shadow 300ms ease'
+          transition: 'box-shadow 300ms ease, transform 150ms ease'
         }}>
           {!isPlaceholder && (
             <>
@@ -152,6 +157,13 @@ export function PanelTableGraphic({ agents, activeSpeakerId, scale = 1 }: PanelT
           
           return renderCircle(`agent-${agent.id}`, x, y, false, false, agent);
         })
+      )}
+
+      {selectedAgent && (
+        <AgentDetailModal 
+          agent={selectedAgent} 
+          onClose={() => setSelectedAgent(null)} 
+        />
       )}
     </div>
   );

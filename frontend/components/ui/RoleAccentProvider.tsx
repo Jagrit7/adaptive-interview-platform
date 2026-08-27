@@ -12,7 +12,6 @@ export function RoleAccentProvider({ color, children, className = '' }: RoleAcce
       className={className} 
       style={{ 
         '--role-accent': color,
-        '--text-primary': color, // Optional: if you want the text to take the color in specific contexts
       } as React.CSSProperties}
     >
       {children}

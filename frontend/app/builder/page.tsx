@@ -64,7 +64,7 @@ export default function BuilderPage() {
           {selectedAgentId === 'scorer' ? (
             <ScorerConfigForm />
           ) : selectedAgent ? (
-            <RoleAccentProvider color={selectedAgent.identity.color}>
+            <RoleAccentProvider color={selectedAgent.identity.color} className="w-full h-full max-w-none flex flex-col">
               <AgentConfigForm key={selectedAgent.id} agent={selectedAgent} />
             </RoleAccentProvider>
           ) : (

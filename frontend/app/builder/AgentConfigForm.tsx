@@ -157,9 +157,9 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
   );
 
   return (
-    <div style={{ margin: '0 auto', paddingBottom: '64px' }}>
+    <div style={{ width: '100%', maxWidth: 'none', margin: '0 auto', paddingBottom: '64px', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <div className="flex justify-between items-center" style={{ marginBottom: '16px' }}>
+      <div className="flex justify-between items-center w-full" style={{ marginBottom: '16px' }}>
         <h1 className="text-display" style={{ color: 'var(--role-accent)', margin: 0 }}>{agent.identity.name}</h1>
         <div className="flex gap-2 items-center">
           <button 
@@ -215,30 +215,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
         </div>
       </div>
 
-      {/* Live Summary Strip */}
-      <div style={{ 
-        display: 'flex', 
-        gap: '16px', 
-        alignItems: 'center', 
-        padding: '12px 16px', 
-        backgroundColor: 'var(--surface)', 
-        borderRadius: '8px',
-        fontSize: '13px',
-        color: 'var(--text-secondary)',
-        marginBottom: '24px',
-        flexWrap: 'wrap'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <div style={{ width: '12px', height: '12px', borderRadius: '50%', backgroundColor: agent.identity.color }}></div>
-          <span style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{agent.identity.role}</span>
-        </div>
-        <span>•</span>
-        <span>Difficulty: {agent.logic.difficultyBand[0]} → {agent.logic.difficultyBand[1]}</span>
-        <span>•</span>
-        <span>{agent.voice.provider === 'elevenlabs' ? 'ElevenLabs' : 'OpenAI'}: {agent.voice.voiceId}</span>
-        <span>•</span>
-        <span>{enabledSkillsCount} of 3 skills on</span>
-      </div>
+      {/* Live Summary Strip removed per user request */}
 
       {stepperUI}
 
@@ -252,7 +229,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
           </h2>
           
           {activeStep === 1 && (
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
               <Field label="Name">
                 <Input 
                   value={agent.identity.name} 
@@ -270,7 +247,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
           )}
 
           {activeStep === 2 && (
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
               <Field label="Voice Model">
                 <Select 
                   options={[{label: 'ElevenLabs: Default', value: 'default'}, {label: 'OpenAI: Alloy', value: 'alloy'}]} 
@@ -332,7 +309,25 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
           )}
 
           {activeStep === 4 && (
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+              <div className="flex gap-4">
+                <Field label="Start Difficulty (1-10)" style={{ flex: 1 }}>
+                  <Input 
+                    type="number"
+                    min={1} max={10}
+                    value={agent.logic.difficultyBand[0]}
+                    onChange={(e) => handleChange('logic', 'difficultyBand', [Number(e.target.value), agent.logic.difficultyBand[1]])}
+                  />
+                </Field>
+                <Field label="Max Difficulty (1-10)" style={{ flex: 1 }}>
+                  <Input 
+                    type="number"
+                    min={1} max={10}
+                    value={agent.logic.difficultyBand[1]}
+                    onChange={(e) => handleChange('logic', 'difficultyBand', [agent.logic.difficultyBand[0], Number(e.target.value)])}
+                  />
+                </Field>
+              </div>
               <Field label="Follow-up aggressiveness (1-10)" description="Light touch vs probing deeply">
                 <Slider 
                   min={1} max={10} 
@@ -351,7 +346,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
           )}
 
           {activeStep === 5 && (
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
               <GlassTile style={{ padding: '16px' }}>
                 <Switch 
                   label="Role-play / scenario mode" 
@@ -390,45 +385,38 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
               </div>
             </div>
           )}
-
+          
           {activeStep === 7 && (
-            <div className="flex flex-col gap-6">
-              <div className="grid grid-cols-2 gap-6">
-                <GlassTile style={{ padding: '24px' }}>
-                  <h3 style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Turn-taking</h3>
-                  <div className="flex flex-col gap-6">
-                    <Switch 
-                      label="Can open the interview" 
-                      checked={agent.turnTaking.canOpen} 
-                      onChange={(val) => handleChange('turnTaking', 'canOpen', val)} 
-                    />
-                    <Field label="Priority weight">
-                      <Select 
-                        options={[
-                          {label: 'Low', value: 'low'},
-                          {label: 'Medium', value: 'medium'},
-                          {label: 'High', value: 'high'}
-                        ]}
-                        value={agent.turnTaking.priority}
-                        onChange={(val) => handleChange('turnTaking', 'priority', val)}
-                      />
-                    </Field>
-                  </div>
-                </GlassTile>
+            <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
+              <GlassTile style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>Turn-taking</h3>
+                <Switch 
+                  label="Can open the interview" 
+                  checked={agent.turnTaking.canOpen} 
+                  onChange={(val) => handleChange('turnTaking', 'canOpen', val)} 
+                />
+                <Field label="Priority weight">
+                  <Select 
+                    options={[
+                      {label: 'Low', value: 'low'},
+                      {label: 'Medium', value: 'medium'},
+                      {label: 'High', value: 'high'}
+                    ]}
+                    value={agent.turnTaking.priority}
+                    onChange={(val) => handleChange('turnTaking', 'priority', val)}
+                  />
+                </Field>
+                <Field label="Handoff triggers" description="E.g., 'Hands off to Product when business impact not addressed'" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                  <Textarea 
+                    value={agent.turnTaking.handoffTriggers}
+                    onChange={(e) => handleChange('turnTaking', 'handoffTriggers', e.target.value)}
+                    style={{ flexGrow: 1, minHeight: '120px' }}
+                  />
+                </Field>
+              </GlassTile>
 
-                <div className="flex flex-col gap-6">
-                  <Field label="Handoff triggers" description="E.g., 'Hands off to Product when business impact not addressed'">
-                    <Textarea 
-                      value={agent.turnTaking.handoffTriggers}
-                      onChange={(e) => handleChange('turnTaking', 'handoffTriggers', e.target.value)}
-                      style={{ minHeight: '120px' }}
-                    />
-                  </Field>
-                </div>
-              </div>
-
-              <div>
-                <h3 style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Scoring Input</h3>
+              <GlassTile style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>Scoring Input</h3>
                 <Field label="Competencies this agent owns" description="Comma-separated list (e.g. System Design, Communication)">
                   <Input 
                     value={agent.scoring.competencies.join(', ')}
@@ -439,7 +427,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
                     placeholder="System Design, Algorithms"
                   />
                 </Field>
-              </div>
+              </GlassTile>
             </div>
           )}
         </div>
