@@ -157,7 +157,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
   );
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '64px' }}>
+    <div style={{ margin: '0 auto', paddingBottom: '64px' }}>
       {/* Header */}
       <div className="flex justify-between items-center" style={{ marginBottom: '16px' }}>
         <h1 className="text-display" style={{ color: 'var(--role-accent)', margin: 0 }}>{agent.identity.name}</h1>
@@ -252,7 +252,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
           </h2>
           
           {activeStep === 1 && (
-            <div className="flex flex-col gap-6">
+            <div className="grid grid-cols-2 gap-6">
               <Field label="Name">
                 <Input 
                   value={agent.identity.name} 
@@ -270,53 +270,55 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
           )}
 
           {activeStep === 2 && (
-            <div className="flex flex-col gap-6">
-              <div className="flex gap-4">
-                <div className="w-full">
-                  <Field label="Voice Model">
-                    <Select 
-                      options={[{label: 'ElevenLabs: Default', value: 'default'}, {label: 'OpenAI: Alloy', value: 'alloy'}]} 
-                      value={agent.voice.voiceId} 
-                      onChange={(val) => handleChange('voice', 'voiceId', val)} 
-                    />
-                  </Field>
-                </div>
-                <div className="w-full">
-                  <Field label="Language">
-                    <Select 
-                      options={[{label: 'English (US)', value: 'en-US'}, {label: 'English (UK)', value: 'en-UK'}]} 
-                      value={agent.voice.language} 
-                      onChange={(val) => handleChange('voice', 'language', val)} 
-                    />
-                  </Field>
-                </div>
-              </div>
+            <div className="grid grid-cols-2 gap-6">
+              <Field label="Voice Model">
+                <Select 
+                  options={[{label: 'ElevenLabs: Default', value: 'default'}, {label: 'OpenAI: Alloy', value: 'alloy'}]} 
+                  value={agent.voice.voiceId} 
+                  onChange={(val) => handleChange('voice', 'voiceId', val)} 
+                />
+              </Field>
+              <Field label="Language">
+                <Select 
+                  options={[{label: 'English (US)', value: 'en-US'}, {label: 'English (UK)', value: 'en-UK'}]} 
+                  value={agent.voice.language} 
+                  onChange={(val) => handleChange('voice', 'language', val)} 
+                />
+              </Field>
             </div>
           )}
 
           {activeStep === 3 && (
             <div className="flex flex-col gap-6">
-              <Field label="System Prompt">
-                <Textarea 
-                  value={agent.behavior.systemPrompt} 
-                  onChange={(e) => handleChange('behavior', 'systemPrompt', e.target.value)} 
-                  style={{ minHeight: '160px', fontFamily: 'var(--font-mono)' }}
-                />
-              </Field>
-              {agent.turnTaking.canOpen && (
-                <Field label="Greeting Message">
-                  <Input 
-                    value={agent.behavior.greetingMessage} 
-                    onChange={(e) => handleChange('behavior', 'greetingMessage', e.target.value)} 
-                  />
-                </Field>
-              )}
-              <Field label="Fallback Message" description="Message to use when the agent doesn't understand the user">
-                <Input 
-                  value={agent.behavior.fallbackMessage} 
-                  onChange={(e) => handleChange('behavior', 'fallbackMessage', e.target.value)} 
-                />
-              </Field>
+              <div className="grid grid-cols-3 gap-6">
+                <div className="col-span-2 flex flex-col">
+                  <Field label="System Prompt" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Textarea 
+                      value={agent.behavior.systemPrompt} 
+                      onChange={(e) => handleChange('behavior', 'systemPrompt', e.target.value)} 
+                      style={{ flexGrow: 1, minHeight: '180px', fontFamily: 'var(--font-mono)' }}
+                    />
+                  </Field>
+                </div>
+                <div className="col-span-1 flex flex-col gap-6">
+                  {agent.turnTaking.canOpen && (
+                    <Field label="Greeting Message">
+                      <Input 
+                        value={agent.behavior.greetingMessage} 
+                        onChange={(e) => handleChange('behavior', 'greetingMessage', e.target.value)} 
+                      />
+                    </Field>
+                  )}
+                  <Field label="Fallback Message" description="Message to use when the agent doesn't understand the user">
+                    <Textarea 
+                      value={agent.behavior.fallbackMessage} 
+                      onChange={(e) => handleChange('behavior', 'fallbackMessage', e.target.value)} 
+                      style={{ minHeight: '80px' }}
+                    />
+                  </Field>
+                </div>
+              </div>
+              
               {agent.skills.rolePlayMode && (
                 <Field label="Scenario Brief">
                   <Textarea 
@@ -330,7 +332,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
           )}
 
           {activeStep === 4 && (
-            <div className="flex flex-col gap-6">
+            <div className="grid grid-cols-2 gap-6">
               <Field label="Follow-up aggressiveness (1-10)" description="Light touch vs probing deeply">
                 <Slider 
                   min={1} max={10} 
@@ -343,29 +345,34 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
                   type="number" 
                   value={agent.logic.maxTurns} 
                   onChange={(e) => handleChange('logic', 'maxTurns', Number(e.target.value))} 
-                  style={{ maxWidth: '120px' }}
                 />
               </Field>
             </div>
           )}
 
           {activeStep === 5 && (
-            <div className="flex flex-col gap-6">
-              <Switch 
-                label="Role-play / scenario mode" 
-                checked={agent.skills.rolePlayMode} 
-                onChange={(val) => handleChange('skills', 'rolePlayMode', val)} 
-              />
-              <Switch 
-                label="Loop until satisfied" 
-                checked={agent.skills.loopUntilSatisfied} 
-                onChange={(val) => handleChange('skills', 'loopUntilSatisfied', val)} 
-              />
-              <Switch 
-                label="Contradiction / vagueness probing" 
-                checked={agent.skills.contradictionProbing} 
-                onChange={(val) => handleChange('skills', 'contradictionProbing', val)} 
-              />
+            <div className="grid grid-cols-2 gap-6">
+              <GlassTile style={{ padding: '16px' }}>
+                <Switch 
+                  label="Role-play / scenario mode" 
+                  checked={agent.skills.rolePlayMode} 
+                  onChange={(val) => handleChange('skills', 'rolePlayMode', val)} 
+                />
+              </GlassTile>
+              <GlassTile style={{ padding: '16px' }}>
+                <Switch 
+                  label="Loop until satisfied" 
+                  checked={agent.skills.loopUntilSatisfied} 
+                  onChange={(val) => handleChange('skills', 'loopUntilSatisfied', val)} 
+                />
+              </GlassTile>
+              <GlassTile style={{ padding: '16px' }}>
+                <Switch 
+                  label="Contradiction / vagueness probing" 
+                  checked={agent.skills.contradictionProbing} 
+                  onChange={(val) => handleChange('skills', 'contradictionProbing', val)} 
+                />
+              </GlassTile>
             </div>
           )}
 
@@ -386,49 +393,52 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
 
           {activeStep === 7 && (
             <div className="flex flex-col gap-6">
-              <div style={{ marginBottom: '8px' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Turn-taking</h3>
-                <div className="flex flex-col gap-6 pl-4" style={{ borderLeft: '2px solid var(--border)' }}>
-                  <Switch 
-                    label="Can open the interview" 
-                    checked={agent.turnTaking.canOpen} 
-                    onChange={(val) => handleChange('turnTaking', 'canOpen', val)} 
-                  />
-                  <Field label="Priority weight">
-                    <Select 
-                      options={[
-                        {label: 'Low', value: 'low'},
-                        {label: 'Medium', value: 'medium'},
-                        {label: 'High', value: 'high'}
-                      ]}
-                      value={agent.turnTaking.priority}
-                      onChange={(val) => handleChange('turnTaking', 'priority', val)}
+              <div className="grid grid-cols-2 gap-6">
+                <GlassTile style={{ padding: '24px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Turn-taking</h3>
+                  <div className="flex flex-col gap-6">
+                    <Switch 
+                      label="Can open the interview" 
+                      checked={agent.turnTaking.canOpen} 
+                      onChange={(val) => handleChange('turnTaking', 'canOpen', val)} 
                     />
-                  </Field>
+                    <Field label="Priority weight">
+                      <Select 
+                        options={[
+                          {label: 'Low', value: 'low'},
+                          {label: 'Medium', value: 'medium'},
+                          {label: 'High', value: 'high'}
+                        ]}
+                        value={agent.turnTaking.priority}
+                        onChange={(val) => handleChange('turnTaking', 'priority', val)}
+                      />
+                    </Field>
+                  </div>
+                </GlassTile>
+
+                <div className="flex flex-col gap-6">
                   <Field label="Handoff triggers" description="E.g., 'Hands off to Product when business impact not addressed'">
                     <Textarea 
                       value={agent.turnTaking.handoffTriggers}
                       onChange={(e) => handleChange('turnTaking', 'handoffTriggers', e.target.value)}
-                      style={{ minHeight: '80px' }}
+                      style={{ minHeight: '120px' }}
                     />
                   </Field>
                 </div>
               </div>
 
-              <div style={{ marginTop: '8px' }}>
+              <div>
                 <h3 style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', marginBottom: '16px' }}>Scoring Input</h3>
-                <div className="pl-4" style={{ borderLeft: '2px solid var(--border)' }}>
-                  <Field label="Competencies this agent owns" description="Comma-separated list (e.g. System Design, Communication)">
-                    <Input 
-                      value={agent.scoring.competencies.join(', ')}
-                      onChange={(e) => {
-                        const comps = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-                        handleChange('scoring', 'competencies', comps);
-                      }}
-                      placeholder="System Design, Algorithms"
-                    />
-                  </Field>
-                </div>
+                <Field label="Competencies this agent owns" description="Comma-separated list (e.g. System Design, Communication)">
+                  <Input 
+                    value={agent.scoring.competencies.join(', ')}
+                    onChange={(e) => {
+                      const comps = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                      handleChange('scoring', 'competencies', comps);
+                    }}
+                    placeholder="System Design, Algorithms"
+                  />
+                </Field>
               </div>
             </div>
           )}
