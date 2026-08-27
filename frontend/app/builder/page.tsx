@@ -8,9 +8,11 @@ import { LeftRail } from './LeftRail';
 import { AgentConfigForm } from './AgentConfigForm';
 import { ScorerConfigForm } from './ScorerConfigForm';
 import { RoleAccentProvider } from '@/components/ui/RoleAccentProvider';
+import { useRouter } from 'next/navigation';
 
 export default function BuilderPage() {
   const { projectName, setProjectName, selectedAgentId, agents, saveProject, isSaved } = useBuilderStore();
+  const router = useRouter();
   
   const selectedAgent = agents.find(a => a.id === selectedAgentId);
 
@@ -38,8 +40,14 @@ export default function BuilderPage() {
           <Button onClick={saveProject} variant="primary">
             Save Panel
           </Button>
-          {/* Start/Preview action slot */}
-          <Button variant="secondary" disabled>Start Preview</Button>
+          <Button 
+            variant="secondary" 
+            disabled={agents.length === 0}
+            onClick={() => router.push('/interview-room')}
+            title={agents.length === 0 ? "Add an agent first" : "Start the interview panel"}
+          >
+            Start Panel
+          </Button>
         </div>
       </header>
 
@@ -57,7 +65,7 @@ export default function BuilderPage() {
             <ScorerConfigForm />
           ) : selectedAgent ? (
             <RoleAccentProvider color={selectedAgent.identity.color}>
-              <AgentConfigForm agent={selectedAgent} />
+              <AgentConfigForm key={selectedAgent.id} agent={selectedAgent} />
             </RoleAccentProvider>
           ) : (
             <div className="flex items-center justify-center h-full text-secondary">

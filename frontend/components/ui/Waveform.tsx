@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 
 interface WaveformProps {
-  variant?: 'ambient' | 'active';
+  variant?: 'ambient' | 'active' | 'idle';
   color?: string;
   className?: string;
 }
@@ -18,7 +18,10 @@ export function Waveform({ variant = 'ambient', color = 'var(--text-primary)', c
     setBars(Array.from({ length: BAR_COUNT }, () => Math.random()));
 
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (mediaQuery.matches) return;
+    if (mediaQuery.matches || variant === 'idle') {
+      setBars(Array.from({ length: BAR_COUNT }, () => 0.2));
+      return;
+    }
 
     const interval = setInterval(() => {
       setBars(prev => prev.map(() => Math.random()));
@@ -27,8 +30,8 @@ export function Waveform({ variant = 'ambient', color = 'var(--text-primary)', c
     return () => clearInterval(interval);
   }, [variant]);
 
-  const opacity = variant === 'ambient' ? 0.05 : 0.8;
-  const heightMultiplier = variant === 'ambient' ? 100 : 40;
+  const opacity = variant === 'ambient' ? 0.05 : variant === 'idle' ? 0.3 : 0.8;
+  const heightMultiplier = variant === 'ambient' ? 100 : variant === 'idle' ? 20 : 40;
 
   return (
     <div

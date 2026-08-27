@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useBuilderStore, RoleType } from '@/store/builderStore';
 import { Button } from '@/components/ui/Button';
 import { PanelVisualizer } from './PanelVisualizer';
-import { PanelReadOnlyView } from './PanelReadOnlyView';
+import { InterviewRoomScene } from './InterviewRoomScene';
 
 export function LeftRail() {
   const { agents, selectedAgentId, selectAgent, addAgent } = useBuilderStore();
@@ -100,7 +100,7 @@ export function LeftRail() {
         </div>
       </div>
 
-      {isVisualizerOpen && <PanelReadOnlyView onClose={() => setIsVisualizerOpen(false)} />}
+      {isVisualizerOpen && <InterviewRoomScene onClose={() => setIsVisualizerOpen(false)} />}
     </>
   );
 }
