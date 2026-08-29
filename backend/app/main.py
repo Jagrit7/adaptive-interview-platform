@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.orchestrator.agent_launcher import start_agent_from_config
 from app.token_generator import generate_token
+from app.routes import sessions
 
 app = FastAPI()
 
@@ -12,6 +13,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(sessions.router)
 
 @app.post("/agents/start")
 def start_agent(agent_id: str, channel: str, remote_uid: str):

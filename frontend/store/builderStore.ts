@@ -28,6 +28,7 @@ export interface Agent {
     seedQuestions: string[];
     followUpAggressiveness: number;
     maxTurns: number;
+    maxVisits: number;
   };
   skills: {
     rolePlayMode: boolean;
@@ -61,7 +62,8 @@ interface BuilderState {
   scorer: Scorer;
   selectedAgentId: string | 'scorer' | null;
   isSaved: boolean;
-  
+  activeSpeakerId: string | 'user' | null;
+
   // Actions
   setProjectName: (name: string) => void;
   addAgent: (role?: RoleType) => void;
@@ -70,6 +72,7 @@ interface BuilderState {
   selectAgent: (id: string | 'scorer' | null) => void;
   updateScorer: (updates: Partial<Scorer>) => void;
   saveProject: () => void;
+  setActiveSpeakerId: (id: string | 'user' | null) => void;
 }
 
 export const roleColors: Record<RoleType, string> = {
@@ -96,9 +99,10 @@ export const useBuilderStore = create<BuilderState>((set) => ({
   scorer: { competencies: [] },
   selectedAgentId: null,
   isSaved: true,
+  activeSpeakerId: null,
 
   setProjectName: (name) => set({ projectName: name, isSaved: false }),
-  
+
   addAgent: (role = 'Technical') => set((state) => {
     const newAgent: Agent = {
       id: crypto.randomUUID(),
@@ -126,6 +130,7 @@ export const useBuilderStore = create<BuilderState>((set) => ({
         seedQuestions: [],
         followUpAggressiveness: 5,
         maxTurns: 5,
+        maxVisits: 3,
       },
       skills: {
         rolePlayMode: false,
@@ -168,10 +173,12 @@ export const useBuilderStore = create<BuilderState>((set) => ({
     scorer: { ...state.scorer, ...updates },
     isSaved: false,
   })),
-  
+
   saveProject: () => {
     // In a real app, API call here.
     console.log('Saving project...');
     set({ isSaved: true });
-  }
+  },
+
+  setActiveSpeakerId: (id) => set({ activeSpeakerId: id }),
 }));

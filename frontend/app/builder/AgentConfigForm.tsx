@@ -62,7 +62,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
         {[
           { name: "Technical", role: "Senior Software Engineer", description: "Focus on system design, data structures, and algorithms.", color: "var(--accent-indigo)" },
-          { name: "Hiring Manager", role: "Engineering Director", description: "Focus on team fit, long-term potential, and leadership.", color: "var(--accent-teal)" },
+          { name: "Hiring manager", role: "Engineering Director", description: "Focus on team fit, long-term potential, and leadership.", color: "var(--accent-teal)" },
           { name: "Product", role: "Product Manager", description: "Evaluating business sense, product intuition.", color: "var(--accent-amber)" },
           { name: "Customer", role: "Enterprise Customer", description: "Demanding but fair role-play scenario.", color: "var(--accent-rose)" },
           { name: "Behavioural", role: "HR Representative", description: "Conducts behavioral interview using the STAR method.", color: "var(--accent-violet)" },
@@ -340,6 +340,13 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
                   type="number" 
                   value={agent.logic.maxTurns} 
                   onChange={(e) => handleChange('logic', 'maxTurns', Number(e.target.value))} 
+                />
+              </Field>
+              <Field label="Max visits" description="How many times this agent can be revisited before it's force-closed">
+                <Input 
+                  type="number" 
+                  value={agent.logic.maxVisits} 
+                  onChange={(e) => handleChange('logic', 'maxVisits', Number(e.target.value))} 
                 />
               </Field>
             </div>

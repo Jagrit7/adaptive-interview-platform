@@ -76,17 +76,26 @@ export function Select({ options, value, onChange, ...props }: { options: { labe
 }
 
 // --- Switch ---
+// FIXED: this previously had no click handler at all - clicking it visually
+// did nothing since neither div nor the label had an onClick wired to
+// onChange. This was true for every Switch in the app, not just one field.
 export function Switch({ checked, onChange, label }: { checked: boolean, onChange: (checked: boolean) => void, label?: string }) {
   return (
     <label style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
-      <div style={{
-        width: '40px',
-        height: '24px',
-        backgroundColor: checked ? 'var(--text-primary)' : 'var(--border-strong)',
-        borderRadius: '12px',
-        position: 'relative',
-        transition: 'background-color 200ms'
-      }}>
+      <div
+        onClick={() => onChange(!checked)}
+        role="switch"
+        aria-checked={checked}
+        style={{
+          width: '40px',
+          height: '24px',
+          backgroundColor: checked ? 'var(--text-primary)' : 'var(--border-strong)',
+          borderRadius: '12px',
+          position: 'relative',
+          transition: 'background-color 200ms',
+          cursor: 'pointer'
+        }}
+      >
         <div style={{
           width: '18px',
           height: '18px',
@@ -95,7 +104,8 @@ export function Switch({ checked, onChange, label }: { checked: boolean, onChang
           position: 'absolute',
           top: '3px',
           left: checked ? '19px' : '3px',
-          transition: 'left 200ms, background-color 200ms'
+          transition: 'left 200ms, background-color 200ms',
+          pointerEvents: 'none'
         }} />
       </div>
       {label && <span style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{label}</span>}

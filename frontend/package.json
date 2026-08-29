@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
     "agora-agent-client-toolkit": "^2.9.1",
     "agora-rtc-sdk-ng": "^4.24.7",
     "agora-rtm": "^2.3.0",
