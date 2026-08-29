@@ -1,5 +1,5 @@
 import React from 'react';
-import { Agent } from '@/store/builderStore';
+import { Agent, useBuilderStore } from '@/store/builderStore';
 
 interface AgentDetailModalProps {
   agent: Agent;
@@ -31,6 +31,8 @@ function Field({ label, value }: { label: string, value: React.ReactNode }) {
 }
 
 export function AgentDetailModal({ agent, onClose }: AgentDetailModalProps) {
+  const language = useBuilderStore((s) => s.language);
+
   return (
     <div 
       style={{
@@ -94,8 +96,7 @@ export function AgentDetailModal({ agent, onClose }: AgentDetailModalProps) {
           <div style={{ columnCount: 2, columnGap: '48px' }}>
             <div style={{ breakInside: 'avoid' }}>
               <Section title="Voice & Personality">
-                <Field label="Voice Model" value={`${agent.voice.provider === 'elevenlabs' ? 'ElevenLabs' : 'OpenAI'}: ${agent.voice.voiceId}`} />
-                <Field label="Language" value={agent.voice.language} />
+                <Field label="Language" value={language} />
                 <Field label="System Prompt" value={agent.behavior.systemPrompt} />
                 {agent.turnTaking.canOpen && (
                   <Field label="Greeting Message" value={agent.behavior.greetingMessage} />
@@ -108,6 +109,15 @@ export function AgentDetailModal({ agent, onClose }: AgentDetailModalProps) {
             </div>
             
             <div style={{ breakInside: 'avoid' }}>
+              <Section title="Knowledge">
+                <Field
+                  label="Question source"
+                  value={agent.knowledge.mode === 'knowledge_base'
+                    ? `Knowledge base (${agent.knowledge.items.length} questions, ${agent.knowledge.strict ? 'strict' : 'guided'})`
+                    : 'Model-generated'}
+                />
+              </Section>
+
               <Section title="Interview Logic">
                 <Field label="Difficulty Band" value={`${agent.logic.difficultyBand[0]} → ${agent.logic.difficultyBand[1]}`} />
                 <Field label="Follow-up aggressiveness" value={`${agent.logic.followUpAggressiveness} / 10`} />

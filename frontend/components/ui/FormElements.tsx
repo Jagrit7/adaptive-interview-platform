@@ -1,9 +1,21 @@
 import React from 'react';
 
 // --- Field Wrapper ---
-export function Field({ label, description, children, error }: { label: string, description?: string, children: React.ReactNode, error?: string }) {
+// `style` is new: AgentConfigForm was already passing it (flexGrow/flex:1 on
+// several fields) but Field never declared or applied it, so those layout hints
+// were silently dropped and `next build` would flag them as excess props even
+// though `next dev` let them through.
+export function Field({
+  label, description, children, error, style,
+}: {
+  label: string;
+  description?: string;
+  children: React.ReactNode;
+  error?: string;
+  style?: React.CSSProperties;
+}) {
   return (
-    <div className="flex flex-col gap-2" style={{ marginBottom: '24px' }}>
+    <div className="flex flex-col gap-2" style={{ marginBottom: '24px', ...style }}>
       <label style={{ fontWeight: 500, color: 'var(--text-primary)' }}>{label}</label>
       {description && <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{description}</span>}
       {children}
@@ -76,8 +88,8 @@ export function Select({ options, value, onChange, ...props }: { options: { labe
 }
 
 // --- Switch ---
-// FIXED: this previously had no click handler at all - clicking it visually
-// did nothing since neither div nor the label had an onClick wired to
+// FIXED (earlier): this previously had no click handler at all - clicking it
+// visually did nothing since neither div nor the label had an onClick wired to
 // onChange. This was true for every Switch in the app, not just one field.
 export function Switch({ checked, onChange, label }: { checked: boolean, onChange: (checked: boolean) => void, label?: string }) {
   return (

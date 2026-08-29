@@ -1,8 +1,14 @@
 import React from 'react';
 import { useBuilderStore } from '@/store/builderStore';
+import { FALLBACK_LANGUAGES, LanguageOption, fetchLanguages, languageLabel, previewVoice } from '@/lib/languages';
 
 export function PanelReadOnlyView({ onClose }: { onClose: () => void }) {
-  const { agents, scorer } = useBuilderStore();
+  const { agents, scorer, language } = useBuilderStore();
+  const [languages, setLanguages] = React.useState<LanguageOption[]>(FALLBACK_LANGUAGES);
+
+  React.useEffect(() => {
+    fetchLanguages().then(setLanguages).catch(() => { /* fallback list already rendered */ });
+  }, []);
 
   return (
     <div 
@@ -85,9 +91,10 @@ export function PanelReadOnlyView({ onClose }: { onClose: () => void }) {
                 </Section>
 
                 <Section title="2. Voice">
-                  <DataRow label="Provider" value={agent.voice.provider} />
-                  <DataRow label="Voice Model" value={agent.voice.voiceId} />
-                  <DataRow label="Language" value={agent.voice.language} />
+                  <DataRow label="Language" value={`${languageLabel(language, languages)} (${language})`} />
+                  <DataRow label="Speech to text" value={sttSummary(language, languages)} />
+                  <DataRow label="Text to speech" value={ttsSummary(language, languages)} />
+                  <DataRow label="Voice" value={voiceSummary(index, language, languages)} />
                 </Section>
 
                 <Section title="3. Prompt">
@@ -107,17 +114,43 @@ export function PanelReadOnlyView({ onClose }: { onClose: () => void }) {
                   <DataRow label="Max turns before handoff" value={agent.logic.maxTurns.toString()} />
                 </Section>
 
-                <Section title="5. Skills">
+                <Section title="5. Knowledge">
+                  <DataRow
+                    label="Question source"
+                    value={agent.knowledge.mode === 'knowledge_base'
+                      ? `Knowledge base - ${agent.knowledge.items.length} question${agent.knowledge.items.length === 1 ? '' : 's'}`
+                      : 'Model-generated (no knowledge base)'}
+                  />
+                  {agent.knowledge.mode === 'knowledge_base' && (
+                    <>
+                      <DataRow
+                        label="Scope"
+                        value={agent.knowledge.strict
+                          ? 'Strict - asks nothing outside the knowledge base'
+                          : 'Guided - covers the knowledge base first, then improvises'}
+                      />
+                      <DataRow
+                        label="With ideal answers"
+                        value={`${agent.knowledge.items.filter(i => i.idealAnswer.trim()).length} of ${agent.knowledge.items.length}`}
+                      />
+                      {agent.knowledge.sourceName && (
+                        <DataRow label="Source file" value={agent.knowledge.sourceName} />
+                      )}
+                    </>
+                  )}
+                </Section>
+
+                <Section title="6. Skills">
                   <DataRow label="Role-play / scenario mode" value={agent.skills.rolePlayMode ? 'Enabled' : 'Disabled'} />
                   <DataRow label="Loop until satisfied" value={agent.skills.loopUntilSatisfied ? 'Enabled' : 'Disabled'} />
                   <DataRow label="Contradiction probing" value={agent.skills.contradictionProbing ? 'Enabled' : 'Disabled'} />
                 </Section>
 
-                <Section title="6. Tools">
+                <Section title="7. Tools">
                   <DataRow label="Enabled Tools" value={agent.tools.length > 0 ? agent.tools.join(', ') : 'None'} />
                 </Section>
 
-                <Section title="7. Turn-taking & Scoring">
+                <Section title="8. Turn-taking & Scoring">
                   <DataRow label="Can open interview" value={agent.turnTaking.canOpen ? 'Yes' : 'No'} />
                   <DataRow label="Priority weight" value={agent.turnTaking.priority} />
                   <DataRow label="Handoff triggers" value={agent.turnTaking.handoffTriggers || 'None'} isBlock />
@@ -213,4 +246,21 @@ function DataRow({ label, value, isBlock = false }: { label: string, value: stri
       <span style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{value}</span>
     </div>
   );
+}
+
+// Speech config is derived from the panel language, so the overview reports what
+// will actually run instead of echoing fields the user no longer controls.
+function sttSummary(code: string, languages: LanguageOption[]): string {
+  const l = languages.find(x => x.code === code);
+  return l ? `${l.sttVendor} ${l.sttModel}` : '-';
+}
+
+function ttsSummary(code: string, languages: LanguageOption[]): string {
+  const l = languages.find(x => x.code === code);
+  return l ? `${l.ttsVendor} ${l.ttsModel}` : '-';
+}
+
+function voiceSummary(index: number, code: string, languages: LanguageOption[]): string {
+  const voice = previewVoice(index, languages.find(x => x.code === code));
+  return voice ? voice.label : 'Assigned at session start';
 }

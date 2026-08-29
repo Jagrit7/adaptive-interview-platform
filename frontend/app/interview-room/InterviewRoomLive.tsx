@@ -11,7 +11,7 @@ const BACKEND_URL = 'http://localhost:8000';
 
 export default function InterviewRoomLive() {
   const router = useRouter();
-  const { agents, scorer, projectName, activeSpeakerId, setActiveSpeakerId } = useBuilderStore();
+  const { agents, scorer, projectName, language, activeSpeakerId, setActiveSpeakerId } = useBuilderStore();
 
   const [channel] = useState(() => `panel-${Date.now()}`);
   const [uid] = useState(1002);
@@ -33,7 +33,10 @@ export default function InterviewRoomLive() {
     const data = await res.json();
     if (data.current_agent_id) setActiveSpeakerId(data.current_agent_id);
     setIsFinished(data.is_finished);
-    setStatus(data.is_finished ? 'Interview finished' : `Listening (${data.action})`);
+    const progress = data.questions_total > 0
+      ? ` \u00b7 Q${data.questions_asked}/${data.questions_total}`
+      : '';
+    setStatus(data.is_finished ? 'Interview finished' : `Listening (${data.action})${progress}`);
   };
 
   useEffect(() => {
@@ -76,7 +79,7 @@ export default function InterviewRoomLive() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            panel: { projectName, agents, scorer },
+            panel: { projectName, language, agents, scorer },
             channel,
             remote_uid: String(uid),
           }),

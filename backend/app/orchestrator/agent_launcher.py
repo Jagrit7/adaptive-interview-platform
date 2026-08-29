@@ -1,10 +1,13 @@
 import json
-from pathlib import Path
-from agora_agent import Agent as AgoraAgentBuilder, Agora, Area, DeepgramSTT, OpenAI, Groq, MiniMaxTTS
 import os
+from pathlib import Path
+
+from agora_agent import Agent as AgoraAgentBuilder, Agora, Area, DeepgramSTT, OpenAI, Groq, MiniMaxTTS
 from dotenv import load_dotenv
 
-from app.schemas.panel import Agent as PanelAgent
+from app.config.voice_profiles import assign_voices, build_stt, build_tts, get_profile
+from app.knowledge.store import format_knowledge_block
+from app.schemas.panel import Agent as PanelAgent, Panel
 
 load_dotenv()
 
@@ -97,8 +100,12 @@ def start_agent_from_config(agent_id: str, channel: str, remote_uid: str) -> str
 # ── orchestrator for real sessions built from the frontend builder. ──
 
 def build_system_prompt_from_agent(agent: PanelAgent) -> str:
-    """Same composition logic as build_system_prompt, but against the real
-    camelCase Agent schema instead of the old recipe dict shape."""
+    """Composes one agent's system prompt from its builder config.
+
+    Order matters: role and persona first, then constraints, then the question
+    bank last so the bank is the freshest thing in the model's context when it
+    picks a question.
+    """
     parts = [agent.behavior.systemPrompt]
 
     diff_min, diff_max = agent.logic.difficultyBand
@@ -114,22 +121,45 @@ def build_system_prompt_from_agent(agent: PanelAgent) -> str:
     if agent.skills.rolePlayMode and agent.behavior.scenarioBrief:
         parts.append(f"Stay in character for this scenario: {agent.behavior.scenarioBrief}")
 
-    if agent.logic.seedQuestions:
+    if agent.knowledge.is_active():
+        # Knowledge base mode: the uploaded bank replaces free-form question
+        # generation entirely, so seedQuestions is intentionally not also
+        # appended - two competing question sources produced incoherent
+        # interviews in testing.
+        parts.append(format_knowledge_block(agent.knowledge))
+    elif agent.logic.seedQuestions:
         question_list = "\n".join(f"- {q}" for q in agent.logic.seedQuestions)
         parts.append(f"Draw from this question set as needed:\n{question_list}")
 
-    return "\n\n".join(parts)
+    return "\n\n".join(p for p in parts if p)
 
 
-def start_session_agent(agent: PanelAgent, channel: str, remote_uid: str):
+def resolve_panel_voices(panel: Panel) -> dict[str, str]:
+    """agent_id -> MiniMax voice_id, decided once per panel."""
+    return assign_voices([a.id for a in panel.agents], panel.language)
+
+
+def start_session_agent(
+    agent: PanelAgent,
+    channel: str,
+    remote_uid: str,
+    language: str | None = None,
+    voice_id: str | None = None,
+):
     """Starts the ONE live Agora agent instance for a real session, using the
-    opening agent's persona. Returns (agent_id, session) - session is kept so
-    swap_agent_persona() can update it later without a new Join call."""
+    opening agent's persona. Returns (agora_agent_id, session) - the session is
+    kept so swap_agent_persona() can update it later without a new Join call.
+
+    STT/TTS vendor, model and voice all come from voice_profiles.py, keyed on the
+    panel language. Nothing here reads the old agent.voice.provider/voiceId
+    fields; a user picks a language and that is the whole speech decision.
+    """
     system_prompt = build_system_prompt_from_agent(agent)
+    profile = get_profile(language)
 
     agent_builder = (
         AgoraAgentBuilder(client)
-        .with_stt(DeepgramSTT(model="nova-3", language=agent.voice.language))
+        .with_stt(build_stt(profile.code))
         .with_llm(Groq(
             api_key=os.environ["GROQ_API_KEY"],
             base_url="https://api.groq.com/openai/v1/chat/completions",
@@ -139,7 +169,7 @@ def start_session_agent(agent: PanelAgent, channel: str, remote_uid: str):
             failure_message=agent.behavior.fallbackMessage,
             max_history=10,
         ))
-        .with_tts(MiniMaxTTS(model="speech-2.6-turbo", voice_id="English_captivating_female1"))
+        .with_tts(build_tts(profile.code, voice_id))
     )
 
     session = agent_builder.create_session(
@@ -154,40 +184,47 @@ def start_session_agent(agent: PanelAgent, channel: str, remote_uid: str):
     return agent_instance_id, session
 
 
-def swap_agent_persona(session, new_agent: PanelAgent) -> None:
+def swap_agent_persona(session, new_agent: PanelAgent, voice_id: str | None = None) -> None:
     """Hot-swaps the persona on an ALREADY RUNNING session - no new Join call,
     same live Agora instance, per the single-agent-persona-swap decision.
 
-    CONFIRMED against the official Python SDK reference: AgentSession.update()
-    is real - "Updates the agent configuration mid-session without restarting.
-    Accepts a partial properties object in REST API format." The nested shape
-    below matches the Join request body's llm/tts structure, which is the most
-    likely correct format for the "REST API format" the docs describe - worth
-    a live test to confirm the exact accepted keys before relying on this in
-    a real session, same as everything else we've verified by testing rather
-    than assuming.
-    """
-    new_system_prompt = build_system_prompt_from_agent(new_agent)
+    Two corrections against the SDK source (agora_agent 2.7.2):
 
-    session.update(
-        llm={
-            "system_messages": [{"role": "system", "content": new_system_prompt}],
+    1. `AgentSession.update()` takes ONE POSITIONAL argument, `properties`. The
+       previous `session.update(llm={...}, tts={...})` form raised TypeError -
+       it would have failed the first time a handoff ever fired.
+
+    2. `UpdateAgentsRequestProperties` declares only `token`, `llm` and `mllm`.
+       There is no documented `tts` field, so the TTS voice most likely cannot be
+       changed mid-session. The model does allow extra keys, so `tts` is still
+       sent below on the chance the REST endpoint honours it - but assume for now
+       that every agent in a session shares the voice chosen at start, and that
+       distinct per-agent voices need the multi-instance architecture that is
+       still an open decision in PROJECT_CONTEXT.
+    """
+    properties: dict = {
+        "llm": {
+            "system_messages": [
+                {"role": "system", "content": build_system_prompt_from_agent(new_agent)}
+            ],
             "greeting_message": new_agent.behavior.greetingMessage,
             "failure_message": new_agent.behavior.fallbackMessage,
-        },
-        tts={
-            "voice_id": new_agent.voice.voiceId,
-        },
-    )
+        }
+    }
+
+    if voice_id:
+        properties["tts"] = {"voice_setting": {"voice_id": voice_id}}
+
+    session.update(properties)
 
 
 def inject_followup(session, instruction_text: str) -> None:
     """Injects a follow-up instruction into the CURRENTLY loaded persona,
     without switching agents or touching the system prompt/voice.
 
-    CONFIRMED against the official Python SDK reference: AgentSession.think()
-    is real - "Injects a custom text instruction into the running agent."
-    This is the FOLLOW_UP action from orchestrator.py - lighter than
-    swap_agent_persona(), no config change, just nudges the current turn.
+    AgentSession.think() is confirmed real in the SDK - "Injects a custom text
+    instruction into the running agent." This is the FOLLOW_UP action from
+    orchestrator.py, and in knowledge-base mode it is also how a specific
+    question from the bank gets handed to the agent for its next turn.
     """
     session.think(instruction_text)

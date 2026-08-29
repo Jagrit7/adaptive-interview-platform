@@ -1,13 +1,41 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Agent, useBuilderStore, RoleType, roleColors, defaultSystemPrompts } from '@/store/builderStore';
-import { Field, Input, Select, Textarea, Switch, Slider, Chips } from '@/components/ui/FormElements';
+import { Field, Input, Select, Textarea, Switch, Slider } from '@/components/ui/FormElements';
 import { GlassTile } from '@/components/ui/GlassTile';
+import { KnowledgeBaseForm } from './KnowledgeBaseForm';
+import {
+  FALLBACK_LANGUAGES,
+  LanguageOption,
+  fetchLanguages,
+  previewVoice,
+} from '@/lib/languages';
+
+const LAST_STEP = 8;
 
 export function AgentConfigForm({ agent }: { agent: Agent }) {
-  const { updateAgent, deleteAgent, saveProject } = useBuilderStore();
+  const { updateAgent, deleteAgent, saveProject, agents, language, setLanguage } = useBuilderStore();
   const [activeStep, setActiveStep] = useState(agent.isNew ? 0 : 1);
+
+  // The dropdown renders immediately from the static mirror, then swaps to the
+  // backend's list so app/config/voice_profiles.py stays the single source of
+  // truth. A backend that's down just leaves the fallback in place.
+  const [languages, setLanguages] = useState<LanguageOption[]>(FALLBACK_LANGUAGES);
+  useEffect(() => {
+    let cancelled = false;
+    fetchLanguages()
+      .then((list) => { if (!cancelled && list.length) setLanguages(list); })
+      .catch(() => { /* fallback list already rendered */ });
+    return () => { cancelled = true; };
+  }, []);
+
+  const activeLanguage = useMemo(
+    () => languages.find((l) => l.code === language),
+    [languages, language]
+  );
+  const agentIndex = agents.findIndex((a) => a.id === agent.id);
+  const assignedVoice = previewVoice(Math.max(agentIndex, 0), activeLanguage);
 
   const handleChange = (section: keyof Agent, field: string, value: any) => {
     updateAgent(agent.id, {
@@ -49,12 +77,11 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
     'Voice',
     'Prompt',
     'Interview logic',
+    'Knowledge',
     'Skills',
     'Tools',
     'Turn-taking & Scoring'
   ];
-
-  const enabledSkillsCount = Object.values(agent.skills).filter(Boolean).length;
 
   const step0Content = (
     <div style={{ padding: '0 8px' }}>
@@ -97,7 +124,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
         const isActive = activeStep === stepNum;
         const isVisited = !agent.isNew || stepNum <= activeStep;
         const color = isVisited ? agent.identity.color : 'var(--border)';
-        
+
         return (
           <button
             key={stepName}
@@ -135,10 +162,10 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
       >
         Back
       </button>
-      
+
       <button
         onClick={() => {
-          if (activeStep < 7) setActiveStep(activeStep + 1);
+          if (activeStep < LAST_STEP) setActiveStep(activeStep + 1);
           else saveProject();
         }}
         style={{
@@ -151,7 +178,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
           fontWeight: 500
         }}
       >
-        {activeStep === 7 ? 'Finish' : 'Next'}
+        {activeStep === LAST_STEP ? 'Finish' : 'Next'}
       </button>
     </div>
   );
@@ -162,10 +189,10 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
       <div className="flex justify-between items-center w-full" style={{ marginBottom: '16px' }}>
         <h1 className="text-display" style={{ color: 'var(--role-accent)', margin: 0 }}>{agent.identity.name}</h1>
         <div className="flex gap-2 items-center">
-          <button 
-            style={{ 
-              padding: '8px 16px', 
-              borderRadius: '6px', 
+          <button
+            style={{
+              padding: '8px 16px',
+              borderRadius: '6px',
               border: '1px solid var(--border)',
               backgroundColor: 'var(--surface)',
               color: 'var(--text-primary)',
@@ -179,10 +206,10 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
           >
             Talk
           </button>
-          <button 
-            style={{ 
-              padding: '8px 16px', 
-              borderRadius: '6px', 
+          <button
+            style={{
+              padding: '8px 16px',
+              borderRadius: '6px',
               border: 'none',
               backgroundColor: agent.identity.color,
               color: '#fff',
@@ -194,16 +221,16 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
           >
             Save
           </button>
-          <button 
+          <button
             onClick={() => deleteAgent(agent.id)}
-            style={{ 
-              color: 'var(--accent-rose)', 
-              cursor: 'pointer', 
-              fontSize: '14px', 
-              padding: '8px 12px', 
-              borderRadius: '4px', 
-              backgroundColor: 'transparent', 
-              border: 'none', 
+            style={{
+              color: 'var(--accent-rose)',
+              cursor: 'pointer',
+              fontSize: '14px',
+              padding: '8px 12px',
+              borderRadius: '4px',
+              backgroundColor: 'transparent',
+              border: 'none',
               marginLeft: '8px',
               fontWeight: 500
             }}
@@ -215,8 +242,6 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
         </div>
       </div>
 
-      {/* Live Summary Strip removed per user request */}
-
       {stepperUI}
 
       {activeStep === 0 && step0Content}
@@ -227,41 +252,69 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
           <h2 className="text-heading" style={{ marginBottom: '24px', color: 'var(--text-primary)' }}>
             {steps[activeStep - 1]}
           </h2>
-          
+
           {activeStep === 1 && (
             <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
               <Field label="Name">
-                <Input 
-                  value={agent.identity.name} 
-                  onChange={(e) => handleChange('identity', 'name', e.target.value)} 
+                <Input
+                  value={agent.identity.name}
+                  onChange={(e) => handleChange('identity', 'name', e.target.value)}
                 />
               </Field>
               <Field label="Role">
-                <Select 
-                  options={roleOptions} 
-                  value={agent.identity.role} 
-                  onChange={(val) => handleChange('identity', 'role', val)} 
+                <Select
+                  options={roleOptions}
+                  value={agent.identity.role}
+                  onChange={(val) => handleChange('identity', 'role', val)}
                 />
               </Field>
             </div>
           )}
 
+          {/* ---- Voice: language is the only control ---- */}
           {activeStep === 2 && (
-            <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
-              <Field label="Voice Model">
-                <Select 
-                  options={[{label: 'ElevenLabs: Default', value: 'default'}, {label: 'OpenAI: Alloy', value: 'alloy'}]} 
-                  value={agent.voice.voiceId} 
-                  onChange={(val) => handleChange('voice', 'voiceId', val)} 
+            <div className="flex flex-col gap-6" style={{ maxWidth: '640px' }}>
+              <Field
+                label="Interview language"
+                description="Applies to the whole panel, not just this agent - the live session runs one speech pipeline, and its language is fixed when the session starts."
+              >
+                <Select
+                  options={languages.map((l) => ({ label: l.label, value: l.code }))}
+                  value={language}
+                  onChange={(val) => setLanguage(val)}
                 />
               </Field>
-              <Field label="Language">
-                <Select 
-                  options={[{label: 'English (US)', value: 'en-US'}, {label: 'English (UK)', value: 'en-UK'}]} 
-                  value={agent.voice.language} 
-                  onChange={(val) => handleChange('voice', 'language', val)} 
+
+              <GlassTile style={{ padding: '20px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 4px' }}>
+                  Speech engine
+                </h3>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 16px', lineHeight: 1.5 }}>
+                  Chosen automatically from the language. Nothing here needs configuring, and no extra
+                  API keys are required - both run on Agora's managed credentials.
+                </p>
+                <ReadOnlyRow
+                  label="Speech to text"
+                  value={activeLanguage ? `${cap(activeLanguage.sttVendor)} ${activeLanguage.sttModel} (${activeLanguage.code})` : '—'}
                 />
-              </Field>
+                <ReadOnlyRow
+                  label="Text to speech"
+                  value={activeLanguage ? `${cap(activeLanguage.ttsVendor)} ${activeLanguage.ttsModel}` : '—'}
+                />
+                <ReadOnlyRow
+                  label="This agent's voice"
+                  value={assignedVoice ? `${assignedVoice.label} (${assignedVoice.gender})` : 'Assigned when the session starts'}
+                />
+              </GlassTile>
+
+              {agents.length > 1 && (
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
+                  Each agent is given a different voice from the language's pool where one is available.
+                  Note that the current single-instance session cannot change voice mid-interview, so in
+                  practice the whole panel speaks with the opening agent's voice until multi-instance
+                  sessions land.
+                </p>
+              )}
             </div>
           )}
 
@@ -270,9 +323,9 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
               <div className="grid grid-cols-3 gap-6">
                 <div className="col-span-2 flex flex-col">
                   <Field label="System Prompt" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                    <Textarea 
-                      value={agent.behavior.systemPrompt} 
-                      onChange={(e) => handleChange('behavior', 'systemPrompt', e.target.value)} 
+                    <Textarea
+                      value={agent.behavior.systemPrompt}
+                      onChange={(e) => handleChange('behavior', 'systemPrompt', e.target.value)}
                       style={{ flexGrow: 1, minHeight: '180px', fontFamily: 'var(--font-mono)' }}
                     />
                   </Field>
@@ -280,27 +333,27 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
                 <div className="col-span-1 flex flex-col gap-6">
                   {agent.turnTaking.canOpen && (
                     <Field label="Greeting Message">
-                      <Input 
-                        value={agent.behavior.greetingMessage} 
-                        onChange={(e) => handleChange('behavior', 'greetingMessage', e.target.value)} 
+                      <Input
+                        value={agent.behavior.greetingMessage}
+                        onChange={(e) => handleChange('behavior', 'greetingMessage', e.target.value)}
                       />
                     </Field>
                   )}
                   <Field label="Fallback Message" description="Message to use when the agent doesn't understand the user">
-                    <Textarea 
-                      value={agent.behavior.fallbackMessage} 
-                      onChange={(e) => handleChange('behavior', 'fallbackMessage', e.target.value)} 
+                    <Textarea
+                      value={agent.behavior.fallbackMessage}
+                      onChange={(e) => handleChange('behavior', 'fallbackMessage', e.target.value)}
                       style={{ minHeight: '80px' }}
                     />
                   </Field>
                 </div>
               </div>
-              
+
               {agent.skills.rolePlayMode && (
                 <Field label="Scenario Brief">
-                  <Textarea 
-                    value={agent.behavior.scenarioBrief} 
-                    onChange={(e) => handleChange('behavior', 'scenarioBrief', e.target.value)} 
+                  <Textarea
+                    value={agent.behavior.scenarioBrief}
+                    onChange={(e) => handleChange('behavior', 'scenarioBrief', e.target.value)}
                     placeholder="Describe the context for the role-play..."
                   />
                 </Field>
@@ -312,7 +365,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
             <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
               <div className="flex gap-4">
                 <Field label="Start Difficulty (1-10)" style={{ flex: 1 }}>
-                  <Input 
+                  <Input
                     type="number"
                     min={1} max={10}
                     value={agent.logic.difficultyBand[0]}
@@ -320,7 +373,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
                   />
                 </Field>
                 <Field label="Max Difficulty (1-10)" style={{ flex: 1 }}>
-                  <Input 
+                  <Input
                     type="number"
                     min={1} max={10}
                     value={agent.logic.difficultyBand[1]}
@@ -329,56 +382,59 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
                 </Field>
               </div>
               <Field label="Follow-up aggressiveness (1-10)" description="Light touch vs probing deeply">
-                <Slider 
-                  min={1} max={10} 
-                  value={agent.logic.followUpAggressiveness} 
-                  onChange={(val) => handleChange('logic', 'followUpAggressiveness', val)} 
+                <Slider
+                  min={1} max={10}
+                  value={agent.logic.followUpAggressiveness}
+                  onChange={(val) => handleChange('logic', 'followUpAggressiveness', val)}
                 />
               </Field>
               <Field label="Max turns before handoff">
-                <Input 
-                  type="number" 
-                  value={agent.logic.maxTurns} 
-                  onChange={(e) => handleChange('logic', 'maxTurns', Number(e.target.value))} 
+                <Input
+                  type="number"
+                  value={agent.logic.maxTurns}
+                  onChange={(e) => handleChange('logic', 'maxTurns', Number(e.target.value))}
                 />
               </Field>
               <Field label="Max visits" description="How many times this agent can be revisited before it's force-closed">
-                <Input 
-                  type="number" 
-                  value={agent.logic.maxVisits} 
-                  onChange={(e) => handleChange('logic', 'maxVisits', Number(e.target.value))} 
+                <Input
+                  type="number"
+                  value={agent.logic.maxVisits}
+                  onChange={(e) => handleChange('logic', 'maxVisits', Number(e.target.value))}
                 />
               </Field>
             </div>
           )}
 
-          {activeStep === 5 && (
+          {/* ---- Knowledge ---- */}
+          {activeStep === 5 && <KnowledgeBaseForm agent={agent} />}
+
+          {activeStep === 6 && (
             <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
               <GlassTile style={{ padding: '16px' }}>
-                <Switch 
-                  label="Role-play / scenario mode" 
-                  checked={agent.skills.rolePlayMode} 
-                  onChange={(val) => handleChange('skills', 'rolePlayMode', val)} 
+                <Switch
+                  label="Role-play / scenario mode"
+                  checked={agent.skills.rolePlayMode}
+                  onChange={(val) => handleChange('skills', 'rolePlayMode', val)}
                 />
               </GlassTile>
               <GlassTile style={{ padding: '16px' }}>
-                <Switch 
-                  label="Loop until satisfied" 
-                  checked={agent.skills.loopUntilSatisfied} 
-                  onChange={(val) => handleChange('skills', 'loopUntilSatisfied', val)} 
+                <Switch
+                  label="Loop until satisfied"
+                  checked={agent.skills.loopUntilSatisfied}
+                  onChange={(val) => handleChange('skills', 'loopUntilSatisfied', val)}
                 />
               </GlassTile>
               <GlassTile style={{ padding: '16px' }}>
-                <Switch 
-                  label="Contradiction / vagueness probing" 
-                  checked={agent.skills.contradictionProbing} 
-                  onChange={(val) => handleChange('skills', 'contradictionProbing', val)} 
+                <Switch
+                  label="Contradiction / vagueness probing"
+                  checked={agent.skills.contradictionProbing}
+                  onChange={(val) => handleChange('skills', 'contradictionProbing', val)}
                 />
               </GlassTile>
             </div>
           )}
 
-          {activeStep === 6 && (
+          {activeStep === 7 && (
             <div className="flex flex-col gap-6">
               <div style={{
                 padding: '48px',
@@ -392,18 +448,18 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
               </div>
             </div>
           )}
-          
-          {activeStep === 7 && (
+
+          {activeStep === 8 && (
             <div className="grid gap-6" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))' }}>
               <GlassTile style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>Turn-taking</h3>
-                <Switch 
-                  label="Can open the interview" 
-                  checked={agent.turnTaking.canOpen} 
-                  onChange={(val) => handleChange('turnTaking', 'canOpen', val)} 
+                <Switch
+                  label="Can open the interview"
+                  checked={agent.turnTaking.canOpen}
+                  onChange={(val) => handleChange('turnTaking', 'canOpen', val)}
                 />
                 <Field label="Priority weight">
-                  <Select 
+                  <Select
                     options={[
                       {label: 'Low', value: 'low'},
                       {label: 'Medium', value: 'medium'},
@@ -414,7 +470,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
                   />
                 </Field>
                 <Field label="Handoff triggers" description="E.g., 'Hands off to Product when business impact not addressed'" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-                  <Textarea 
+                  <Textarea
                     value={agent.turnTaking.handoffTriggers}
                     onChange={(e) => handleChange('turnTaking', 'handoffTriggers', e.target.value)}
                     style={{ flexGrow: 1, minHeight: '120px' }}
@@ -425,7 +481,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
               <GlassTile style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)', margin: 0 }}>Scoring Input</h3>
                 <Field label="Competencies this agent owns" description="Comma-separated list (e.g. System Design, Communication)">
-                  <Input 
+                  <Input
                     value={agent.scoring.competencies.join(', ')}
                     onChange={(e) => {
                       const comps = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
@@ -444,3 +500,16 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
     </div>
   );
 }
+
+function ReadOnlyRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', padding: '7px 0' }}>
+      <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{label}</span>
+      <span style={{ fontSize: '13px', color: 'var(--text-primary)', textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
