@@ -15,6 +15,8 @@ class VoiceOut(BaseModel):
 class LanguageOut(BaseModel):
     code: str
     label: str
+    nativeName: str
+    defaultGreeting: str
     sttVendor: str
     sttModel: str
     ttsVendor: str

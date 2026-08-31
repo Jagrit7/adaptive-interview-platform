@@ -39,7 +39,15 @@ class FakeAgoraSession:
         self.thoughts: list[str] = []
         self.updates: list[dict] = []
 
-    def think(self, text):
+    def think(self, text, *, on_listening_action=None, on_speaking_action=None,
+              on_thinking_action=None, interruptable=None, metadata=None, options=None):
+        # Mirrors the real keyword-only signature. Both assertions matter: API
+        # v2.7 defaults on_listening_action to "interrupt", which would cut the
+        # candidate off every time a question is injected.
+        assert on_listening_action == "inject", (
+            f"think() must not interrupt the candidate, got {on_listening_action!r}")
+        assert on_speaking_action == "append", (
+            f"think() must let the agent finish speaking, got {on_speaking_action!r}")
         self.thoughts.append(text)
 
     def update(self, properties):
@@ -60,7 +68,7 @@ def fake_start_session_agent(agent, channel, remote_uid, language=None, voice_id
     STARTED_WITH.update({
         "agent_id": agent.id, "language": language, "voice_id": voice_id,
         "stt": stt, "tts": tts,
-        "system_prompt": launcher.build_system_prompt_from_agent(agent),
+        "system_prompt": launcher.build_system_prompt_from_agent(agent, language),
     })
     return "agora-instance-123", FAKE_SESSION
 
@@ -68,9 +76,11 @@ def fake_start_session_agent(agent, channel, remote_uid, language=None, voice_id
 SCRIPT: list[ScoreResult] = []
 
 
-async def fake_score_turn(current_agent, all_agents, transcript_so_far, latest_answer, asked_item_id=None):
+async def fake_score_turn(current_agent, all_agents, transcript_so_far, latest_answer,
+                          asked_item_id=None, language=None):
     SCORE_CALLS.append({"agent": current_agent.id, "asked_item_id": asked_item_id,
-                        "answer": latest_answer, "transcript_len": len(transcript_so_far)})
+                        "answer": latest_answer, "transcript_len": len(transcript_so_far),
+                        "language": language})
     return SCRIPT.pop(0) if SCRIPT else ScoreResult(
         competency_scores={}, flags=[], triggered_agent_ids=[])
 
@@ -185,7 +195,9 @@ sp = STARTED_WITH["system_prompt"]
 assert "ONLY questions from the list" in sp, "strict rule missing from the prompt"
 assert "Never read out, quote, or hint at the expected answers" in sp
 assert KB_ITEMS[0]["question"] in sp
-ok("system prompt carries the bank, the strict rule and the answer-leak guard")
+assert "OUTPUT LANGUAGE" in sp and "\u65e5\u672c\u8a9e" in sp, "language directive missing"
+assert sp.rstrip().endswith("brackets."), "the directive must be the LAST thing in the prompt"
+ok("prompt carries the bank, strict rule, leak guard AND a Japanese language directive last")
 
 assert len(FAKE_SESSION.thoughts) == 1, FAKE_SESSION.thoughts
 assert KB_ITEMS[0]["question"] in FAKE_SESSION.thoughts[0]
@@ -202,8 +214,10 @@ assert t1["action"] == "follow_up" and t1["current_agent_id"] == "tech"
 assert t1["coverage"] == 0.4 and t1["missing_points"] == ["custom aliases", "analytics"]
 assert t1["questions_asked"] == 2 and t1["questions_total"] == 3
 assert SCORE_CALLS[-1]["asked_item_id"] == KB_ITEMS[0]["id"], "scorer must grade against Q1"
+assert SCORE_CALLS[-1]["language"] == "ja-JP", "scorer must be told the interview language"
 assert KB_ITEMS[1]["question"] in FAKE_SESSION.thoughts[-1]
-ok("graded against Q1's ideal answer; Q2 injected verbatim; progress 2/3")
+assert "\u65e5\u672c\u8a9e" in FAKE_SESSION.thoughts[-1], "injection must name the target language"
+ok("graded against Q1's answer; Q2 injected with a Japanese-language instruction; 2/3")
 
 print("\n=== 7. Turn 2 -> Q3, Turn 3 -> bank exhausted, visit ends, handoff ===")
 SCRIPT.append(ScoreResult(competency_scores={"System Design": 0.6}, flags=[], triggered_agent_ids=[]))

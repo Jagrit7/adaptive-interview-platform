@@ -353,7 +353,7 @@ def pick_next_question(items: list[KnowledgeItem], asked_ids: set[str]) -> Knowl
 
 # ------------------------------------------------------------ prompt text ----
 
-def format_knowledge_block(knowledge, max_items: int = 40) -> str:
+def format_knowledge_block(knowledge, max_items: int = 40, language: str | None = None) -> str:
     """The system-prompt section for an agent running in knowledge_base mode.
 
     Ideal answers are included because they are what makes probing useful - the
@@ -388,8 +388,21 @@ def format_knowledge_block(knowledge, max_items: int = 40) -> str:
             "delivery and follow up on the candidate's answers."
         )
 
+    # The bank is whatever the user uploaded, usually English. On a non-English
+    # panel the agent has to translate as it asks, and "do not change what is
+    # being asked" would otherwise be read as "recite this English sentence".
+    translation_note = ""
+    if language and not str(language).startswith("en"):
+        from app.config.voice_profiles import get_profile
+        profile = get_profile(language)
+        translation_note = (
+            f"\n\nThe question bank below is written in English but the interview is in "
+            f"{profile.label}. Ask each question in {profile.label}, preserving its meaning "
+            f"exactly. Translate; do not read the English out loud."
+        )
+
     return (
-        f"{rules}\n\n"
+        f"{rules}{translation_note}\n\n"
         "Never read out, quote, or hint at the expected answers - they are your reference "
         "for judging completeness, not something to share with the candidate.\n\n"
         "QUESTION BANK:\n" + "\n".join(lines)

@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import uuid
 
-from app.config.voice_profiles import get_profile
+from app.config.voice_profiles import get_profile, native_name
 from app.knowledge.store import pick_next_question
 from app.schemas.panel import Agent, Panel
 from app.orchestrator.state import SessionState, TranscriptTurn
@@ -61,7 +61,8 @@ def _scorer_thresholds(panel: Panel) -> dict[str, float]:
     return {c.name: c.threshold for c in panel.scorer.competencies}
 
 
-def _ask_from_bank(session_data: dict, agent: Agent, state: SessionState) -> bool:
+def _ask_from_bank(session_data: dict, agent: Agent, state: SessionState,
+                   language: str | None = None) -> bool:
     """Hands the agent its next unasked knowledge-base question.
 
     This is what makes "stick to the knowledge base" a guarantee rather than a
@@ -82,11 +83,20 @@ def _ask_from_bank(session_data: dict, agent: Agent, state: SessionState) -> boo
         return False
 
     agent_state.mark_asked(item.id)
+
+    # On a non-English panel the bank is still English, so the instruction has to
+    # say "translate" explicitly - otherwise "do not change what is being asked"
+    # reads as "recite this English sentence" and the agent switches language
+    # mid-interview.
+    in_language = ""
+    if language and not str(language).startswith("en"):
+        in_language = f" Ask it in {native_name(language)}, keeping the meaning exact."
+
     inject_followup(
         session_data["agora_session"],
         "Ask the candidate this next question. Deliver it naturally in your own voice and "
         "style, but do not change what is being asked, and do not ask anything else "
-        f"alongside it:\n\n{item.question}",
+        f"alongside it.{in_language}\n\n{item.question}",
     )
     return True
 
@@ -140,7 +150,16 @@ def start_session(body: StartSessionRequest):
     # the greeting message alone would leave it to improvise an opener, which is
     # exactly what the bank exists to prevent.
     if opening_agent.knowledge.is_active():
-        _ask_from_bank(session_data, opening_agent, state)
+        _ask_from_bank(session_data, opening_agent, state, profile.code)
+
+    # Printed once per session so a language complaint can be diagnosed from the
+    # server log alone: if this says en-US when the builder said Hindi, the panel
+    # payload never carried `language` (check InterviewRoomLive sends it).
+    print(
+        f"[session {state.session_id[:8]}] language={profile.code} "
+        f"asr={profile.asr_model}/{profile.asr_language} voice={opening_voice} "
+        f"opening_agent={opening_agent_id} knowledge={'on' if opening_agent.knowledge.is_active() else 'off'}"
+    )
 
     return StartSessionResponse(
         session_id=state.session_id,
@@ -192,6 +211,7 @@ async def next_turn(session_id: str, body: NextTurnRequest):
         transcript_so_far,
         body.answer_text,
         asked_item_id=answered_item_id,
+        language=state.language,
     )
 
     # write flags and coverage onto the transcript turn we just added
@@ -212,13 +232,13 @@ async def next_turn(session_id: str, body: NextTurnRequest):
 
     if decision.action == ActionType.SWITCH_AGENT:
         new_agent = agents_by_id[decision.next_agent_id]
-        swap_agent_persona(agora_session, new_agent, voices.get(new_agent.id))
+        swap_agent_persona(agora_session, new_agent, voices.get(new_agent.id), state.language)
         # The incoming agent gets its first bank question straight away, same
         # reason as the opening agent above.
-        _ask_from_bank(session_data, new_agent, state)
+        _ask_from_bank(session_data, new_agent, state, state.language)
 
     elif decision.action == ActionType.FOLLOW_UP:
-        asked = _ask_from_bank(session_data, current_agent, state)
+        asked = _ask_from_bank(session_data, current_agent, state, state.language)
         if not asked:
             # Either this agent isn't in knowledge-base mode, or it is in
             # non-strict mode with a spent bank - both fall back to the original

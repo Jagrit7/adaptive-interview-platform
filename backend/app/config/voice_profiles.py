@@ -260,6 +260,109 @@ DEFAULT_LANGUAGE = LANGUAGES[0].code
 _BY_CODE: dict[str, LanguageProfile] = {p.code: p for p in LANGUAGES}
 
 
+# Kept as side tables rather than fields on LanguageProfile so the 18 profile
+# literals above stay readable.
+#
+# These exist because picking a language used to configure only STT and TTS. The
+# LLM was never told anything, so it kept answering in English and MiniMax
+# happily read that English text aloud in a Hindi voice. Speech in, speech out
+# and the actual conversation are three separate settings; this file now covers
+# all three.
+NATIVE_NAMES: dict[str, str] = {
+    "en-US": "English",
+    "en-IN": "English",
+    "hi-IN": "हिन्दी",
+    "es-ES": "Español",
+    "fr-FR": "Français",
+    "de-DE": "Deutsch",
+    "pt-PT": "Português",
+    "it-IT": "Italiano",
+    "nl-NL": "Nederlands",
+    "ru-RU": "Русский",
+    "ja-JP": "日本語",
+    "ko-KR": "한국어",
+    "zh-CN": "中文",
+    "ar-SA": "العربية",
+    "tr-TR": "Türkçe",
+    "id-ID": "Bahasa Indonesia",
+    "vi-VN": "Tiếng Việt",
+    "th-TH": "ไทย",
+}
+
+# Spoken verbatim by TTS at the start of a session, so they must already be in
+# the target language - the LLM never sees them and cannot translate them.
+DEFAULT_GREETINGS: dict[str, str] = {
+    "en-US": "Hello, thanks for joining. Are you ready to begin?",
+    "en-IN": "Hello, thanks for joining. Are you ready to begin?",
+    "hi-IN": "नमस्ते, जुड़ने के लिए धन्यवाद। क्या हम शुरू करें?",
+    "es-ES": "Hola, gracias por acompañarnos. ¿Empezamos?",
+    "fr-FR": "Bonjour, merci de votre présence. Pouvons-nous commencer ?",
+    "de-DE": "Guten Tag, danke, dass Sie da sind. Können wir beginnen?",
+    "pt-PT": "Olá, obrigado por participar. Podemos começar?",
+    "it-IT": "Salve, grazie per essere qui. Possiamo iniziare?",
+    "nl-NL": "Hallo, fijn dat u er bent. Zullen we beginnen?",
+    "ru-RU": "Здравствуйте, спасибо, что присоединились. Начнём?",
+    "ja-JP": "こんにちは、本日はよろしくお願いします。始めてもよろしいでしょうか。",
+    "ko-KR": "안녕하세요, 참여해 주셔서 감사합니다. 시작해도 될까요?",
+    "zh-CN": "您好，感谢参加。我们可以开始了吗？",
+    "ar-SA": "مرحباً، شكراً لانضمامك. هل نبدأ؟",
+    "tr-TR": "Merhaba, katıldığınız için teşekkürler. Başlayalım mı?",
+    "id-ID": "Halo, terima kasih sudah bergabung. Boleh kita mulai?",
+    "vi-VN": "Xin chào, cảm ơn bạn đã tham gia. Chúng ta bắt đầu nhé?",
+    "th-TH": "สวัสดีครับ ขอบคุณที่เข้าร่วม เราเริ่มกันเลยไหมครับ",
+}
+
+
+def native_name(language_code: str | None) -> str:
+    profile = get_profile(language_code)
+    return NATIVE_NAMES.get(profile.code, profile.label)
+
+
+def default_greeting(language_code: str | None) -> str:
+    profile = get_profile(language_code)
+    return DEFAULT_GREETINGS.get(profile.code, DEFAULT_GREETINGS[DEFAULT_LANGUAGE])
+
+
+def language_directive(language_code: str | None) -> str:
+    """The instruction that makes the LLM actually speak the chosen language.
+
+    Placed LAST in the system prompt by build_system_prompt_from_agent. Last
+    position is deliberate: the question bank that precedes it can be hundreds of
+    lines of English, and an instruction buried above all that gets diluted.
+    """
+    profile = get_profile(language_code)
+    name = NATIVE_NAMES.get(profile.code, profile.label)
+
+    directive = (
+        f"OUTPUT LANGUAGE: Conduct this entire interview in {profile.label} ({name}). "
+        f"Every question, follow-up, acknowledgement and closing remark you speak must be "
+        f"written in {name}. "
+        f"If the candidate answers in a different language, note what they said but continue "
+        f"speaking {name} yourself. "
+        f"Do not repeat yourself in English, and do not add translations in brackets."
+    )
+
+    if profile.code.startswith("en"):
+        # English needs no reinforcement, but the "stay in one language" rule still
+        # helps when a candidate code-switches mid-answer.
+        directive = (
+            "OUTPUT LANGUAGE: Conduct this entire interview in English. If the candidate "
+            "answers in another language, continue in English yourself."
+        )
+
+    return directive
+
+
+def is_latin_script(text: str) -> bool:
+    """True if `text` has no characters above the Latin-1 range.
+
+    Used by the builder to warn when someone has typed an English greeting for a
+    non-Latin-script language - the greeting is spoken verbatim, so it would be
+    read out in English no matter what the language setting says.
+    """
+    return all(ord(ch) < 0x0250 for ch in text)
+
+
 def get_profile(language_code: str | None) -> LanguageProfile:
     """Never raises. An unknown/missing code falls back to the default rather
     than 500-ing a live session - a panel saved before this registry existed
@@ -276,6 +379,8 @@ def list_languages() -> list[dict]:
         {
             "code": p.code,
             "label": p.label,
+            "nativeName": NATIVE_NAMES.get(p.code, p.label),
+            "defaultGreeting": DEFAULT_GREETINGS.get(p.code, ""),
             "sttVendor": STT_VENDOR,
             "sttModel": p.asr_model,
             "ttsVendor": TTS_VENDOR,

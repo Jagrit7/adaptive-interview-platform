@@ -18,6 +18,7 @@ def build_scoring_prompt(
     transcript_so_far: str,
     latest_answer: str,
     reference: KnowledgeItem | None = None,
+    language: str | None = None,
 ) -> str:
     """Composes the single prompt sent to the scoring LLM call each turn."""
     competency_list = ", ".join(current_agent.scoring.competencies) or "none defined"
@@ -29,6 +30,20 @@ def build_scoring_prompt(
     )
 
     reference_block = format_reference_for_scorer(reference)
+
+    # On a non-English panel the transcript is in that language while the
+    # uploaded reference answers are almost always English. Without this the
+    # grader tends to mark a correct Hindi answer down for "not matching" an
+    # English reference it is comparing against literally.
+    language_note = ""
+    if language and not str(language).startswith("en"):
+        from app.config.voice_profiles import get_profile
+        language_note = (
+            f"\n\nThis interview is conducted in {get_profile(language).label}. The transcript "
+            "and the candidate's answer are in that language; the reference material may be in "
+            "English. Judge meaning, not language. Never penalise the candidate for the "
+            "language they answered in.\n"
+        )
 
     # With a reference answer the scorer measures the candidate against a fixed
     # standard, which makes scores comparable across candidates. Without one it
@@ -60,7 +75,7 @@ Full transcript so far:
 
 Candidate's latest answer:
 {latest_answer}
-
+{language_note}
 {grading_instruction}
 
 Also flag if the answer is vague or contradicts something the candidate said earlier
@@ -87,6 +102,7 @@ async def score_turn(
     transcript_so_far: str,
     latest_answer: str,
     asked_item_id: str | None = None,
+    language: str | None = None,
 ) -> ScoreResult:
     import json
     import os
@@ -99,7 +115,7 @@ async def score_turn(
         )
 
     prompt = build_scoring_prompt(
-        current_agent, all_agents, transcript_so_far, latest_answer, reference
+        current_agent, all_agents, transcript_so_far, latest_answer, reference, language
     )
 
     client = AsyncGroq(api_key=os.environ["GROQ_API_KEY"])

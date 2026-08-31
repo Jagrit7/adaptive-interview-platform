@@ -5,7 +5,14 @@ from pathlib import Path
 from agora_agent import Agent as AgoraAgentBuilder, Agora, Area, DeepgramSTT, OpenAI, Groq, MiniMaxTTS
 from dotenv import load_dotenv
 
-from app.config.voice_profiles import assign_voices, build_stt, build_tts, get_profile
+from app.config.voice_profiles import (
+    assign_voices,
+    build_stt,
+    build_tts,
+    default_greeting,
+    get_profile,
+    language_directive,
+)
 from app.knowledge.store import format_knowledge_block
 from app.schemas.panel import Agent as PanelAgent, Panel
 
@@ -99,7 +106,7 @@ def start_agent_from_config(agent_id: str, channel: str, remote_uid: str) -> str
 # ── NEW: works against the real Agent pydantic model (panel.py), used by the ──
 # ── orchestrator for real sessions built from the frontend builder. ──
 
-def build_system_prompt_from_agent(agent: PanelAgent) -> str:
+def build_system_prompt_from_agent(agent: PanelAgent, language: str | None = None) -> str:
     """Composes one agent's system prompt from its builder config.
 
     Order matters: role and persona first, then constraints, then the question
@@ -126,12 +133,35 @@ def build_system_prompt_from_agent(agent: PanelAgent) -> str:
         # generation entirely, so seedQuestions is intentionally not also
         # appended - two competing question sources produced incoherent
         # interviews in testing.
-        parts.append(format_knowledge_block(agent.knowledge))
+        parts.append(format_knowledge_block(agent.knowledge, language=language))
     elif agent.logic.seedQuestions:
         question_list = "\n".join(f"- {q}" for q in agent.logic.seedQuestions)
         parts.append(f"Draw from this question set as needed:\n{question_list}")
 
+    # LAST, always. Everything above it may be long stretches of English - the
+    # persona, the constraints, the question bank - and an instruction placed
+    # before all that gets diluted. This line is what actually makes a Hindi
+    # panel speak Hindi.
+    parts.append(language_directive(language))
+
     return "\n\n".join(p for p in parts if p)
+
+
+def resolve_greeting(agent: PanelAgent, language: str | None) -> str:
+    """The agent's greeting, falling back to one written in the target language.
+
+    The greeting is handed to TTS verbatim - the LLM never sees it and so cannot
+    translate it. An English greeting on a Hindi panel is therefore spoken in
+    English no matter what the language setting says, which is half of why the
+    first Hindi test came out in English.
+
+    A greeting the user actually wrote is always respected; only a blank one is
+    replaced. The builder warns separately when a greeting's script doesn't match
+    the chosen language, because silently overwriting someone's words would be
+    worse than letting them hear the mismatch and fix it.
+    """
+    written = (agent.behavior.greetingMessage or "").strip()
+    return written or default_greeting(language)
 
 
 def resolve_panel_voices(panel: Panel) -> dict[str, str]:
@@ -154,8 +184,8 @@ def start_session_agent(
     panel language. Nothing here reads the old agent.voice.provider/voiceId
     fields; a user picks a language and that is the whole speech decision.
     """
-    system_prompt = build_system_prompt_from_agent(agent)
     profile = get_profile(language)
+    system_prompt = build_system_prompt_from_agent(agent, profile.code)
 
     agent_builder = (
         AgoraAgentBuilder(client)
@@ -165,8 +195,11 @@ def start_session_agent(
             base_url="https://api.groq.com/openai/v1/chat/completions",
             model="openai/gpt-oss-20b",
             system_messages=[{"role": "system", "content": system_prompt}],
-            greeting_message=agent.behavior.greetingMessage,
+            greeting_message=resolve_greeting(agent, profile.code),
             failure_message=agent.behavior.fallbackMessage,
+            # Rolling window of the LAST 10 messages held by the Agora agent.
+            # This is NOT the interview's memory - SessionState.transcript on our
+            # side keeps everything. See SESSION_MEMORY.md.
             max_history=10,
         ))
         .with_tts(build_tts(profile.code, voice_id))
@@ -184,7 +217,12 @@ def start_session_agent(
     return agent_instance_id, session
 
 
-def swap_agent_persona(session, new_agent: PanelAgent, voice_id: str | None = None) -> None:
+def swap_agent_persona(
+    session,
+    new_agent: PanelAgent,
+    voice_id: str | None = None,
+    language: str | None = None,
+) -> None:
     """Hot-swaps the persona on an ALREADY RUNNING session - no new Join call,
     same live Agora instance, per the single-agent-persona-swap decision.
 
@@ -205,9 +243,9 @@ def swap_agent_persona(session, new_agent: PanelAgent, voice_id: str | None = No
     properties: dict = {
         "llm": {
             "system_messages": [
-                {"role": "system", "content": build_system_prompt_from_agent(new_agent)}
+                {"role": "system", "content": build_system_prompt_from_agent(new_agent, language)}
             ],
-            "greeting_message": new_agent.behavior.greetingMessage,
+            "greeting_message": resolve_greeting(new_agent, language),
             "failure_message": new_agent.behavior.fallbackMessage,
         }
     }
@@ -222,9 +260,22 @@ def inject_followup(session, instruction_text: str) -> None:
     """Injects a follow-up instruction into the CURRENTLY loaded persona,
     without switching agents or touching the system prompt/voice.
 
-    AgentSession.think() is confirmed real in the SDK - "Injects a custom text
-    instruction into the running agent." This is the FOLLOW_UP action from
-    orchestrator.py, and in knowledge-base mode it is also how a specific
-    question from the bank gets handed to the agent for its next turn.
+    This is the FOLLOW_UP action from orchestrator.py, and in knowledge-base mode
+    it is also how a specific question from the bank reaches the agent.
+
+    The two action arguments are not optional decoration. As of API v2.7,
+    omitting `on_listening_action` makes the server default to "interrupt" - so
+    every injected question would cut the candidate off the moment they started
+    speaking. That is disastrous in an interview and is the opposite of what the
+    orchestrator wants. The SDK docstring names "inject" as the pre-v2.7
+    behaviour, which is the behaviour this codebase was written against.
+
+    on_speaking_action="append" matters at session start: the first knowledge-base
+    question is injected immediately after the agent begins its greeting, and
+    appending lets the greeting finish instead of being talked over.
     """
-    session.think(instruction_text)
+    session.think(
+        instruction_text,
+        on_listening_action="inject",   # never talk over the candidate
+        on_speaking_action="append",    # let the agent finish its current sentence
+    )
