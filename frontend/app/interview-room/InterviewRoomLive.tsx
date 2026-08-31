@@ -34,9 +34,9 @@ export default function InterviewRoomLive() {
     if (data.current_agent_id) setActiveSpeakerId(data.current_agent_id);
     setIsFinished(data.is_finished);
     const progress = data.questions_total > 0
-      ? ` \u00b7 Q${data.questions_asked}/${data.questions_total}`
-      : '';
-    setStatus(data.is_finished ? 'Interview finished' : `Listening (${data.action})${progress}`);
+  ? ` · Q${data.questions_asked}/${data.questions_total}`
+  : '';
+setStatus(data.is_finished ? 'Interview finished' : `Listening (${data.action})${progress}`);
   };
 
   useEffect(() => {

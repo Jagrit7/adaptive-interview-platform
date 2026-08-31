@@ -17,7 +17,7 @@ import {
   ChatMessagePriority,
   type TranscriptHelperItem,
 } from "agora-agent-client-toolkit";
-import { MicButtonState } from "@agora/agent-ui-kit";
+type MicButtonState = "idle" | "listening" | "speaking";
 
 export type VoiceClientConfig = {
   appId: string;

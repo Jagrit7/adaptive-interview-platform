@@ -14,6 +14,13 @@ import {
 
 const LAST_STEP = 8;
 
+// Languages whose greeting should not be plain Latin script. Latin-script
+// languages (Spanish, French, German...) are excluded because an English
+// greeting there is a mistake we cannot detect by character range alone.
+const NON_LATIN_LANGUAGES = new Set([
+  'hi-IN', 'ru-RU', 'ja-JP', 'ko-KR', 'zh-CN', 'ar-SA', 'th-TH',
+]);
+
 export function AgentConfigForm({ agent }: { agent: Agent }) {
   const { updateAgent, deleteAgent, saveProject, agents, language, setLanguage } = useBuilderStore();
   const [activeStep, setActiveStep] = useState(agent.isNew ? 0 : 1);
@@ -36,6 +43,18 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
   );
   const agentIndex = agents.findIndex((a) => a.id === agent.id);
   const assignedVoice = previewVoice(Math.max(agentIndex, 0), activeLanguage);
+
+  // The greeting is handed to TTS verbatim - the model never sees it and cannot
+  // translate it. So an all-Latin greeting on a non-Latin-script panel gets read
+  // out in English regardless of the language setting. Warn rather than
+  // overwrite: silently replacing someone's words would be worse.
+  const greetingScriptMismatch =
+    !!activeLanguage &&
+    !activeLanguage.code.startsWith('en') &&
+    NON_LATIN_LANGUAGES.has(activeLanguage.code) &&
+    agent.behavior.greetingMessage.trim().length > 0 &&
+    // eslint-disable-next-line no-control-regex
+    !/[^\u0000-\u024F]/.test(agent.behavior.greetingMessage);
 
   const handleChange = (section: keyof Agent, field: string, value: any) => {
     updateAgent(agent.id, {
@@ -193,23 +212,6 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
             style={{
               padding: '8px 16px',
               borderRadius: '6px',
-              border: '1px solid var(--border)',
-              backgroundColor: 'var(--surface)',
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-              fontWeight: 500,
-              fontSize: '14px'
-            }}
-            onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--surface-raised)'}
-            onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--surface)'}
-            onClick={() => alert('Talk function not fully implemented yet')}
-          >
-            Talk
-          </button>
-          <button
-            style={{
-              padding: '8px 16px',
-              borderRadius: '6px',
               border: 'none',
               backgroundColor: agent.identity.color,
               color: '#fff',
@@ -332,11 +334,43 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
                 </div>
                 <div className="col-span-1 flex flex-col gap-6">
                   {agent.turnTaking.canOpen && (
-                    <Field label="Greeting Message">
+                    <Field
+                      label="Greeting Message"
+                      description={activeLanguage && !activeLanguage.code.startsWith('en')
+                        ? `Spoken word-for-word by the voice engine, so it must already be written in ${activeLanguage.label}.`
+                        : 'Spoken word-for-word at the start of the session.'}
+                    >
                       <Input
                         value={agent.behavior.greetingMessage}
                         onChange={(e) => handleChange('behavior', 'greetingMessage', e.target.value)}
+                        placeholder={activeLanguage?.defaultGreeting ?? ''}
                       />
+                      {greetingScriptMismatch && (
+                        <div style={{
+                          marginTop: '8px', padding: '10px 12px', borderRadius: '6px',
+                          fontSize: '12px', lineHeight: 1.5,
+                          border: '1px solid var(--accent-amber)',
+                          color: 'var(--accent-amber)',
+                          backgroundColor: 'rgba(245,158,11,0.06)',
+                        }}>
+                          This greeting looks like English, but the panel is set to{' '}
+                          {activeLanguage?.label}. The greeting is read out exactly as typed, so it
+                          will be spoken in English.
+                          {activeLanguage?.defaultGreeting && (
+                            <button
+                              onClick={() => handleChange('behavior', 'greetingMessage', activeLanguage.defaultGreeting)}
+                              style={{
+                                display: 'block', marginTop: '8px', padding: '5px 10px',
+                                fontSize: '12px', borderRadius: '4px', cursor: 'pointer',
+                                border: '1px solid var(--accent-amber)',
+                                background: 'transparent', color: 'var(--accent-amber)',
+                              }}
+                            >
+                              Use the {activeLanguage.label} greeting
+                            </button>
+                          )}
+                        </div>
+                      )}
                     </Field>
                   )}
                   <Field label="Fallback Message" description="Message to use when the agent doesn't understand the user">

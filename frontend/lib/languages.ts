@@ -19,6 +19,11 @@ export interface VoiceOption {
 export interface LanguageOption {
   code: string;
   label: string;
+  /** The language's name in itself, e.g. "हिन्दी". */
+  nativeName: string;
+  /** Greeting already written in this language. The greeting is spoken verbatim
+   *  by TTS - the model never sees it - so it cannot be auto-translated. */
+  defaultGreeting: string;
   sttVendor: string;
   sttModel: string;
   ttsVendor: string;
@@ -54,6 +59,8 @@ export const FALLBACK_LANGUAGES: LanguageOption[] = [
   { code: 'th-TH', label: 'Thai' },
 ].map((l) => ({
   ...l,
+  nativeName: l.label,        // real native names arrive with fetchLanguages()
+  defaultGreeting: '',
   sttVendor: 'deepgram',
   sttModel: 'nova-3',
   ttsVendor: 'minimax',
