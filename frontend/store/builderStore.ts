@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { DEFAULT_LANGUAGE } from '@/lib/languages';
+import { loadPanel, savePanel, type PanelConfig } from '@/lib/panels';
 
 export type RoleType = 'Technical' | 'Hiring manager' | 'Product' | 'Customer' | 'Behavioural' | 'Custom';
 
@@ -90,6 +91,13 @@ interface BuilderState {
   isSaved: boolean;
   activeSpeakerId: string | 'user' | null;
 
+  /** Supabase row id. Null until first save; holding it is what makes the
+   *  second save an UPDATE rather than a duplicate INSERT. */
+  panelId: string | null;
+  isSaving: boolean;
+  saveError: string | null;
+  lastSavedAt: number | null;
+
   // Actions
   setProjectName: (name: string) => void;
   setLanguage: (code: string) => void;
@@ -99,7 +107,9 @@ interface BuilderState {
   deleteAgent: (id: string) => void;
   selectAgent: (id: string | 'scorer' | null) => void;
   updateScorer: (updates: Partial<Scorer>) => void;
-  saveProject: () => void;
+  saveProject: () => Promise<void>;
+  openPanel: (id: string) => Promise<void>;
+  newPanel: () => void;
   setActiveSpeakerId: (id: string | 'user' | null) => void;
 }
 
@@ -128,7 +138,7 @@ export const emptyKnowledge = (): Knowledge => ({
   items: [],
 });
 
-export const useBuilderStore = create<BuilderState>((set) => ({
+export const useBuilderStore = create<BuilderState>((set, get) => ({
   projectName: '',
   language: DEFAULT_LANGUAGE,
   agents: [],
@@ -136,6 +146,10 @@ export const useBuilderStore = create<BuilderState>((set) => ({
   selectedAgentId: null,
   isSaved: true,
   activeSpeakerId: null,
+  panelId: null,
+  isSaving: false,
+  saveError: null,
+  lastSavedAt: null,
 
   setProjectName: (name) => set({ projectName: name, isSaved: false }),
 
@@ -219,14 +233,54 @@ export const useBuilderStore = create<BuilderState>((set) => ({
     isSaved: false,
   })),
 
-  saveProject: () => {
-    // Still a stub - Supabase steps 13-15 (auth UI + upsert) are the open item.
-    // When wired, the payload is { projectName, language, agents, scorer }:
-    // knowledge lives inside each agent, so it goes into the existing jsonb
-    // `config` column with no new storage layer.
-    console.log('Saving project...');
-    set({ isSaved: true });
+  saveProject: async () => {
+    const { projectName, language, agents, scorer, panelId, isSaving } = get();
+
+    // The header Save button and the Finish button both call this. On a slow
+    // connection the second call would still see panelId === null and insert a
+    // duplicate row, so re-entrancy is blocked rather than deduplicated later.
+    if (isSaving) return;
+
+    set({ isSaving: true, saveError: null });
+    try {
+      const config: PanelConfig = { projectName, language, agents, scorer };
+      const id = await savePanel(panelId, config);
+      set({ panelId: id, isSaved: true, isSaving: false, lastSavedAt: Date.now() });
+    } catch (err) {
+      // isSaved deliberately stays false: the UI must keep showing unsaved
+      // changes, because that is the truth. A save that silently fails while
+      // the UI reads "Saved" is worse than no save at all.
+      set({ isSaving: false, saveError: err instanceof Error ? err.message : String(err) });
+    }
   },
+
+  openPanel: async (id) => {
+    const row = await loadPanel(id);
+    const config = row.config ?? ({} as PanelConfig);
+    set({
+      panelId: row.id,
+      projectName: config.projectName ?? row.project_name ?? '',
+      // Panels saved before the language change have no `language` key.
+      language: config.language ?? DEFAULT_LANGUAGE,
+      agents: (config.agents ?? []).map((a: Agent) => ({
+        ...a,
+        // Panels saved before the knowledge feature have no `knowledge` block,
+        // and every form reads agent.knowledge.mode unguarded.
+        knowledge: a.knowledge ?? emptyKnowledge(),
+      })),
+      scorer: config.scorer ?? { competencies: [] },
+      selectedAgentId: null,
+      isSaved: true,
+      saveError: null,
+      lastSavedAt: Date.now(),
+    });
+  },
+
+  newPanel: () => set({
+    panelId: null, projectName: '', language: DEFAULT_LANGUAGE, agents: [],
+    scorer: { competencies: [] }, selectedAgentId: null, isSaved: true,
+    saveError: null, lastSavedAt: null,
+  }),
 
   setActiveSpeakerId: (id) => set({ activeSpeakerId: id }),
 }));

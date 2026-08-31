@@ -9,9 +9,21 @@ import { AgentConfigForm } from './AgentConfigForm';
 import { ScorerConfigForm } from './ScorerConfigForm';
 import { RoleAccentProvider } from '@/components/ui/RoleAccentProvider';
 import { useRouter } from 'next/navigation';
+import { AuthGate } from '@/components/ui/AuthGate';
 
 export default function BuilderPage() {
-  const { projectName, setProjectName, selectedAgentId, agents, saveProject, isSaved } = useBuilderStore();
+  // Bounces signed-out visitors to /login before any builder state renders.
+  // UX only - RLS in supabase/schema.sql is the real boundary.
+  return (
+    <AuthGate>
+      <BuilderPageInner />
+    </AuthGate>
+  );
+}
+
+function BuilderPageInner() {
+  const { projectName, setProjectName, selectedAgentId, agents, saveProject, isSaved,
+          isSaving, saveError } = useBuilderStore();
   const router = useRouter();
   
   const selectedAgent = agents.find(a => a.id === selectedAgentId);
@@ -36,7 +48,13 @@ export default function BuilderPage() {
           />
         </div>
         <div className="flex items-center gap-4">
-          {!isSaved && <span className="text-caption">Unsaved changes</span>}
+          {saveError && (
+            <span className="text-caption" style={{ color: 'var(--accent-rose)' }} title={saveError}>
+              Not saved
+            </span>
+          )}
+          {!saveError && isSaving && <span className="text-caption">Saving...</span>}
+          {!saveError && !isSaving && !isSaved && <span className="text-caption">Unsaved changes</span>}
           <Button onClick={saveProject} variant="primary">
             Save Panel
           </Button>

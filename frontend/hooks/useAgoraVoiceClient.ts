@@ -16,7 +16,17 @@ import {
   ChatMessageType,
   ChatMessagePriority,
   type TranscriptHelperItem,
+  type UserTranscription,
+  type AgentTranscription,
 } from "agora-agent-client-toolkit";
+
+/** The toolkit's own TRANSCRIPT_UPDATED payload type. Named here because the
+ *  bare `TranscriptHelperItem` is generic and will not compile without its
+ *  type argument - which is why `next build` was failing type checking, and
+ *  therefore why the frontend Docker image could not be built. */
+type TranscriptItem = TranscriptHelperItem<
+  Partial<UserTranscription | AgentTranscription>
+>;
 type MicButtonState = "idle" | "listening" | "speaking";
 
 export type VoiceClientConfig = {
@@ -58,6 +68,10 @@ export function useAgoraVoiceClient() {
   const rtmClientRef = useRef<InstanceType<typeof AgoraRTM.RTM> | null>(null);
   const voiceAIRef = useRef<AgoraVoiceAI | null>(null);
   const volumeCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Mirrors localAudioTrack so leaveChannel - which has an empty dep array on
+  // purpose, to stay referentially stable - can close the CURRENT track rather
+  // than whichever one existed when the callback was created.
+  const localAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
   // Tracks RTC track-event handlers so they can be unregistered on leave.
   const rtcTrackHandlersRef = useRef<{
     onPublished?: (user: IAgoraRTCRemoteUser, mediaType: "audio" | "video") => void;
@@ -109,18 +123,57 @@ export function useAgoraVoiceClient() {
   }, [remoteAudioTrack, isAgentSpeaking]);
 
   const leaveChannel = useCallback(async () => {
+    // Each resource is torn down in its OWN try/catch, deliberately.
+    //
+    // This used to be one try/catch around the whole sequence. If
+    // voiceAI.unsubscribe() or destroy() threw - which happens when the agent
+    // has already gone away - the RTM logout below it never ran, the error was
+    // swallowed by the catch, and the RTM session stayed logged in on Agora's
+    // side. The next join with the same uid then failed with
+    // "-10027: user ID is already in use by another active RTM instance".
+    //
+    // RTM logout is the one step that must never be skipped, so nothing above
+    // it is allowed to prevent it from being attempted.
+
     try {
       if (voiceAIRef.current) {
         voiceAIRef.current.unsubscribe();
         voiceAIRef.current.destroy();
-        voiceAIRef.current = null;
       }
+    } catch (e) {
+      console.warn("voiceAI teardown failed (continuing):", e);
+    } finally {
+      voiceAIRef.current = null;
+    }
 
+    try {
       if (rtmClientRef.current) {
         await rtmClientRef.current.logout();
-        rtmClientRef.current = null;
       }
+    } catch (e) {
+      // Already logged out, or the socket died. Either way the ref must be
+      // cleared so a retry can build a fresh client.
+      console.warn("RTM logout failed (continuing):", e);
+    } finally {
+      rtmClientRef.current = null;
+    }
 
+    // The mic device stays held until the track is closed. Dropping the
+    // reference with setLocalAudioTrack(null) alone left the browser's
+    // recording indicator lit after leaving the room.
+    try {
+      const track = localAudioTrackRef.current;
+      if (track) {
+        track.stop();
+        track.close();
+      }
+    } catch (e) {
+      console.warn("local track close failed (continuing):", e);
+    } finally {
+      localAudioTrackRef.current = null;
+    }
+
+    try {
       if (rtcClientRef.current) {
         const handlers = rtcTrackHandlersRef.current;
         if (handlers.onPublished) rtcClientRef.current.off("user-published", handlers.onPublished);
@@ -128,18 +181,21 @@ export function useAgoraVoiceClient() {
         if (handlers.onLeft) rtcClientRef.current.off("user-left", handlers.onLeft);
         rtcTrackHandlersRef.current = {};
         await rtcClientRef.current.leave();
-        rtcClientRef.current = null;
       }
-
-      setLocalAudioTrack(null);
-      setIsConnected(false);
-      setMicState("idle");
-      setIsAgentSpeaking(false);
-      setMessageList([]);
-      setCurrentInProgressMessage(null);
-    } catch (error) {
-      console.error("Error leaving channel:", error);
+    } catch (e) {
+      console.warn("RTC leave failed (continuing):", e);
+    } finally {
+      rtcClientRef.current = null;
     }
+
+    setLocalAudioTrack(null);
+
+    localAudioTrackRef.current = null;
+    setIsConnected(false);
+    setMicState("idle");
+    setIsAgentSpeaking(false);
+    setMessageList([]);
+    setCurrentInProgressMessage(null);
   }, []);
 
   const joinChannel = useCallback(
@@ -197,7 +253,7 @@ export function useAgoraVoiceClient() {
         // Initialize AgoraVoiceAI
         const voiceAI = await AgoraVoiceAI.init({
           rtcEngine: rtcClient,
-          rtmConfig: { rtmEngine: rtmClient },
+          rtmEngine: rtmClient,
           renderMode: TranscriptHelperMode.TEXT,
           enableLog: false,
         });
@@ -205,7 +261,7 @@ export function useAgoraVoiceClient() {
         // Listen to transcript updates
         voiceAI.on(
           AgoraVoiceAIEvents.TRANSCRIPT_UPDATED,
-          (messages: TranscriptHelperItem[]) => {
+          (messages: TranscriptItem[]) => {
             const fixSpacing = (t: string) =>
               t.replace(/([.!?,:;])([A-Za-z])/g, "$1 $2");
             const convertedMessages = messages.map((m) => ({
@@ -213,7 +269,10 @@ export function useAgoraVoiceClient() {
               uid: m.uid,
               text: fixSpacing(m.text),
               status: m.status,
-              timestamp: m.timestamp,
+              // The toolkit field is `_time`, not `timestamp`. Reading
+              // `m.timestamp` returned undefined on every message, so the
+              // sort below was comparing 0 - 0 and never reordered anything.
+              timestamp: m._time,
             }));
 
             const completedMessages = convertedMessages
@@ -258,6 +317,8 @@ export function useAgoraVoiceClient() {
         voiceAI.subscribeMessage(config.channel);
 
         setLocalAudioTrack(audioTrack);
+
+        localAudioTrackRef.current = audioTrack;
         setIsConnected(true);
         setMicState("listening");
       } catch (error) {

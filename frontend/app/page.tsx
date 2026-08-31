@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { EditableText } from "@/components/ui/EditableText";
 import { Card } from "@/components/ui/Card";
 import { Waveform } from "@/components/ui/Waveform";
+import { useBuilderStore } from "@/store/builderStore";
 const RECIPE_ACCENTS = [
   "var(--accent-indigo)",
   "var(--accent-amber)",
@@ -16,6 +17,7 @@ const RECIPE_ACCENTS = [
 export default function HomePage() {
   const router = useRouter();
   const [projectName, setProjectName] = useState("");
+  const newPanel = useBuilderStore((s) => s.newPanel);
 
   return (
     <div
@@ -88,7 +90,15 @@ export default function HomePage() {
             <div style={{ flex: 1 }}>
               <Card
                 hoverable
-                onClick={() => router.push("/builder")}
+                onClick={() => {
+                  // Clear panelId, agents and scorer before opening the builder.
+                  // Without this, "Build from scratch" inherits whatever panel
+                  // was last opened - including its Supabase row id - so the
+                  // first Save silently OVERWRITES that saved panel instead of
+                  // creating a new one.
+                  newPanel();
+                  router.push("/builder");
+                }}
                 style={{ height: "100%" }}
               >
                 <h2 className="text-heading" style={{ marginBottom: "8px" }}>
@@ -100,6 +110,38 @@ export default function HomePage() {
               </Card>
             </div>
           </div>
+
+          <Card
+            hoverable
+            onClick={() => router.push("/panels")}
+            style={{ width: "100%" }}
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <h2 className="text-heading" style={{ marginBottom: "8px" }}>
+                  Open a saved panel
+                </h2>
+                <p className="text-body text-muted">
+                  Pick up a panel you already built. Signing in is required, since
+                  panels are saved to your account.
+                </p>
+              </div>
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                style={{ flexShrink: 0, opacity: 0.5 }}
+              >
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </div>
+          </Card>
         </div>
       </div>
     </div>

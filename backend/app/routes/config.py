@@ -17,6 +17,7 @@ class LanguageOut(BaseModel):
     label: str
     nativeName: str
     defaultGreeting: str
+    defaultFallback: str
     sttVendor: str
     sttModel: str
     ttsVendor: str

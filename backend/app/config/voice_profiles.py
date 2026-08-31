@@ -313,6 +313,49 @@ DEFAULT_GREETINGS: dict[str, str] = {
 }
 
 
+
+# Spoken verbatim by TTS when the agent fails to understand, so like the
+# greetings these must already be in the target language - the model never sees
+# them and cannot translate them.
+DEFAULT_FALLBACKS: dict[str, str] = {
+    "en-US": "Sorry, I didn't catch that. Could you say it again?",
+    "en-IN": "Sorry, I didn't catch that. Could you say it again?",
+    "hi-IN": "माफ़ कीजिए, मैं समझ नहीं पाया। क्या आप दोहरा सकते हैं?",
+    "es-ES": "Perdona, no te he entendido. ¿Puedes repetirlo?",
+    "fr-FR": "Pardon, je n'ai pas bien compris. Pouvez-vous répéter ?",
+    "de-DE": "Entschuldigung, das habe ich nicht verstanden. Können Sie das wiederholen?",
+    "pt-PT": "Desculpe, não percebi. Pode repetir?",
+    "it-IT": "Scusi, non ho capito. Può ripetere?",
+    "nl-NL": "Sorry, dat heb ik niet verstaan. Kunt u dat herhalen?",
+    "ru-RU": "Извините, я не расслышал. Не могли бы вы повторить?",
+    "ja-JP": "すみません、聞き取れませんでした。もう一度お願いできますか。",
+    "ko-KR": "죄송합니다, 잘 듣지 못했습니다. 다시 말씀해 주시겠어요?",
+    "zh-CN": "抱歉，我没有听清。您可以再说一遍吗？",
+    "ar-SA": "عذراً، لم أسمع ذلك جيداً. هل يمكنك إعادته؟",
+    "tr-TR": "Affedersiniz, anlayamadım. Tekrar eder misiniz?",
+    "id-ID": "Maaf, saya kurang menangkap. Bisa diulangi?",
+    "vi-VN": "Xin lỗi, tôi chưa nghe rõ. Bạn có thể nhắc lại không?",
+    "th-TH": "ขออภัยครับ ผมฟังไม่ชัด ช่วยพูดอีกครั้งได้ไหมครับ",
+}
+
+
+def default_fallback(language_code: str | None) -> str:
+    profile = get_profile(language_code)
+    return DEFAULT_FALLBACKS.get(profile.code, DEFAULT_FALLBACKS[DEFAULT_LANGUAGE])
+
+
+def is_language_default(text: str) -> bool:
+    """True if `text` is one of the built-in greetings or fallbacks, for ANY language.
+
+    The builder uses this to decide whether it may replace the field when the
+    language changes. Text the user actually wrote is never a known default, so
+    it is never overwritten.
+    """
+    stripped = (text or "").strip()
+    if not stripped:
+        return True
+    return stripped in set(DEFAULT_GREETINGS.values()) | set(DEFAULT_FALLBACKS.values())
+
 def native_name(language_code: str | None) -> str:
     profile = get_profile(language_code)
     return NATIVE_NAMES.get(profile.code, profile.label)
@@ -381,6 +424,7 @@ def list_languages() -> list[dict]:
             "label": p.label,
             "nativeName": NATIVE_NAMES.get(p.code, p.label),
             "defaultGreeting": DEFAULT_GREETINGS.get(p.code, ""),
+            "defaultFallback": DEFAULT_FALLBACKS.get(p.code, ""),
             "sttVendor": STT_VENDOR,
             "sttModel": p.asr_model,
             "ttsVendor": TTS_VENDOR,

@@ -1,0 +1,26 @@
+# Backend runtime dependencies.
+#
+# Every entry below was derived by scanning the actual imports in backend/app
+# and backend/tests, then resolved in a clean virtualenv and confirmed to be
+# sufficient: `import app.main` succeeds with exactly this set and nothing else.
+# Versions are pinned to what resolved, so a rebuilt image matches what was tested.
+
+# --- Imported directly by app code ---
+fastapi==0.141.1            # app/main.py, all routes
+pydantic==2.13.5            # schemas/panel.py, orchestrator/*  (also a fastapi dep, pinned deliberately)
+python-dotenv==1.2.3        # agent_launcher.py, token_generator.py  -> `from dotenv import load_dotenv`
+groq==1.7.0                 # orchestrator/scorer.py -> `from groq import AsyncGroq`
+agora-agents==2.7.2         # agent_launcher.py -> `from agora_agent import ...`
+
+# --- Required at runtime but never imported by name ---
+uvicorn[standard]==0.52.4   # the ASGI server; `uvicorn app.main:app`
+python-multipart==0.0.32    # FastAPI needs this for UploadFile in routes/knowledge.py.
+                            # Without it, POST /knowledge/parse fails at import with
+                            # "Form data requires python-multipart to be installed",
+                            # which is easy to miss because nothing imports it.
+
+# --- Not listed, on purpose ---
+# RtcTokenBuilder2 is NOT a PyPI package. token_generator.py appends
+# backend/agora-token-tools/DynamicKey/AgoraDynamicKey/python/src to sys.path and
+# imports it from there, so that vendored directory must be COPYied into the
+# image. See backend/Dockerfile.

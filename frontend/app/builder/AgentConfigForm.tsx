@@ -9,6 +9,7 @@ import {
   FALLBACK_LANGUAGES,
   LanguageOption,
   fetchLanguages,
+  isLanguageDefault,
   previewVoice,
 } from '@/lib/languages';
 
@@ -22,7 +23,8 @@ const NON_LATIN_LANGUAGES = new Set([
 ]);
 
 export function AgentConfigForm({ agent }: { agent: Agent }) {
-  const { updateAgent, deleteAgent, saveProject, agents, language, setLanguage } = useBuilderStore();
+  const { updateAgent, deleteAgent, saveProject, agents, language, setLanguage,
+          isSaving, saveError, lastSavedAt } = useBuilderStore();
   const [activeStep, setActiveStep] = useState(agent.isNew ? 0 : 1);
 
   // The dropdown renders immediately from the static mirror, then swaps to the
@@ -44,17 +46,45 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
   const agentIndex = agents.findIndex((a) => a.id === agent.id);
   const assignedVoice = previewVoice(Math.max(agentIndex, 0), activeLanguage);
 
-  // The greeting is handed to TTS verbatim - the model never sees it and cannot
-  // translate it. So an all-Latin greeting on a non-Latin-script panel gets read
-  // out in English regardless of the language setting. Warn rather than
-  // overwrite: silently replacing someone's words would be worse.
-  const greetingScriptMismatch =
+  // Both the greeting and the fallback are handed to TTS verbatim - the model
+  // never sees them and cannot translate them. So Latin-script text on a
+  // non-Latin-script panel gets read out in English regardless of the language
+  // setting. Warn rather than overwrite: silently replacing someone's own words
+  // would be worse than letting them hear the mismatch and fix it.
+  const looksLatinOnly = (text: string) =>
+    text.trim().length > 0 && !/[^\u0000-\u024F]/.test(text);
+
+  const scriptMismatch =
     !!activeLanguage &&
     !activeLanguage.code.startsWith('en') &&
-    NON_LATIN_LANGUAGES.has(activeLanguage.code) &&
-    agent.behavior.greetingMessage.trim().length > 0 &&
-    // eslint-disable-next-line no-control-regex
-    !/[^\u0000-\u024F]/.test(agent.behavior.greetingMessage);
+    NON_LATIN_LANGUAGES.has(activeLanguage.code);
+
+  const greetingScriptMismatch =
+    scriptMismatch && looksLatinOnly(agent.behavior.greetingMessage);
+  const fallbackScriptMismatch =
+    scriptMismatch && looksLatinOnly(agent.behavior.fallbackMessage);
+
+  // When the language changes, swap in that language's greeting and fallback -
+  // but ONLY if the current text is blank or is still a built-in default from
+  // some other language. Text the user wrote themselves is left alone.
+  const prevLanguageRef = React.useRef(language);
+  useEffect(() => {
+    if (prevLanguageRef.current === language) return;
+    prevLanguageRef.current = language;
+    if (!activeLanguage?.defaultGreeting) return;   // list not loaded yet
+
+    const patch: Partial<Agent['behavior']> = {};
+    if (isLanguageDefault(agent.behavior.greetingMessage, languages)) {
+      patch.greetingMessage = activeLanguage.defaultGreeting;
+    }
+    if (isLanguageDefault(agent.behavior.fallbackMessage, languages)) {
+      patch.fallbackMessage = activeLanguage.defaultFallback;
+    }
+    if (Object.keys(patch).length > 0) {
+      updateAgent(agent.id, { behavior: { ...agent.behavior, ...patch } });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [language, activeLanguage]);
 
   const handleChange = (section: keyof Agent, field: string, value: any) => {
     updateAgent(agent.id, {
@@ -220,8 +250,9 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
               fontSize: '14px'
             }}
             onClick={saveProject}
+            disabled={isSaving}
           >
-            Save
+            {isSaving ? 'Saving...' : 'Save'}
           </button>
           <button
             onClick={() => deleteAgent(agent.id)}
@@ -243,6 +274,18 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
           </button>
         </div>
       </div>
+
+      {(saveError || lastSavedAt) && (
+        <div style={{
+          marginBottom: '12px', padding: '8px 12px', borderRadius: '6px',
+          fontSize: '12px', lineHeight: 1.5,
+          border: `1px solid ${saveError ? 'var(--accent-rose)' : 'var(--border)'}`,
+          color: saveError ? 'var(--accent-rose)' : 'var(--text-muted)',
+        }}>
+          {saveError ? `Not saved. ${saveError}`
+                     : `Saved at ${new Date(lastSavedAt as number).toLocaleTimeString()}.`}
+        </div>
+      )}
 
       {stepperUI}
 
@@ -309,6 +352,49 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
                 />
               </GlassTile>
 
+              {agent.turnTaking.canOpen && (
+                <Field
+                  label="Greeting message"
+                  description="The first thing the candidate hears. Spoken word-for-word by the voice engine."
+                >
+                  <Input
+                    value={agent.behavior.greetingMessage}
+                    onChange={(e) => handleChange('behavior', 'greetingMessage', e.target.value)}
+                    placeholder={activeLanguage?.defaultGreeting ?? ''}
+                  />
+                  <ScriptWarning
+                    show={greetingScriptMismatch}
+                    language={activeLanguage}
+                    suggestion={activeLanguage?.defaultGreeting}
+                    onUse={(text) => handleChange('behavior', 'greetingMessage', text)}
+                  />
+                </Field>
+              )}
+
+              <Field
+                label="Fallback message"
+                description="Spoken when the agent doesn't understand the candidate. Also word-for-word."
+              >
+                <Textarea
+                  value={agent.behavior.fallbackMessage}
+                  onChange={(e) => handleChange('behavior', 'fallbackMessage', e.target.value)}
+                  placeholder={activeLanguage?.defaultFallback ?? ''}
+                  style={{ minHeight: '72px' }}
+                />
+                <ScriptWarning
+                  show={fallbackScriptMismatch}
+                  language={activeLanguage}
+                  suggestion={activeLanguage?.defaultFallback}
+                  onUse={(text) => handleChange('behavior', 'fallbackMessage', text)}
+                />
+              </Field>
+
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
+                Both lines are read out exactly as typed - the model never sees them, so it cannot
+                translate them. Changing the language above rewrites them for you, unless you have
+                edited them yourself.
+              </p>
+
               {agents.length > 1 && (
                 <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
                   Each agent is given a different voice from the language's pool where one is available.
@@ -333,53 +419,25 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
                   </Field>
                 </div>
                 <div className="col-span-1 flex flex-col gap-6">
-                  {agent.turnTaking.canOpen && (
-                    <Field
-                      label="Greeting Message"
-                      description={activeLanguage && !activeLanguage.code.startsWith('en')
-                        ? `Spoken word-for-word by the voice engine, so it must already be written in ${activeLanguage.label}.`
-                        : 'Spoken word-for-word at the start of the session.'}
+                  <div style={{
+                    padding: '14px 16px', borderRadius: '8px', fontSize: '12px',
+                    lineHeight: 1.6, color: 'var(--text-muted)',
+                    border: '1px solid var(--border)', backgroundColor: 'var(--surface)',
+                  }}>
+                    Greeting and fallback lines have moved to the{' '}
+                    <button
+                      onClick={() => setActiveStep(2)}
+                      style={{
+                        background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                        color: agent.identity.color, fontSize: '12px', textDecoration: 'underline',
+                      }}
                     >
-                      <Input
-                        value={agent.behavior.greetingMessage}
-                        onChange={(e) => handleChange('behavior', 'greetingMessage', e.target.value)}
-                        placeholder={activeLanguage?.defaultGreeting ?? ''}
-                      />
-                      {greetingScriptMismatch && (
-                        <div style={{
-                          marginTop: '8px', padding: '10px 12px', borderRadius: '6px',
-                          fontSize: '12px', lineHeight: 1.5,
-                          border: '1px solid var(--accent-amber)',
-                          color: 'var(--accent-amber)',
-                          backgroundColor: 'rgba(245,158,11,0.06)',
-                        }}>
-                          This greeting looks like English, but the panel is set to{' '}
-                          {activeLanguage?.label}. The greeting is read out exactly as typed, so it
-                          will be spoken in English.
-                          {activeLanguage?.defaultGreeting && (
-                            <button
-                              onClick={() => handleChange('behavior', 'greetingMessage', activeLanguage.defaultGreeting)}
-                              style={{
-                                display: 'block', marginTop: '8px', padding: '5px 10px',
-                                fontSize: '12px', borderRadius: '4px', cursor: 'pointer',
-                                border: '1px solid var(--accent-amber)',
-                                background: 'transparent', color: 'var(--accent-amber)',
-                              }}
-                            >
-                              Use the {activeLanguage.label} greeting
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </Field>
-                  )}
-                  <Field label="Fallback Message" description="Message to use when the agent doesn't understand the user">
-                    <Textarea
-                      value={agent.behavior.fallbackMessage}
-                      onChange={(e) => handleChange('behavior', 'fallbackMessage', e.target.value)}
-                      style={{ minHeight: '80px' }}
-                    />
-                  </Field>
+                      Voice step
+                    </button>
+                    . They are spoken word-for-word by the voice engine rather than written by
+                    the model, so they belong with the language setting that determines what
+                    language they need to be in.
+                  </div>
                 </div>
               </div>
 
@@ -531,6 +589,40 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
       )}
 
       {navButtons}
+    </div>
+  );
+}
+
+function ScriptWarning({
+  show, language, suggestion, onUse,
+}: {
+  show: boolean;
+  language: LanguageOption | undefined;
+  suggestion: string | undefined;
+  onUse: (text: string) => void;
+}) {
+  if (!show || !language) return null;
+  return (
+    <div style={{
+      marginTop: '8px', padding: '10px 12px', borderRadius: '6px',
+      fontSize: '12px', lineHeight: 1.5,
+      border: '1px solid var(--accent-amber)', color: 'var(--accent-amber)',
+      backgroundColor: 'rgba(245,158,11,0.06)',
+    }}>
+      This looks like English, but the panel is set to {language.label}. It is read out exactly
+      as typed, so it will be spoken in English.
+      {suggestion && (
+        <button
+          onClick={() => onUse(suggestion)}
+          style={{
+            display: 'block', marginTop: '8px', padding: '5px 10px', fontSize: '12px',
+            borderRadius: '4px', cursor: 'pointer', border: '1px solid var(--accent-amber)',
+            background: 'transparent', color: 'var(--accent-amber)',
+          }}
+        >
+          Use the {language.label} version
+        </button>
+      )}
     </div>
   );
 }

@@ -14,7 +14,16 @@ export default function InterviewRoomLive() {
   const { agents, scorer, projectName, language, activeSpeakerId, setActiveSpeakerId } = useBuilderStore();
 
   const [channel] = useState(() => `panel-${Date.now()}`);
-  const [uid] = useState(1002);
+  // A fresh uid per session, not a hardcoded 1002.
+  //
+  // Agora RTM rejects a second login with a uid that is already active on the
+  // same app ID (-10027). A constant uid made that collision guaranteed in three
+  // ordinary situations: two tabs of the app open at once, a fast rejoin before
+  // Agora has finished tearing the old session down, and any exit path that
+  // skipped leaveChannel. A unique uid removes the collision by construction, so
+  // the cleanup below is a courtesy rather than the only thing standing between
+  // you and a broken room.
+  const [uid] = useState(() => Math.floor(Math.random() * 1_000_000) + 100_000);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [status, setStatus] = useState('starting...');
   const [isFinished, setIsFinished] = useState(false);
@@ -58,8 +67,14 @@ setStatus(data.is_finished ? 'Interview finished' : `Listening (${data.action})$
   // that only just succeeded on the second attempt - this was the actual
   // cause of "connected but no audio".
   const hasStartedRef = useRef(false);
+  const teardownTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // A remount within the deferral window means Strict Mode, not a real exit.
+    if (teardownTimerRef.current) {
+      clearTimeout(teardownTimerRef.current);
+      teardownTimerRef.current = null;
+    }
     if (hasStartedRef.current) return;
     hasStartedRef.current = true;
 
@@ -107,13 +122,36 @@ setStatus(data.is_finished ? 'Interview finished' : `Listening (${data.action})$
     };
 
     start();
-    // No cleanup here on purpose - hasStartedRef already guarantees this
-    // effect's real work runs exactly once. A `cancelled` flag set by
-    // Strict Mode's fake unmount was previously causing this async function
-    // to silently bail out AFTER the real backend call had already
-    // succeeded, right before updating status to "Joining channel..." -
-    // that was the actual cause of the frozen "Starting panel session..."
-    // status even though the backend logs showed a clean 200 OK.
+
+    // Teardown on real unmount, deferred so Strict Mode cannot trigger it.
+    //
+    // The previous version had NO cleanup at all, for a good reason: in dev,
+    // Strict Mode unmounts and immediately remounts, and an eager cleanup tore
+    // down the channel join that had only just succeeded. The cost of removing
+    // it was that leaving the room by any route other than the Exit button -
+    // browser Back, closing the tab, a hot reload - left the RTM session logged
+    // in forever, which is what produced -10027 on the next attempt.
+    //
+    // The fix is to defer rather than skip. Strict Mode remounts within a few
+    // milliseconds and the effect body clears the pending timer; a real unmount
+    // has nothing to clear it, so teardown runs.
+    return () => {
+      teardownTimerRef.current = setTimeout(() => {
+        void leaveChannel();
+        hasStartedRef.current = false;
+      }, 400);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Closing the tab or hard-refreshing never runs React cleanup, so RTM would
+  // stay logged in. logout() is async and the page is going away, so this is
+  // best-effort - the unique uid above is what actually guarantees the next
+  // session still works.
+  useEffect(() => {
+    const onUnload = () => { void leaveChannel(); };
+    window.addEventListener("pagehide", onUnload);
+    return () => window.removeEventListener("pagehide", onUnload);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

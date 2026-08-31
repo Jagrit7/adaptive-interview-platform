@@ -24,6 +24,9 @@ export interface LanguageOption {
   /** Greeting already written in this language. The greeting is spoken verbatim
    *  by TTS - the model never sees it - so it cannot be auto-translated. */
   defaultGreeting: string;
+  /** Fallback line ("sorry, I didn't catch that") in this language. Same
+   *  constraint as the greeting: spoken verbatim by TTS, never translated. */
+  defaultFallback: string;
   sttVendor: string;
   sttModel: string;
   ttsVendor: string;
@@ -61,6 +64,7 @@ export const FALLBACK_LANGUAGES: LanguageOption[] = [
   ...l,
   nativeName: l.label,        // real native names arrive with fetchLanguages()
   defaultGreeting: '',
+  defaultFallback: '',
   sttVendor: 'deepgram',
   sttModel: 'nova-3',
   ttsVendor: 'minimax',
@@ -73,6 +77,20 @@ export async function fetchLanguages(): Promise<LanguageOption[]> {
   if (!res.ok) throw new Error(`GET /config/languages failed: ${res.status}`);
   const data = await res.json();
   return data.languages as LanguageOption[];
+}
+
+/**
+ * True when `text` is one of the built-in greetings or fallbacks for ANY
+ * language, or is empty.
+ *
+ * The builder uses this to decide whether switching language may replace the
+ * field. Anything the user actually typed is not a known default, so their own
+ * wording is never silently overwritten.
+ */
+export function isLanguageDefault(text: string, languages: LanguageOption[]): boolean {
+  const t = (text ?? '').trim();
+  if (!t) return true;
+  return languages.some((l) => l.defaultGreeting === t || l.defaultFallback === t);
 }
 
 export function languageLabel(code: string, languages: LanguageOption[]): string {

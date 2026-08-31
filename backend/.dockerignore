@@ -1,0 +1,29 @@
+# Keep secrets and bulk out of the build context.
+.env
+.env.*
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+tests/
+agent-samples/
+
+# Only the python/src subtree of agora-token-tools is COPYied by the Dockerfile,
+# but the whole repo would otherwise be uploaded as build context - it carries
+# implementations for a dozen other languages plus node_modules.
+agora-token-tools/DynamicKey/AgoraDynamicKey/cpp/
+agora-token-tools/DynamicKey/AgoraDynamicKey/csharp/
+agora-token-tools/DynamicKey/AgoraDynamicKey/dart/
+agora-token-tools/DynamicKey/AgoraDynamicKey/deno/
+agora-token-tools/DynamicKey/AgoraDynamicKey/go/
+agora-token-tools/DynamicKey/AgoraDynamicKey/java/
+agora-token-tools/DynamicKey/AgoraDynamicKey/kotlin/
+agora-token-tools/DynamicKey/AgoraDynamicKey/lua/
+agora-token-tools/DynamicKey/AgoraDynamicKey/nodejs/
+agora-token-tools/DynamicKey/AgoraDynamicKey/php/
+agora-token-tools/DynamicKey/AgoraDynamicKey/python3/
+agora-token-tools/DynamicKey/AgoraDynamicKey/ruby/
+agora-token-tools/DynamicKey/AgoraDynamicKey/rust/
+agora-token-tools/Golem/
+agora-token-tools/Proxy/
+agora-token-tools/TroubleShooting/

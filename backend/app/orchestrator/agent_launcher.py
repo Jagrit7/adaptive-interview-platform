@@ -9,6 +9,7 @@ from app.config.voice_profiles import (
     assign_voices,
     build_stt,
     build_tts,
+    default_fallback,
     default_greeting,
     get_profile,
     language_directive,
@@ -164,6 +165,18 @@ def resolve_greeting(agent: PanelAgent, language: str | None) -> str:
     return written or default_greeting(language)
 
 
+def resolve_fallback(agent: PanelAgent, language: str | None) -> str:
+    """The agent's fallback line, falling back to one written in the target language.
+
+    Same reasoning as resolve_greeting: this string is handed to TTS verbatim
+    when the agent fails to understand, so an English fallback on a Hindi panel
+    is spoken in English no matter what the language setting says. A line the
+    user actually wrote is always respected; only a blank one is replaced.
+    """
+    written = (agent.behavior.fallbackMessage or "").strip()
+    return written or default_fallback(language)
+
+
 def resolve_panel_voices(panel: Panel) -> dict[str, str]:
     """agent_id -> MiniMax voice_id, decided once per panel."""
     return assign_voices([a.id for a in panel.agents], panel.language)
@@ -196,7 +209,7 @@ def start_session_agent(
             model="openai/gpt-oss-20b",
             system_messages=[{"role": "system", "content": system_prompt}],
             greeting_message=resolve_greeting(agent, profile.code),
-            failure_message=agent.behavior.fallbackMessage,
+            failure_message=resolve_fallback(agent, profile.code),
             # Rolling window of the LAST 10 messages held by the Agora agent.
             # This is NOT the interview's memory - SessionState.transcript on our
             # side keeps everything. See SESSION_MEMORY.md.
@@ -246,7 +259,7 @@ def swap_agent_persona(
                 {"role": "system", "content": build_system_prompt_from_agent(new_agent, language)}
             ],
             "greeting_message": resolve_greeting(new_agent, language),
-            "failure_message": new_agent.behavior.fallbackMessage,
+            "failure_message": resolve_fallback(new_agent, language),
         }
     }
 
