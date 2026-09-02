@@ -1,135 +1,168 @@
-/* app/globals.css */
+/* app/globals.css
+   ------------------------------------------------------------------
+   Three surfaces, one token file.
 
+   The designs are not one look — they are three, deliberately:
+
+     PRACTICE  light, indigo, rounded, gamified   (consumer)
+     CONSOLE   light, black + serif, dense        (enterprise)
+     ARENA     dark, cyan, monospace              (live interview)
+
+   Arena being dark is right: the live interview is a focus moment, the
+   same reason video calls dim their chrome.
+
+   Colours are sampled from the screens, not eyeballed. The arena ground
+   #0f131d is 24.8% of the lobby's pixels; #00e5ff is its CTA fill.
+   ------------------------------------------------------------------ */
+
+@import "tailwindcss";
+
+/* Tailwind was installed but never imported, so every `className` utility
+   in this app has been inert — which is why the codebase carries 358
+   inline styles against only 70 classNames. The line above turns them on.
+   Expect existing screens to shift the first time you run this. */
+
+@theme {
+  /* ---------- shared ---------- */
+  --font-sans:  var(--font-jakarta), system-ui, sans-serif;
+  --font-serif: var(--font-playfair), Georgia, serif;
+  --font-ui:    var(--font-inter), system-ui, sans-serif;
+  --font-mono:  var(--font-jetbrains), ui-monospace, monospace;
+
+  --radius-control: 0.75rem;
+  --radius-card:    1rem;
+  --radius-panel:   1.5rem;
+
+  /* ---------- PRACTICE (light, consumer) ---------- */
+  --color-practice-bg:        #f7f9fb;
+  --color-practice-surface:   #ffffff;
+  --color-practice-sunken:    #eef2ff;
+  --color-practice-border:    #e2e8f0;
+  --color-practice-ink:       #191c1e;
+  --color-practice-ink-soft:  #464555;
+  --color-practice-ink-mute:  #767586;
+  --color-practice-accent:    #4f46e5;
+  --color-practice-deep:      #3525cd;
+  --color-practice-gem:       #7c3aed;
+  --color-practice-xp:        #f59e0b;  /* glyphs and fills only — 2.03:1 on white */
+  --color-practice-pass:      #16a34a;
+  --color-practice-hard:      #dc2626;
+
+  /* ---------- CONSOLE (light, enterprise) ---------- */
+  --color-console-bg:        #f7f9fb;
+  --color-console-surface:   #ffffff;
+  --color-console-border:    #e2e8f0;
+  --color-console-ink:       #0b0b0c;
+  --color-console-ink-soft:  #45464d;
+  --color-console-ink-mute:  #64748b;
+  --color-console-accent:    #000000;
+  --color-console-tint:      #d0e1fb;
+
+  /* ---------- ARENA (dark, live interview) ---------- */
+  --color-arena-bg:        #0f131d;
+  --color-arena-panel:     #171b26;
+  --color-arena-raised:    #1c1f29;
+  --color-arena-line:      #313540;
+  --color-arena-ink:       #dfe2f1;
+  --color-arena-ink-soft:  #8b93a7;
+  --color-arena-ink-mute:  #5b6377;
+  --color-arena-cyan:      #00e5ff;
+  --color-arena-cyan-soft: #c3f5ff;
+  --color-arena-cyan-deep: #006875;
+  --color-arena-live:      #ff6b6b;
+  --color-arena-danger:    #93000a;
+}
+
+/* The arena's faint grid. One decorative element, used once, on the one
+   screen whose job is to feel like an instrument. */
+.arena-grid {
+  background-color: var(--color-arena-bg);
+  background-image:
+    linear-gradient(to right,  rgba(255,255,255,.028) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,.028) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Cyan edge on arena cards, as on the lobby's status tiles. */
+.arena-edge { box-shadow: inset 2px 0 0 0 var(--color-arena-cyan); }
+
+@keyframes arena-pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
+.arena-live-dot { animation: arena-pulse 1.8s ease-in-out infinite; }
+
+:focus-visible {
+  outline: 2px solid var(--color-arena-cyan);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* ------------------------------------------------------------------
+   Legacy bridge.
+
+   The existing app reads ~15 variables that predate this file, and it
+   hand-rolled its own .flex / .gap-4 utilities because Tailwind was
+   never imported. Those utilities now come from Tailwind at identical
+   values, so they are gone from here; the variables are re-pointed at
+   the light palette instead.
+
+   Keeping the OLD NAMES is the whole trick: every existing screen
+   re-skins without touching a single component. The four type classes
+   below are the only custom ones still referenced (23 usages).
+
+   Role accents are darkened for the light ground. The originals were
+   picked against #0A0A0C and several failed badly on white — amber was
+   2.04:1 and teal 1.76:1. These all clear 4.5:1.
+   ------------------------------------------------------------------ */
 :root {
-  /* Core Palette */
-  --bg: #0A0A0C;
-  --surface: #131316;
-  --surface-raised: #1B1B1F;
-  --border: #232327;
-  --border-strong: #333338;
-  --text-primary: #EDEDEF;
-  --text-secondary: #9C9CA3;
-  --text-muted: #5C5C63;
+  --bg:             var(--color-practice-bg);
+  --surface:        var(--color-practice-surface);
+  --surface-raised: var(--color-practice-sunken);
+  --border:         var(--color-practice-border);
+  --border-strong:  #cbd5e1;
 
-  /* Role Accents */
-  --accent-indigo: #6E56CF;
-  --accent-amber: #E8A33D;
-  --accent-teal: #2DD4BF;
-  --accent-rose: #F2545B;
-  --accent-violet: #C2418C;
-  --accent-slate: #7A7A85;
+  --text-primary:   var(--color-practice-ink);
+  --text-secondary: var(--color-practice-ink-soft);
+  --text-muted:     var(--color-practice-ink-mute);
 
-  /* Typography Variables */
-  --font-body: var(--font-inter), sans-serif;
-  --font-display: var(--font-space), sans-serif;
-  --font-mono-face: var(--font-mono), monospace;
+  --accent-indigo:  #4f46e5;   /* 5.96:1 */
+  --accent-amber:   #b45309;   /* 4.76:1 — was #E8A33D, 2.04:1 */
+  --accent-teal:    #0f766e;   /* 5.19:1 — was #2DD4BF, 1.76:1 */
+  --accent-rose:    #dc2626;   /* 4.58:1 */
+  --accent-violet:  #7c3aed;   /* 5.40:1 */
+  --accent-slate:   #64748b;   /* 4.51:1 */
 
-  /* Glassmorphism Tokens */
-  --glass-highlight: rgba(237, 237, 239, 0.06);
-}
-
-.glass-tile {
-  background: rgba(160, 160, 170, 0.12);   /* grey, translucent — NOT --surface solid */
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-  color: #FFFFFF;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  --font-body:      var(--font-jakarta), system-ui, sans-serif;
+  --font-display:   var(--font-jakarta), system-ui, sans-serif;
+  --font-mono-face: var(--font-jetbrains), ui-monospace, monospace;
 }
 
 body {
-  background-color: var(--bg);
+  background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-body);
-  font-size: 14px;
-  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display);
-  font-weight: 500;
-  margin: 0;
-}
+.text-display { font-family: var(--font-display); font-size: 32px; font-weight: 800;
+                line-height: 40px; letter-spacing: -0.02em; }
+.text-heading { font-family: var(--font-display); font-size: 20px; font-weight: 700;
+                line-height: 28px; }
+.text-body    { font-size: 16px; line-height: 24px; color: var(--text-secondary); }
+.text-caption { font-size: 12px; line-height: 16px; color: var(--text-muted); }
 
-input, textarea, button, select {
-  font-family: inherit;
-  font-size: inherit;
-  color: inherit;
-  background: transparent;
-  border: none;
-}
-
-input:focus, textarea:focus, button:focus, select:focus {
-  outline: none;
-}
-
-/* Custom scrollbar for dark theme */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg);
-}
-::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
-}
-
-/* Utility classes for layout & styles */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.items-center { align-items: center; }
-.justify-center { justify-content: center; }
-.justify-between { justify-content: space-between; }
-.gap-2 { gap: 8px; }
-.gap-4 { gap: 16px; }
-.gap-6 { gap: 24px; }
-.gap-8 { gap: 32px; }
-
-.w-full { width: 100%; }
-.h-full { height: 100%; }
-.min-h-screen { min-height: 100vh; }
-.flex-1 { flex: 1 1 0%; }
-.grid { display: grid; }
-.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.col-span-1 { grid-column: span 1 / span 1; }
-.col-span-2 { grid-column: span 2 / span 2; }
-.col-span-3 { grid-column: span 3 / span 3; }
-
-.text-center { text-align: center; }
-.text-display { font-size: 32px; font-family: var(--font-display); }
-.text-heading { font-size: 20px; font-family: var(--font-display); }
-.text-body { font-size: 14px; }
-.text-caption { font-size: 12px; color: var(--text-secondary); }
-.text-muted { color: var(--text-muted); }
-
-.relative { position: relative; }
-.absolute { position: absolute; }
-.z-0 { z-index: 0; }
-.z-10 { z-index: 10; }
-
-.hidden { display: none; }
-@media (min-width: 768px) {
-  .md\:flex-row { flex-direction: row; }
-  .md\:w-1\/2 { width: 50%; }
+/* Was white-translucent over a near-black ground; on a light ground it
+   disappeared entirely. Inverted to a solid card with a soft shadow, the
+   treatment the practice designs actually use. */
+.glass-tile {
+  background: var(--color-practice-surface);
+  border: 1px solid var(--color-practice-border);
+  border-radius: var(--radius-card);
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05);
+  color: var(--text-primary);
+  backdrop-filter: none;
 }

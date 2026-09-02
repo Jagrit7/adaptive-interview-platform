@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AuthGate, SignOutButton } from '@/components/ui/AuthGate';
+import { AuthGate } from '@/components/ui/AuthGate';
+import { ConsoleShell, ConsoleCard, ConsoleButton, StatusPill } from '@/components/console/ConsoleShell';
 import { deletePanel, listPanels, type PanelSummary } from '@/lib/panels';
 import { useBuilderStore } from '@/store/builderStore';
 
@@ -60,95 +61,78 @@ function PanelList() {
   };
 
   return (
-    <div style={{ maxWidth: '860px', margin: '0 auto', padding: '48px 24px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
-          Your panels
-        </h1>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <button
-            onClick={create}
-            style={{
-              padding: '8px 16px', borderRadius: '6px', border: 'none', fontWeight: 500,
-              fontSize: '14px', cursor: 'pointer',
-              backgroundColor: 'var(--text-primary)', color: 'var(--bg)',
-            }}
-          >
-            New panel
-          </button>
-          <SignOutButton />
-        </div>
-      </div>
-
+    <ConsoleShell
+      breadcrumb="INTERVIEWS"
+      title="Interview Templates"
+      subtitle="Every panel saved to your account. Duplicate one to start from a shape that works."
+      actions={<ConsoleButton onClick={create}>+ New interview</ConsoleButton>}
+    >
       {error && (
-        <div style={{
-          padding: '12px 16px', borderRadius: '8px', marginBottom: '20px',
-          border: '1px solid var(--accent-rose)', color: 'var(--accent-rose)', fontSize: '13px',
-        }}>
+        <div className="mb-6 px-4 py-3 rounded-lg text-sm border
+                        border-[#dc2626] text-[#dc2626]">
           {error}
         </div>
       )}
 
-      {loading && <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>Loading...</p>}
-
-      {!loading && panels.length === 0 && !error && (
-        <div style={{
-          padding: '48px', textAlign: 'center', borderRadius: '12px',
-          border: '1px dashed var(--border)', color: 'var(--text-secondary)',
-        }}>
-          <p style={{ margin: '0 0 16px' }}>You haven&apos;t saved a panel yet.</p>
-          <button
-            onClick={create}
-            style={{
-              padding: '8px 16px', borderRadius: '6px', cursor: 'pointer',
-              border: '1px solid var(--border)', backgroundColor: 'transparent',
-              color: 'var(--text-primary)', fontSize: '14px',
-            }}
-          >
-            Build your first one
-          </button>
-        </div>
+      {loading && (
+        <p className="text-sm text-[var(--color-console-ink-mute)]">Loading…</p>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {!loading && panels.length === 0 && !error && (
+        <ConsoleCard className="text-center py-14">
+          <p className="font-serif text-xl font-bold mb-2">No interviews yet</p>
+          <p className="text-sm text-[var(--color-console-ink-soft)] mb-6">
+            Build a panel and it will appear here.
+          </p>
+          <ConsoleButton onClick={create}>Build your first one</ConsoleButton>
+        </ConsoleCard>
+      )}
+
+      <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
         {panels.map((p) => (
-          <div
-            key={p.id}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px',
-              border: '1px solid var(--border)', borderRadius: '10px',
-              backgroundColor: 'var(--surface)',
-            }}
-          >
-            <button
-              onClick={() => open(p.id)}
-              style={{
-                flex: 1, textAlign: 'left', background: 'none', border: 'none',
-                cursor: 'pointer', padding: 0,
-              }}
-            >
-              <div style={{ fontWeight: 500, fontSize: '15px', color: 'var(--text-primary)' }}>
+          <ConsoleCard key={p.id} className="flex flex-col">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <h2 className="font-serif text-xl font-bold leading-snug">
                 {p.project_name}
+              </h2>
+              <StatusPill tone="active">Saved</StatusPill>
+            </div>
+
+            <dl className="space-y-2 text-sm mb-6">
+              <div className="flex justify-between gap-4">
+                <dt className="text-[var(--color-console-ink-mute)]">Interviewers</dt>
+                <dd className="font-medium">{p.agentCount}</dd>
               </div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>
-                {p.agentCount} agent{p.agentCount === 1 ? '' : 's'} &middot; {p.language} &middot;{' '}
-                edited {new Date(p.updated_at).toLocaleDateString()}
+              <div className="flex justify-between gap-4">
+                <dt className="text-[var(--color-console-ink-mute)]">Language</dt>
+                <dd className="font-medium">{p.language}</dd>
               </div>
-            </button>
-            <button
-              onClick={() => remove(p.id, p.project_name)}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--text-muted)', fontSize: '13px', padding: '4px 8px',
-              }}
-              onMouseOver={(e) => (e.currentTarget.style.color = 'var(--accent-rose)')}
-              onMouseOut={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
-            >
-              Delete
-            </button>
-          </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-[var(--color-console-ink-mute)]">Last edited</dt>
+                <dd className="font-medium">
+                  {new Date(p.updated_at).toLocaleDateString()}
+                </dd>
+              </div>
+            </dl>
+
+            <div className="mt-auto flex gap-2">
+              <button onClick={() => open(p.id)}
+                      className="flex-1 px-5 py-2.5 rounded-lg text-sm font-semibold
+                                 bg-[var(--color-console-accent)] text-white
+                                 hover:brightness-150 transition">
+                Open
+              </button>
+              <button onClick={() => remove(p.id, p.project_name)}
+                      className="px-4 py-2.5 rounded-lg text-sm
+                                 border border-[var(--color-console-border)]
+                                 text-[var(--color-console-ink-soft)]
+                                 hover:bg-[var(--color-console-bg)] transition">
+                Delete
+              </button>
+            </div>
+          </ConsoleCard>
         ))}
       </div>
-    </div>
+    </ConsoleShell>
   );
 }

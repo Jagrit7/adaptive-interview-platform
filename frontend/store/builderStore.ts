@@ -131,6 +131,34 @@ export const defaultSystemPrompts: Record<RoleType, string> = {
   'Custom': 'You are a helpful interview agent. Please configure my instructions.'
 };
 
+/**
+ * Competencies pre-filled when an agent is created, by role.
+ *
+ * These are defaults, not constraints - the field is editable and the user can
+ * replace them entirely. They exist because an agent with NO competencies is a
+ * trap: it has nothing to measure, so it contributes nothing to the final
+ * score, and until recently it was also retired from the panel after a single
+ * question. A sensible starting set means the common case works without anyone
+ * having to know that.
+ */
+export const defaultCompetencies: Record<RoleType, string[]> = {
+  'Technical': ['System Design', 'Problem Solving', 'Technical Depth'],
+  'Product': ['Product Sense', 'Prioritisation', 'Business Judgement'],
+  'Hiring manager': ['Ownership', 'Collaboration', 'Role Fit'],
+  'Customer': ['Customer Empathy', 'Handling Objections', 'Clarity'],
+  'Behavioural': ['Communication', 'Self-Awareness', 'Resilience'],
+  'Custom': ['Communication'],
+};
+
+/** Default scoring rule for a competency that has no rule yet.
+ *  Equal weight, and a threshold that is visible rather than the silent 0.7
+ *  the backend would otherwise apply. */
+export const defaultCompetencyRule = (name: string): CompetencyRule => ({
+  name,
+  weight: 1,
+  threshold: 0.7,
+});
+
 export const emptyKnowledge = (): Knowledge => ({
   mode: 'llm',
   strict: true,
@@ -186,16 +214,34 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
       },
       tools: [],
       turnTaking: {
-        canOpen: false,
+        // The FIRST agent in a panel opens the interview by default.
+        //
+        // This used to be false for every agent, which meant a freshly built
+        // panel could never start: /sessions/start rejects a panel where nobody
+        // has canOpen, and the toggle is buried on the last builder step. You
+        // had to already know it existed to get past the error. Still editable -
+        // this only changes what a new panel starts out as.
+        canOpen: state.agents.length === 0,
         handoffTriggers: '',
-        priority: 'medium',
+        priority: state.agents.length === 0 ? 'high' : 'medium',
       },
       scoring: {
-        competencies: [],
+        competencies: defaultCompetencies[role] ?? defaultCompetencies['Custom'],
       },
     };
+
+    // Every competency needs a rule, or the backend silently applies a 0.7
+    // threshold and a weight of 1 that nobody chose and nobody can see.
+    const known = new Set(state.scorer.competencies.map((c) => c.name));
+    const added = newAgent.scoring.competencies
+      .filter((name) => !known.has(name))
+      .map(defaultCompetencyRule);
+
     return {
       agents: [...state.agents, newAgent],
+      scorer: added.length
+        ? { ...state.scorer, competencies: [...state.scorer.competencies, ...added] }
+        : state.scorer,
       selectedAgentId: newAgent.id,
       isSaved: false,
     };

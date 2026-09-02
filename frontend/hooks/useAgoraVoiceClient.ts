@@ -200,7 +200,17 @@ export function useAgoraVoiceClient() {
 
   const joinChannel = useCallback(
     async (config: VoiceClientConfig) => {
-      if (isConnected) {
+      // Guard on the REFS, not on isConnected.
+      //
+      // isConnected is React state and only flips true after a join fully
+      // succeeds. If an earlier attempt created the RTM client and then failed
+      // partway - or if the state simply has not committed yet - isConnected is
+      // still false while rtmClientRef holds a live client. The old check missed
+      // that case, so every retry built ANOTHER AgoraRTM.RTM and orphaned the
+      // previous one. That is what Agora's "Ins id is 2 / 3 / 4, please pay
+      // attention to avoid mutual kick issues" messages are reporting: instances
+      // piling up, one per attempt.
+      if (isConnected || rtmClientRef.current || rtcClientRef.current || voiceAIRef.current) {
         await leaveChannel();
       }
 

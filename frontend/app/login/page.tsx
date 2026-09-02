@@ -70,14 +70,19 @@ export default function LoginPage() {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', padding: '24px', backgroundColor: 'var(--bg)',
+      justifyContent: 'center', padding: '24px', backgroundColor: 'var(--color-practice-bg)',
     }}>
       <div style={{
         width: '100%', maxWidth: '380px', padding: '32px',
-        border: '1px solid var(--border)', borderRadius: '12px',
-        backgroundColor: 'var(--surface)',
+        border: '1px solid var(--color-practice-border)', borderRadius: '16px',
+        backgroundColor: 'var(--color-practice-surface)',
+        boxShadow: '0 4px 20px rgba(15,23,42,0.05)',
       }}>
-        <h1 style={{ fontSize: '22px', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 6px' }}>
+        <div style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.02em',
+                      color: 'var(--color-practice-deep)', marginBottom: '20px' }}>
+          InterviewPro
+        </div>
+        <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--color-practice-ink)', margin: '0 0 6px' }}>
           {mode === 'signup' ? 'Create an account' : 'Sign in'}
         </h1>
         <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 24px' }}>
@@ -118,8 +123,8 @@ export default function LoginPage() {
             width: '100%', padding: '10px', borderRadius: '8px', border: 'none',
             fontWeight: 500, fontSize: '14px',
             cursor: canSubmit ? 'pointer' : 'not-allowed',
-            backgroundColor: canSubmit ? 'var(--text-primary)' : 'var(--border-strong)',
-            color: canSubmit ? 'var(--bg)' : 'var(--text-muted)',
+            backgroundColor: canSubmit ? 'var(--color-practice-accent)' : '#cbd5e1',
+            color: '#fff',
           }}
         >
           {busy ? 'Working...' : mode === 'signup' ? 'Create account'
@@ -141,7 +146,7 @@ export default function LoginPage() {
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '10px 12px', margin: '6px 0 16px',
-  backgroundColor: 'var(--bg)', border: '1px solid var(--border)',
+  backgroundColor: 'var(--color-practice-bg)', border: '1px solid var(--border)',
   borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px',
 };
 

@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 import uuid
@@ -13,8 +15,11 @@ from app.orchestrator.orchestrator import (
     decide_next_step,
     seed_agent_states,
 )
+from app.orchestrator.report import build_report
 from app.orchestrator.scorer import score_turn
+from app.schemas.report import InterviewReport
 from app.orchestrator.agent_launcher import (
+    AGENT_UID,
     inject_followup,
     resolve_panel_voices,
     start_session_agent,
@@ -33,6 +38,10 @@ class StartSessionRequest(BaseModel):
     panel: Panel
     channel: str
     remote_uid: str
+    # Captured on the pre-interview form. Optional so the older payload shape
+    # still starts a session - it just produces a report with a blank name.
+    candidate_name: str = ""
+    candidate_ref: str = ""
 
 
 class StartSessionResponse(BaseModel):
@@ -41,6 +50,9 @@ class StartSessionResponse(BaseModel):
     agora_agent_id: str      # the Agora instance ID, for status/stop calls
     language: str
     voice_id: str            # resolved from the language registry, not user input
+    # The uid the agent speaks under. Returned so the client can tell the
+    # agent's transcript lines apart from the candidate's without guessing.
+    agent_uid: str
 
 
 class NextTurnRequest(BaseModel):
@@ -133,6 +145,9 @@ def start_session(body: StartSessionRequest):
         language=profile.code,
         current_agent_id=opening_agent_id,
         queue=queue,
+        candidate_name=body.candidate_name.strip(),
+        candidate_ref=body.candidate_ref.strip(),
+        started_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
     )
 
     # Competencies are seeded to 0/uncovered up front - see seed_agent_states.
@@ -167,6 +182,7 @@ def start_session(body: StartSessionRequest):
         agora_agent_id=agora_agent_id,
         language=profile.code,
         voice_id=opening_voice,
+        agent_uid=AGENT_UID,
     )
 
 
@@ -259,6 +275,9 @@ async def next_turn(session_id: str, body: NextTurnRequest):
                 )
             inject_followup(agora_session, nudge)
 
+    if state.is_finished and not state.finished_at:
+        state.finished_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+
     active_agent = agents_by_id.get(state.current_agent_id)
     active_state = state.get_agent_state(state.current_agent_id) if active_agent else None
 
@@ -271,3 +290,26 @@ async def next_turn(session_id: str, body: NextTurnRequest):
         questions_asked=len(active_state.asked_item_ids) if active_state else 0,
         questions_total=len(active_agent.knowledge.items) if active_agent else 0,
     )
+
+
+@router.get("/sessions/{session_id}/report", response_model=InterviewReport)
+def get_report(session_id: str):
+    """The end-of-interview report.
+
+    Readable at any point, not only after the queue empties - a candidate who
+    exits early should still get whatever was measured, with `completed: false`
+    saying so rather than the report silently pretending otherwise.
+
+    The backend does not write this to Supabase. The frontend fetches it and
+    stores it under the user's own session, which keeps the existing split
+    intact: FastAPI never holds database credentials, and Row Level Security
+    still applies to every write.
+    """
+    session_data = SESSIONS.get(session_id)
+    if session_data is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found. Reports live in memory and are lost when the "
+                   "backend restarts, so fetch the report before ending the session.",
+        )
+    return build_report(session_data["state"], session_data["panel"])

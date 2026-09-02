@@ -24,9 +24,22 @@ class AgentSessionState(BaseModel):
     bank_exhausted: bool = False
 
     def satisfaction(self) -> float:
-        """Fraction of this agent's competencies currently covered, 0-1."""
+        """Fraction of this agent's competencies currently covered, 0-1.
+
+        An empty dict returns 0.0, NOT 1.0. This used to return 1.0 on the
+        reasoning that "no competencies means nothing to satisfy" - but
+        satisfaction >= 1.0 is what ends an agent's visit AND removes it from
+        the queue for good, so an agent with no competencies configured was
+        being retired after a single question. That is the opposite of the
+        intent: an agent nobody wrote competencies for should still ask its
+        allotted questions and end on its turn/visit caps like any other.
+
+        seed_agent_states() pre-creates an entry for every declared competency
+        before the interview starts, so by the time this is called an empty dict
+        unambiguously means "none were declared" rather than "not scored yet".
+        """
         if not self.competency_scores:
-            return 1.0  # no competencies defined -> nothing to satisfy
+            return 0.0
         covered = sum(1 for c in self.competency_scores.values() if c.covered)
         return covered / len(self.competency_scores)
 
@@ -52,6 +65,13 @@ class TranscriptTurn(BaseModel):
 class SessionState(BaseModel):
     session_id: str
     panel_project_name: str
+
+    # Captured on the pre-interview form. candidate_ref is the short human-
+    # readable code shown to the candidate; session_id is the internal uuid.
+    candidate_name: str = ""
+    candidate_ref: str = ""
+    started_at: str = ""      # ISO 8601, set at /sessions/start
+    finished_at: str = ""     # ISO 8601, set when the queue empties
     language: str | None = None
     current_agent_id: str | None = None
     current_visit_turn_count: int = 0     # turns taken during the CURRENT visit only

@@ -120,11 +120,18 @@ apply_score_result(st6, p5.agents[0], empty, {"C1": 0.7})
 assert decide_next_step(st6, p5, empty).action == ActionType.FOLLOW_UP
 ok("agent with declared competencies keeps going before its first score lands")
 
-p6 = Panel(projectName="x", agents=[agent("a", True, "high", comps=[]), agent("b")])
+# An agent with NO competencies declared must NOT read as satisfied. This
+# assertion previously expected 1.0, which encoded the bug: satisfaction >= 1.0
+# ends the visit AND retires the agent, so an unconfigured agent was being
+# dropped after a single question. It now scores 0.0 and ends on its turn/visit
+# caps like any other agent.
+p6 = Panel(projectName="x", agents=[agent("a", True, "high", comps=[], maxTurns=9), agent("b")])
 st7 = SessionState(session_id="s", panel_project_name="x", current_agent_id="a", queue=["b"])
 seed_agent_states(st7, p6)
-assert st7.get_agent_state("a").satisfaction() == 1.0
-ok("agent with genuinely no competencies still resolves as satisfied")
+assert st7.get_agent_state("a").satisfaction() == 0.0
+apply_score_result(st7, p6.agents[0], empty, {})
+assert decide_next_step(st7, p6, empty).action == ActionType.FOLLOW_UP
+ok("agent with no competencies is NOT auto-satisfied; it keeps its turns")
 
 print("\n=== G. Scorer tolerates a sloppy JSON response ===")
 sr = ScoreResult(**{"competency_scores": {"C1": 0.8}, "flags": [], "triggered_agent_ids": [],

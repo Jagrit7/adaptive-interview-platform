@@ -25,6 +25,8 @@ client = Agora(
     app_certificate=os.environ["AGORA_APP_CERTIFICATE"],
 )
 
+AGENT_UID = "1"   # fixed, and reported back to the client
+
 RECIPE_PATH = Path(__file__).resolve().parent.parent.parent / "recipes" / "sde_panel"
 
 
@@ -220,7 +222,16 @@ def start_session_agent(
 
     session = agent_builder.create_session(
         channel=channel,
-        agent_uid="0",
+        # NOT "0". In Agora RTC, uid 0 means "assign me a random uid" - it does
+        # not pin the agent to uid 0. The agent therefore joined under a random
+        # uid, its transcript messages carried that uid, and the frontend's
+        # "anything that isn't 0 is the candidate" test matched the agent's own
+        # speech. Every question it asked was posted back as the candidate's
+        # answer, so it interviewed itself at machine speed.
+        #
+        # "1" is what the SDK's own example uses. Candidate uids are generated
+        # in the 100000+ range, so there is no collision.
+        agent_uid=AGENT_UID,
         remote_uids=[remote_uid],
         name=f"{agent.id}-{channel}",
         idle_timeout=180,
