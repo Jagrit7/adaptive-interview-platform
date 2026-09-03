@@ -20,7 +20,7 @@ export default function NotificationsPage() {
   const unread = items.filter((n) => n.unread).length;
 
   return (
-    <PracticeShell user={USER} active="Dashboard">
+    <PracticeShell user={USER}>
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight mb-2">Notifications</h1>

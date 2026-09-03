@@ -38,6 +38,7 @@ class FakeAgoraSession:
     def __init__(self):
         self.thoughts: list[str] = []
         self.updates: list[dict] = []
+        self.stop_count = 0
 
     def think(self, text, *, on_listening_action=None, on_speaking_action=None,
               on_thinking_action=None, interruptable=None, metadata=None, options=None):
@@ -46,8 +47,8 @@ class FakeAgoraSession:
         # candidate off every time a question is injected.
         assert on_listening_action == "inject", (
             f"think() must not interrupt the candidate, got {on_listening_action!r}")
-        assert on_speaking_action == "append", (
-            f"think() must let the agent finish speaking, got {on_speaking_action!r}")
+        assert on_speaking_action in {"append", "interrupt"}, on_speaking_action
+        assert on_thinking_action in {"append", "interrupt"}, on_thinking_action
         self.thoughts.append(text)
 
     def update(self, properties):
@@ -56,19 +57,24 @@ class FakeAgoraSession:
         assert isinstance(properties, dict), "update() must receive a dict"
         self.updates.append(properties)
 
+    def stop(self):
+        self.stop_count += 1
+
 
 FAKE_SESSION = FakeAgoraSession()
 STARTED_WITH = {}
 
 
-def fake_start_session_agent(agent, channel, remote_uid, language=None, voice_id=None):
+def fake_start_session_agent(agent, channel, remote_uid, language=None, voice_id=None, **kwargs):
     # Exercise the real registry so a bad voice/language would still blow up here.
     stt = launcher.build_stt(language).to_config()
     tts = launcher.build_tts(language, voice_id).to_config()
     STARTED_WITH.update({
         "agent_id": agent.id, "language": language, "voice_id": voice_id,
         "stt": stt, "tts": tts,
-        "system_prompt": launcher.build_system_prompt_from_agent(agent, language),
+        "system_prompt": launcher.build_system_prompt_from_agent(
+            agent, language, kwargs.get("boundary_instruction", "")
+        ),
     })
     return "agora-instance-123", FAKE_SESSION
 
@@ -125,7 +131,7 @@ for l in cfg["languages"]:
 ok(f"{len(codes)} languages returned, every one has a voice pool")
 
 print("\n=== 2. Frontend fallback list matches the backend registry ===")
-ts = open(str(PROJECT / "frontend" / "lib" / "languages.ts")).read()
+ts = open(str(PROJECT / "frontend" / "lib" / "languages.ts"), encoding="utf-8").read()
 import re
 fe_codes = re.findall(r"\{ code: '([a-zA-Z-]+)', label: '([^']+)' \}", ts)
 assert [c for c, _ in fe_codes] == codes, f"\nfrontend={[c for c,_ in fe_codes]}\nbackend={codes}"
@@ -180,6 +186,7 @@ r = client.post("/sessions/start", json={"panel": panel, "channel": "chan-1", "r
 assert r.status_code == 200, r.text
 start = r.json()
 sid = start["session_id"]
+ACTIVE_ITEMS = [item.model_dump() for item in sessions_route.SESSIONS[sid]["panel"].agents[0].knowledge.items]
 assert start["agent_id"] == "tech" and start["language"] == "ja-JP"
 assert start["voice_id"] == "Japanese_IntellectualSenior", start["voice_id"]
 ok(f"opened with {start['agent_id']}, language {start['language']}, voice {start['voice_id']}")
@@ -192,18 +199,18 @@ assert STARTED_WITH["tts"]["params"]["language_boost"] == "Japanese"
 ok("STT/TTS built from the language, no vendor API keys anywhere in the config")
 
 sp = STARTED_WITH["system_prompt"]
-assert "ONLY questions from the list" in sp, "strict rule missing from the prompt"
-assert "Never read out, quote, or hint at the expected answers" in sp
-assert KB_ITEMS[0]["question"] in sp
+assert "COORDINATOR-CONTROLLED INTERVIEW" in sp, "control rule missing from the prompt"
+assert "Never choose, invent, repeat, skip, or advance" in sp
+assert ACTIVE_ITEMS[0]["question"] not in sp, "the voice model must not receive the whole bank"
 assert "OUTPUT LANGUAGE" in sp and "\u65e5\u672c\u8a9e" in sp, "language directive missing"
 assert sp.rstrip().endswith("brackets."), "the directive must be the LAST thing in the prompt"
-ok("prompt carries the bank, strict rule, leak guard AND a Japanese language directive last")
+ok("voice prompt has one-source-of-truth control rules and no question bank")
 
 assert len(FAKE_SESSION.thoughts) == 1, FAKE_SESSION.thoughts
-assert KB_ITEMS[0]["question"] in FAKE_SESSION.thoughts[0]
+assert ACTIVE_ITEMS[0]["question"] in FAKE_SESSION.thoughts[0]
 ok("opening agent was handed knowledge-base question 1 immediately, not left to improvise")
 
-print("\n=== 6. Turn 1: partial answer -> follow-up with the NEXT bank question ===")
+print("\n=== 6. Turn 1: partial answer is scored proportionally and advances ===")
 SCRIPT.append(ScoreResult(competency_scores={"System Design": 0.5}, flags=[],
                           triggered_agent_ids=[], coverage=0.4,
                           missing_points=["custom aliases", "analytics"]))
@@ -213,49 +220,52 @@ t1 = r.json()
 assert t1["action"] == "follow_up" and t1["current_agent_id"] == "tech"
 assert t1["coverage"] == 0.4 and t1["missing_points"] == ["custom aliases", "analytics"]
 assert t1["questions_asked"] == 2 and t1["questions_total"] == 3
-assert SCORE_CALLS[-1]["asked_item_id"] == KB_ITEMS[0]["id"], "scorer must grade against Q1"
+assert t1["question_status"] == "answered" and t1["question_score"] == 0.4
+assert t1["current_question"]["id"] == ACTIVE_ITEMS[1]["id"]
+assert SCORE_CALLS[-1]["asked_item_id"] == ACTIVE_ITEMS[0]["id"], "scorer must grade against Q1"
 assert SCORE_CALLS[-1]["language"] == "ja-JP", "scorer must be told the interview language"
-assert KB_ITEMS[1]["question"] in FAKE_SESSION.thoughts[-1]
-assert "\u65e5\u672c\u8a9e" in FAKE_SESSION.thoughts[-1], "injection must name the target language"
-ok("graded against Q1's answer; Q2 injected with a Japanese-language instruction; 2/3")
+assert ACTIVE_ITEMS[1]["question"] in FAKE_SESSION.thoughts[-1]
+ok("graded Q1 at 40%; UI and agent both advanced to Q2")
 
-print("\n=== 7. Turn 2 -> Q3, Turn 3 -> bank exhausted, visit ends, handoff ===")
-SCRIPT.append(ScoreResult(competency_scores={"System Design": 0.6}, flags=[], triggered_agent_ids=[]))
+print("\n=== 7. Correct Q2 -> Q3; explicit don't-know scores zero and hands off ===")
+SCRIPT.append(ScoreResult(competency_scores={"System Design": 0.6}, flags=[],
+                          triggered_agent_ids=[], coverage=0.9, answer_correct=True))
 r = client.post(f"/sessions/{sid}/next", json={"answer_text": "Cache it and shard the store."})
 t2 = r.json()
 assert t2["action"] == "follow_up" and t2["questions_asked"] == 3
-assert KB_ITEMS[2]["question"] in FAKE_SESSION.thoughts[-1]
-ok("Q3 injected; still the same agent")
+assert t2["question_status"] == "correct"
+assert t2["current_question"]["id"] == ACTIVE_ITEMS[2]["id"]
+assert ACTIVE_ITEMS[2]["question"] in FAKE_SESSION.thoughts[-1]
+ok("accepted Q2 and advanced both channels to Q3")
 
-SCRIPT.append(ScoreResult(competency_scores={"System Design": 0.7}, flags=[], triggered_agent_ids=[]))
-r = client.post(f"/sessions/{sid}/next", json={"answer_text": "Threads share memory, processes don't."})
+r = client.post(f"/sessions/{sid}/next", json={"answer_text": "I don't know the answer."})
 t3 = r.json()
-assert t3["action"] == "switch_agent", t3
-assert t3["current_agent_id"] == "hm", t3
-ok("bank spent -> visit ended and handed off to the next agent, not left improvising")
+assert t3["action"] == "switch_agent" and t3["question_status"] == "skipped"
+assert t3["current_agent_id"] == "hm" and t3["question_score"] == 0
+ok("explicit don't-know scored Q3 at zero and handed off")
 
-assert len(FAKE_SESSION.updates) == 1, FAKE_SESSION.updates
-upd = FAKE_SESSION.updates[0]
-assert set(upd.keys()) <= {"llm", "tts"}, upd.keys()
-assert "You are Grace." in upd["llm"]["system_messages"][0]["content"]
-assert upd["tts"]["voice_setting"]["voice_id"] == "Japanese_DependableWoman", upd["tts"]
-ok("persona swap sent as ONE positional dict; new prompt + that agent's voice")
+assert FAKE_SESSION.stop_count == 1
+assert STARTED_WITH["agent_id"] == "hm"
+assert STARTED_WITH["voice_id"] == "Japanese_DependableWoman"
+assert "You are Grace." in STARTED_WITH["system_prompt"]
+assert "ENFORCED SPECIALIST BOUNDARY" in STARTED_WITH["system_prompt"]
+ok("handoff replaced the active session with a private context and distinct voice")
 
-asked_qs = [q for q in KB_ITEMS[:3]]
+asked_qs = ACTIVE_ITEMS
 injected = " ".join(FAKE_SESSION.thoughts)
 assert all(q["question"] in injected for q in asked_qs)
-assert len([t for t in FAKE_SESSION.thoughts if "Ask the candidate this next question" in t]) == 3
+assert len([t for t in FAKE_SESSION.thoughts if "Question:\n" in t]) == 3
 assert len(set(FAKE_SESSION.thoughts)) == len(FAKE_SESSION.thoughts), "a question was repeated"
-ok("all 3 bank questions asked exactly once, in upload order, none repeated")
+ok("all 3 session-randomized bank questions asked exactly once, none repeated")
 
 print("\n=== 8. Non-KB agent falls back to a flag-shaped nudge ===")
 before = len(FAKE_SESSION.thoughts)
 SCRIPT.append(ScoreResult(competency_scores={"Communication": 0.3}, flags=["vague"],
                           triggered_agent_ids=[]))
 r = client.post(f"/sessions/{sid}/next", json={"answer_text": "Um, it depends I guess."})
-t4 = r.json()
-assert t4["action"] == "follow_up" and t4["current_agent_id"] == "hm"
-assert t4["questions_total"] == 0, "agent with no bank should report no progress"
+t5 = r.json()
+assert t5["action"] == "follow_up" and t5["current_agent_id"] == "hm"
+assert t5["questions_total"] == 0, "agent with no bank should report no progress"
 assert "vague" in FAKE_SESSION.thoughts[-1].lower()
 assert len(FAKE_SESSION.thoughts) == before + 1
 ok("llm-mode agent got the vagueness nudge, not a bank question")
@@ -263,8 +273,8 @@ ok("llm-mode agent got the vagueness nudge, not a bank question")
 print("\n=== 9. Interview finishes; further turns are safe ===")
 SCRIPT.append(ScoreResult(competency_scores={"Communication": 0.9}, flags=[], triggered_agent_ids=[]))
 r = client.post(f"/sessions/{sid}/next", json={"answer_text": "Concretely: we cut p99 by 40%."})
-t5 = r.json()
-assert t5["is_finished"] is True and t5["action"] == "finished", t5
+t6 = r.json()
+assert t6["is_finished"] is True and t6["action"] == "finished", t6
 ok("Communication crossed its 0.6 threshold -> agent satisfied -> queue empty -> finished")
 
 r = client.post(f"/sessions/{sid}/next", json={"answer_text": "anything"})
@@ -277,7 +287,7 @@ print("\n=== 10. Transcript kept the grading provenance ===")
 state = sessions_route.SESSIONS[sid]["state"]
 turns = state.transcript
 assert len(turns) == 5, len(turns)
-assert turns[0].knowledge_item_id == KB_ITEMS[0]["id"]
+assert turns[0].knowledge_item_id == ACTIVE_ITEMS[0]["id"]
 assert turns[0].coverage == 0.4
 assert turns[3].knowledge_item_id is None, "the llm-mode agent's turn has no bank item"
 assert turns[3].flags == ["vague"]
@@ -318,7 +328,68 @@ assert r.json()["language"] == "en-US", r.json()
 assert STARTED_WITH["stt"]["params"]["language"] == "en-US", "must fall back to the default profile"
 ok("unknown language falls back to English; response reports the resolved language, not the input")
 
-print("\n=== 13. Route inventory ===")
+print("\n=== 13. Orchestrator floor, revisions, and idempotency ===")
+flow_kb = {"mode": "knowledge_base", "strict": True, "sourceName": "flow-test",
+           "bankId": "custom", "items": [{"id": "flow-q", "question": "Explain a cache.",
+           "idealAnswer": "Stores reusable results.", "tags": ["Technical"], "kind": "verbal"}]}
+flow_panel = {"projectName": "Floor test", "language": "en-US",
+              "agents": [agent("floor-agent", "Floor", canOpen=True, maxTurns=1, kb=flow_kb)],
+              "scorer": {"competencies": []}}
+r = client.post("/sessions/start", json={"panel": flow_panel, "channel": "floor", "remote_uid": "91"})
+flow_start = r.json()
+flow_sid = flow_start["session_id"]
+assert flow_start["awaiting"] == "agent" and flow_start["question_revision"] == 1
+
+r = client.post(f"/sessions/{flow_sid}/next", json={
+    "answer_text": "It stores results.", "question_id": "flow-q",
+    "question_revision": 1, "answer_id": "answer-one",
+})
+assert r.status_code == 409 and "yielded the floor" in r.json()["detail"]
+
+r = client.post(f"/sessions/{flow_sid}/candidate-ready", json={"question_revision": 1})
+assert r.status_code == 200 and r.json()["awaiting"] == "candidate"
+SCRIPT.append(ScoreResult(competency_scores={}, flags=[], triggered_agent_ids=[],
+                          coverage=0.8, answer_correct=True))
+r = client.post(f"/sessions/{flow_sid}/next", json={
+    "answer_text": "It stores reusable results.", "question_id": "flow-q",
+    "question_revision": 1, "answer_id": "answer-one",
+})
+assert r.status_code == 200
+first_result = r.json()
+turn_count = len(sessions_route.SESSIONS[flow_sid]["state"].transcript)
+r = client.post(f"/sessions/{flow_sid}/next", json={
+    "answer_text": "duplicate", "question_id": "flow-q",
+    "question_revision": 1, "answer_id": "answer-one",
+})
+assert r.status_code == 200 and r.json() == first_result
+assert len(sessions_route.SESSIONS[flow_sid]["state"].transcript) == turn_count
+ok("agent must yield before answer; stale/duplicate events cannot advance twice")
+
+print("\n=== 14. Role boundary rejects a technical HR bank ===")
+hr_bad = {"projectName": "Bad HR", "language": "en-US",
+          "agents": [{**agent("hr", "Rhea", canOpen=True, kb={**flow_kb, "bankId": "dsa"}),
+                      "identity": {"name": "Rhea", "role": "Behavioural", "color": "#fff", "avatar": ""}}],
+          "scorer": {"competencies": []}}
+r = client.post("/sessions/start", json={"panel": hr_bad, "channel": "bad-hr", "remote_uid": "92"})
+assert r.status_code == 400 and "cannot use" in r.json()["detail"]
+ok("HR cannot be configured with a DSA/system-design bank")
+
+mixed_bank = {"mode": "knowledge_base", "strict": True, "sourceName": "mixed",
+              "bankId": "custom", "items": [
+                  {"id": "technical-only", "question": "Explain a cache.", "idealAnswer": "Reuse results.",
+                   "tags": ["Technical"], "kind": "verbal", "domain": "general"},
+                  {"id": "behavioural-only", "question": "Tell me about a conflict.", "idealAnswer": "STAR.",
+                   "tags": ["Behavioural"], "kind": "verbal", "domain": "behavioural"},
+              ]}
+mixed_panel = {"projectName": "Mixed", "language": "en-US",
+               "agents": [agent("technical", "Ada", canOpen=True, maxTurns=2, kb=mixed_bank)],
+               "scorer": {"competencies": []}}
+r = client.post("/sessions/start", json={"panel": mixed_panel, "channel": "mixed", "remote_uid": "93"})
+assert r.status_code == 200, r.text
+assert r.json()["questions_total"] == 1 and r.json()["current_question"]["id"] == "technical-only"
+ok("technical specialist's custom bank excludes behavioural questions")
+
+print("\n=== 15. Route inventory ===")
 # Read the OpenAPI schema rather than walking app.routes - include_router wraps
 # children in _IncludedRouter on this FastAPI version, and the schema is the
 # authoritative list of what is actually served.

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { DEFAULT_LANGUAGE } from '@/lib/languages';
 import { loadPanel, savePanel, type PanelConfig } from '@/lib/panels';
+import type { QuestionDomain } from '@/lib/questionDomains';
 
 export type RoleType = 'Technical' | 'Hiring manager' | 'Product' | 'Customer' | 'Behavioural' | 'Custom';
 
@@ -12,6 +13,8 @@ export interface KnowledgeItem {
   idealAnswer: string;
   tags: string[];
   difficulty?: number | null;
+  kind?: 'coding' | 'written' | 'verbal' | null;
+  domain?: QuestionDomain | null;
 }
 
 export interface Knowledge {
@@ -22,6 +25,7 @@ export interface Knowledge {
    *  through the bank first, then improvise. */
   strict: boolean;
   sourceName: string;
+  bankId?: 'dsa' | 'system-design' | 'custom';
   items: KnowledgeItem[];
 }
 
@@ -33,6 +37,12 @@ export interface Agent {
     role: RoleType;
     color: string;
     avatar: string;
+  };
+  voice?: {
+    provider?: string;
+    voiceId?: string;
+    language?: string;
+    speakingStyle?: string;
   };
   behavior: {
     systemPrompt: string;
@@ -61,6 +71,7 @@ export interface Agent {
   };
   scoring: {
     competencies: string[];
+    weight?: number;
   };
 }
 

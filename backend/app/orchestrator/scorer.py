@@ -10,6 +10,7 @@ class ScoreResult(BaseModel):
     triggered_agent_ids: list[str]           # agent_ids whose handoffTriggers matched THIS turn
     coverage: float | None = None            # 0-1, how much of the reference answer was covered
     missing_points: list[str] = []           # what the reference answer had and the candidate didn't
+    answer_correct: bool = False             # whether this specific question is resolved and may advance
 
 
 def build_scoring_prompt(
@@ -30,6 +31,10 @@ def build_scoring_prompt(
     )
 
     reference_block = format_reference_for_scorer(reference)
+    question_block = (
+        f"\n\nCurrent written question:\n{reference.question}\n"
+        if reference else ""
+    )
 
     # On a non-English panel the transcript is in that language while the
     # uploaded reference answers are almost always English. Without this the
@@ -55,7 +60,9 @@ def build_scoring_prompt(
             "well the candidate's answer matches the expected answer above. Do not reward correct "
             "material that the expected answer does not call for, and do not penalise different "
             "wording - judge substance. Also report `coverage` (0.0-1.0, the fraction of the "
-            "expected answer the candidate actually covered) and `missing_points` (the specific "
+            "expected answer the candidate actually covered). Treat coverage as the score for this "
+            "exact question: half of the required substance covered means 0.5, regardless of whether "
+            "the answer is perfect. Also report `missing_points` (the specific "
             "things the expected answer includes that the candidate did not mention)."
         )
     else:
@@ -76,7 +83,12 @@ Full transcript so far:
 Candidate's latest answer:
 {latest_answer}
 {language_note}
+{question_block}
 {grading_instruction}
+
+Set `answer_correct` to true only when the latest answer is substantively correct and at least 70%
+complete. This field describes quality only; the orchestrator records the proportional score and
+moves to the next question after every completed answer. Do not require identical wording.
 
 Also flag if the answer is vague or contradicts something the candidate said earlier
 in the transcript.
@@ -91,7 +103,8 @@ Respond as JSON:
   "flags": ["vague" | "contradiction", ...],
   "triggered_agent_ids": ["<agent_id>", ...],
   "coverage": <0-1 float or null>,
-  "missing_points": ["<point>", ...]
+  "missing_points": ["<point>", ...],
+  "answer_correct": <true only when this question may advance>
 }}
 """
 
@@ -135,5 +148,6 @@ async def score_turn(
     parsed.setdefault("flags", [])
     parsed.setdefault("triggered_agent_ids", [])
     parsed["missing_points"] = parsed.get("missing_points") or []
+    parsed["answer_correct"] = bool(parsed.get("answer_correct", False))
 
     return ScoreResult(**parsed)

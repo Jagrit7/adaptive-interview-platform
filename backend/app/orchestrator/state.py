@@ -2,6 +2,15 @@ from pydantic import BaseModel, Field
 from typing import Literal
 
 
+ConversationFloor = Literal[
+    "agent_speaking",
+    "candidate_speaking",
+    "workspace",
+    "evaluating",
+    "finished",
+]
+
+
 class CompetencyScore(BaseModel):
     score: float = 0.0          # 0-1, current best score for this competency
     covered: bool = False        # score >= scorer threshold for this competency
@@ -60,6 +69,7 @@ class TranscriptTurn(BaseModel):
     flags: list[str] = Field(default_factory=list)   # e.g. "vague", "contradiction"
     knowledge_item_id: str | None = None             # which bank question this answered
     coverage: float | None = None                    # 0-1 vs the reference answer
+    question_score: float | None = None              # 0-1 score for this exact answer
 
 
 class SessionState(BaseModel):
@@ -79,6 +89,12 @@ class SessionState(BaseModel):
     agent_states: dict[str, AgentSessionState] = Field(default_factory=dict)
     transcript: list[TranscriptTurn] = Field(default_factory=list)
     is_finished: bool = False
+    # The orchestrator is the only writer of these fields.  Browser transcript
+    # events are accepted only while the matching revision belongs to the
+    # candidate, which makes stale/duplicate Agora events harmless.
+    floor: ConversationFloor = "agent_speaking"
+    question_revision: int = 0
+    accepted_answer_ids: list[str] = Field(default_factory=list)
 
     def get_agent_state(self, agent_id: str) -> AgentSessionState:
         if agent_id not in self.agent_states:

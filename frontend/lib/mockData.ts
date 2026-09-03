@@ -156,16 +156,22 @@ export const EVALUATION = {
 /* ---------------- skill paths & profile ---------------- */
 
 export const SKILL_PATHS = [
-  { id: 'frontend',  name: 'Frontend Engineering',    level: 8, done: 26, total: 30, featured: true,
-    next: 'Review Flexbox' },
-  { id: 'dsa',       name: 'Data Structures & Algorithms', level: 4, done: 12, total: 30 },
-  { id: 'backend',   name: 'Backend Engineering',     level: 2, done: 4,  total: 20 },
-  { id: 'sysdesign', name: 'System Design',           level: 1, done: 1,  total: 10 },
-  { id: 'databases', name: 'Databases and SQL',       level: 5, done: 15, total: 30 },
-  { id: 'comms',     name: 'Communication',           level: 6, done: 12, total: 20 },
-  { id: 'behaviour', name: 'Behavioural',             level: 7, done: 14, total: 20 },
-  { id: 'ml',        name: 'AI and Machine Learning', level: 0, done: 0,  total: 24,
-    locked: 'Reach level 5 in Backend to unlock' },
+  { id: 'dsa', name: 'Data Structures & Algorithms', level: 1, done: 0, total: 5,
+    featured: true, next: 'Arrays and complexity', availability: 'available' as const },
+  { id: 'frontend', name: 'Frontend Engineering', level: 0, done: 0, total: 30,
+    availability: 'coming_soon' as const, locked: 'Coming soon' },
+  { id: 'backend', name: 'Backend Engineering', level: 0, done: 0, total: 20,
+    availability: 'coming_soon' as const, locked: 'Coming soon' },
+  { id: 'sysdesign', name: 'System Design', level: 0, done: 0, total: 10,
+    availability: 'coming_soon' as const, locked: 'Coming soon' },
+  { id: 'databases', name: 'Databases and SQL', level: 0, done: 0, total: 30,
+    availability: 'coming_soon' as const, locked: 'Coming soon' },
+  { id: 'comms', name: 'Communication', level: 0, done: 0, total: 20,
+    availability: 'coming_soon' as const, locked: 'Coming soon' },
+  { id: 'behaviour', name: 'Behavioural', level: 0, done: 0, total: 20,
+    availability: 'coming_soon' as const, locked: 'Coming soon' },
+  { id: 'ml', name: 'AI and Machine Learning', level: 0, done: 0, total: 24,
+    availability: 'coming_soon' as const, locked: 'Coming soon' },
 ];
 
 export const PROFILE = {

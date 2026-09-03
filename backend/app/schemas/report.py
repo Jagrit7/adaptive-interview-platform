@@ -26,6 +26,8 @@ class AgentReport(BaseModel):
     visits: int
     questions_answered: int
     satisfaction: float
+    score: float = 0.0              # mean score for this agent's criteria
+    weight: float = 0.0             # share used in the final weighted mean
     force_closed: bool              # ran out of visits without being satisfied
     competencies: list[str] = Field(default_factory=list)
     knowledge_questions_asked: int = 0
@@ -41,6 +43,7 @@ class TranscriptEntry(BaseModel):
     flags: list[str] = Field(default_factory=list)
     coverage: float | None = None
     knowledge_item_id: str | None = None
+    question_score: float | None = None
 
 
 class ReportTotals(BaseModel):

@@ -14,7 +14,6 @@ from app.config.voice_profiles import (
     get_profile,
     language_directive,
 )
-from app.knowledge.store import format_knowledge_block
 from app.schemas.panel import Agent as PanelAgent, Panel
 
 load_dotenv()
@@ -109,7 +108,11 @@ def start_agent_from_config(agent_id: str, channel: str, remote_uid: str) -> str
 # ── NEW: works against the real Agent pydantic model (panel.py), used by the ──
 # ── orchestrator for real sessions built from the frontend builder. ──
 
-def build_system_prompt_from_agent(agent: PanelAgent, language: str | None = None) -> str:
+def build_system_prompt_from_agent(
+    agent: PanelAgent,
+    language: str | None = None,
+    boundary_instruction: str = "",
+) -> str:
     """Composes one agent's system prompt from its builder config.
 
     Order matters: role and persona first, then constraints, then the question
@@ -117,6 +120,10 @@ def build_system_prompt_from_agent(agent: PanelAgent, language: str | None = Non
     picks a question.
     """
     parts = [agent.behavior.systemPrompt]
+    if boundary_instruction:
+        # Builder-authored prompts define style; this server-owned boundary
+        # defines authority and cannot be weakened by an accidental prompt.
+        parts.append(f"ENFORCED SPECIALIST BOUNDARY: {boundary_instruction}")
 
     diff_min, diff_max = agent.logic.difficultyBand
     parts.append(f"Keep question difficulty between {diff_min} and {diff_max} (on a 1-10 scale).")
@@ -132,11 +139,19 @@ def build_system_prompt_from_agent(agent: PanelAgent, language: str | None = Non
         parts.append(f"Stay in character for this scenario: {agent.behavior.scenarioBrief}")
 
     if agent.knowledge.is_active():
-        # Knowledge base mode: the uploaded bank replaces free-form question
-        # generation entirely, so seedQuestions is intentionally not also
-        # appended - two competing question sources produced incoherent
-        # interviews in testing.
-        parts.append(format_knowledge_block(agent.knowledge, language=language))
+        # Selection and grading are server-owned. Exposing the entire bank here
+        # let the voice model read ahead and drift away from the UI.
+        parts.append(
+            "COORDINATOR-CONTROLLED INTERVIEW. Never choose, invent, repeat, skip, or advance a question "
+            "yourself. A coordinator message identifies exactly one active question. For a VERBAL "
+            "question, use at most one short natural transition, ask the supplied question exactly once, "
+            "then stop and listen. For a WRITTEN or CODING question, never read or paraphrase its prompt; "
+            "briefly say that it is visible on screen, then stop and wait for submission. After a candidate "
+            "answer, do not respond autonomously: never grade it, provide the answer, ask an unscripted "
+            "follow-up, or announce a next question. Wait for the coordinator, whose next instruction will "
+            "include the natural acknowledgement and transition. A newer "
+            "coordinator message always replaces an older pending instruction."
+        )
     elif agent.logic.seedQuestions:
         question_list = "\n".join(f"- {q}" for q in agent.logic.seedQuestions)
         parts.append(f"Draw from this question set as needed:\n{question_list}")
@@ -181,7 +196,11 @@ def resolve_fallback(agent: PanelAgent, language: str | None) -> str:
 
 def resolve_panel_voices(panel: Panel) -> dict[str, str]:
     """agent_id -> MiniMax voice_id, decided once per panel."""
-    return assign_voices([a.id for a in panel.agents], panel.language)
+    return assign_voices(
+        [a.id for a in panel.agents],
+        panel.language,
+        {a.id: a.voice.voiceId for a in panel.agents},
+    )
 
 
 def start_session_agent(
@@ -190,6 +209,13 @@ def start_session_agent(
     remote_uid: str,
     language: str | None = None,
     voice_id: str | None = None,
+    patient_turn_taking: bool = False,
+    listen_to_all_remote_users: bool = False,
+    agent_uid: str = AGENT_UID,
+    remote_uids: list[str] | None = None,
+    speak_greeting: bool = True,
+    idle_timeout: int = 180,
+    boundary_instruction: str = "",
 ):
     """Starts the ONE live Agora agent instance for a real session, using the
     opening agent's persona. Returns (agora_agent_id, session) - the session is
@@ -200,7 +226,7 @@ def start_session_agent(
     fields; a user picks a language and that is the whole speech decision.
     """
     profile = get_profile(language)
-    system_prompt = build_system_prompt_from_agent(agent, profile.code)
+    system_prompt = build_system_prompt_from_agent(agent, profile.code, boundary_instruction)
 
     agent_builder = (
         AgoraAgentBuilder(client)
@@ -210,7 +236,7 @@ def start_session_agent(
             base_url="https://api.groq.com/openai/v1/chat/completions",
             model="openai/gpt-oss-20b",
             system_messages=[{"role": "system", "content": system_prompt}],
-            greeting_message=resolve_greeting(agent, profile.code),
+            greeting_message=resolve_greeting(agent, profile.code) if speak_greeting else "",
             failure_message=resolve_fallback(agent, profile.code),
             # Rolling window of the LAST 10 messages held by the Agora agent.
             # This is NOT the interview's memory - SessionState.transcript on our
@@ -219,6 +245,49 @@ def start_session_agent(
         ))
         .with_tts(build_tts(profile.code, voice_id))
     )
+
+    if patient_turn_taking:
+        agent_builder = agent_builder.with_turn_detection({
+            "mode": "default",
+            "config": {
+                # Lower sensitivity threshold helps laptop microphones and
+                # softer speakers without enabling interruption during agent
+                # speech (the frontend keeps that publication muted).
+                "speech_threshold": 0.25,
+                "start_of_speech": {
+                    "mode": "vad",
+                    "vad_config": {
+                        "interrupt_duration_ms": 320,
+                        "speaking_interrupt_duration_ms": 500,
+                        "prefix_padding_ms": 450,
+                    },
+                },
+                "end_of_speech": {
+                    # Semantic endpointing responds quickly after a complete
+                    # thought but keeps listening through phrases such as
+                    # "hold on" and ordinary reasoning pauses. This avoids the
+                    # old fixed 1.8s VAD + browser debounce latency stack.
+                    "mode": "semantic",
+                    "semantic_config": {
+                        "silence_duration_ms": 650,
+                        "max_wait_ms": 2400,
+                        "pause_state_enabled": True,
+                    },
+                },
+            },
+        })
+        # Preserve speech that begins while Ari is finishing a sentence, but do
+        # not let incidental noise cut the interviewer off mid-question.
+        agent_builder = agent_builder.with_interruption({
+            "enable": False,
+            "disabled_config": {"strategy": "append"},
+        })
+        agent_builder = agent_builder.with_advanced_features({"enable_rtm": True})
+        agent_builder = agent_builder.with_parameters({
+            "data_channel": "rtm",
+            "enable_error_message": True,
+            "audio_scenario": "aiserver",
+        })
 
     session = agent_builder.create_session(
         channel=channel,
@@ -231,10 +300,17 @@ def start_session_agent(
         #
         # "1" is what the SDK's own example uses. Candidate uids are generated
         # in the 100000+ range, so there is no collision.
-        agent_uid=AGENT_UID,
-        remote_uids=[remote_uid],
+        agent_uid=agent_uid,
+        # DSA uses a random private channel with one candidate. The wildcard
+        # avoids numeric/string UID mismatches between Web RTC and REST.
+        remote_uids=(
+            remote_uids
+            if remote_uids is not None
+            else (["*"] if listen_to_all_remote_users else [remote_uid])
+        ),
+        enable_string_uid=False,
         name=f"{agent.id}-{channel}",
-        idle_timeout=180,
+        idle_timeout=idle_timeout,
     )
 
     agent_instance_id = session.start()
@@ -280,7 +356,39 @@ def swap_agent_persona(
     session.update(properties)
 
 
-def inject_followup(session, instruction_text: str) -> None:
+def replace_active_agent(
+    current_session,
+    new_agent: PanelAgent,
+    *,
+    channel: str,
+    remote_uid: str,
+    language: str,
+    voice_id: str,
+    agent_uid: str,
+    boundary_instruction: str,
+):
+    """Replace the active Agora session at a handoff.
+
+    Agora 2.7 can update LLM properties but does not document a mutable TTS
+    property and retains the old rolling history. Stopping the old specialist
+    and starting one fresh specialist guarantees both context isolation and the
+    configured voice while preserving the single-speaker floor.
+    """
+    current_session.stop()
+    return start_session_agent(
+        new_agent,
+        channel,
+        remote_uid,
+        language=language,
+        voice_id=voice_id,
+        patient_turn_taking=True,
+        agent_uid=agent_uid,
+        speak_greeting=False,
+        boundary_instruction=boundary_instruction,
+    )
+
+
+def inject_followup(session, instruction_text: str, replace_pending: bool = False) -> None:
     """Injects a follow-up instruction into the CURRENTLY loaded persona,
     without switching agents or touching the system prompt/voice.
 
@@ -301,5 +409,6 @@ def inject_followup(session, instruction_text: str) -> None:
     session.think(
         instruction_text,
         on_listening_action="inject",   # never talk over the candidate
-        on_speaking_action="append",    # let the agent finish its current sentence
+        on_thinking_action="interrupt" if replace_pending else "append",
+        on_speaking_action="interrupt" if replace_pending else "append",
     )

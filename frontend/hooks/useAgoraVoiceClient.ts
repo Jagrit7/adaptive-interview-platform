@@ -15,6 +15,7 @@ import {
   TranscriptHelperMode,
   ChatMessageType,
   ChatMessagePriority,
+  MessageType,
   type TranscriptHelperItem,
   type UserTranscription,
   type AgentTranscription,
@@ -28,6 +29,31 @@ type TranscriptItem = TranscriptHelperItem<
   Partial<UserTranscription | AgentTranscription>
 >;
 type MicButtonState = "idle" | "listening" | "speaking";
+
+function describeVoiceError(error: unknown): string {
+  const value = error as { name?: string; code?: string | number; message?: string };
+  const name = value?.name ?? "";
+  const code = String(value?.code ?? "").toUpperCase();
+  const message = value?.message ?? String(error);
+  const detail = `${name} ${code} ${message}`.toLowerCase();
+
+  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+    return "Microphone access requires a secure browser context. Open the interview on localhost or HTTPS.";
+  }
+  if (name === "NotAllowedError" || detail.includes("permission_denied") || detail.includes("permission denied")) {
+    return "Microphone access is blocked. Allow microphone access for this site in your browser settings, then reload the interview.";
+  }
+  if (name === "NotFoundError" || detail.includes("notfounderror") || detail.includes("no audio input")) {
+    return "No microphone was found. Connect or enable an input device, then reload the interview.";
+  }
+  if (name === "NotReadableError" || detail.includes("notreadableerror") || detail.includes("could not start audio source")) {
+    return "The microphone is busy or unavailable. Close other apps using it, then retry the interview.";
+  }
+  if (name === "OverconstrainedError" || detail.includes("overconstrained")) {
+    return "The selected microphone is no longer available. Choose another input device and retry.";
+  }
+  return message || "The interview audio connection could not be established.";
+}
 
 export type VoiceClientConfig = {
   appId: string;
@@ -46,6 +72,7 @@ export interface IMessageListItem {
   text: string;
   status: number;
   timestamp?: number;
+  source: "candidate" | "agent" | "unknown";
 }
 
 export function useAgoraVoiceClient() {
@@ -58,7 +85,12 @@ export function useAgoraVoiceClient() {
   const [currentInProgressMessage, setCurrentInProgressMessage] =
     useState<IMessageListItem | null>(null);
   const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
+  const [isAgentListening, setIsAgentListening] = useState(false);
+  const [inputVolume, setInputVolume] = useState(0);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const [remoteUserLeftAt, setRemoteUserLeftAt] = useState<number>(0);
+  const [agentTurnFinishedSequence, setAgentTurnFinishedSequence] = useState(0);
+  const [agentSpeakingStartedSequence, setAgentSpeakingStartedSequence] = useState(0);
   const [agentUid, setAgentUid] = useState<string | undefined>(undefined);
   const [agentRtmUid, setAgentRtmUid] = useState<string | undefined>(undefined);
   const [remoteAudioTrack, setRemoteAudioTrack] =
@@ -68,15 +100,17 @@ export function useAgoraVoiceClient() {
   const rtmClientRef = useRef<InstanceType<typeof AgoraRTM.RTM> | null>(null);
   const voiceAIRef = useRef<AgoraVoiceAI | null>(null);
   const volumeCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const localVolumeIntervalRef = useRef<NodeJS.Timeout | null>(null);
   // Mirrors localAudioTrack so leaveChannel - which has an empty dep array on
   // purpose, to stay referentially stable - can close the CURRENT track rather
   // than whichever one existed when the callback was created.
   const localAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
+  const remoteAudioUidRef = useRef<string | null>(null);
   // Tracks RTC track-event handlers so they can be unregistered on leave.
   const rtcTrackHandlersRef = useRef<{
     onPublished?: (user: IAgoraRTCRemoteUser, mediaType: "audio" | "video") => void;
     onUnpublished?: (user: IAgoraRTCRemoteUser, mediaType: "audio" | "video") => void;
-    onLeft?: () => void;
+    onLeft?: (user: IAgoraRTCRemoteUser) => void;
   }>({});
 
   // Handlers are registered inside joinChannel against the freshly-created
@@ -171,6 +205,10 @@ export function useAgoraVoiceClient() {
       console.warn("local track close failed (continuing):", e);
     } finally {
       localAudioTrackRef.current = null;
+      if (localVolumeIntervalRef.current) {
+        clearInterval(localVolumeIntervalRef.current);
+        localVolumeIntervalRef.current = null;
+      }
     }
 
     try {
@@ -194,8 +232,13 @@ export function useAgoraVoiceClient() {
     setIsConnected(false);
     setMicState("idle");
     setIsAgentSpeaking(false);
+    setIsAgentListening(false);
+    setInputVolume(0);
     setMessageList([]);
     setCurrentInProgressMessage(null);
+    setAgentTurnFinishedSequence(0);
+    setAgentSpeakingStartedSequence(0);
+    remoteAudioUidRef.current = null;
   }, []);
 
   const joinChannel = useCallback(
@@ -215,6 +258,7 @@ export function useAgoraVoiceClient() {
       }
 
       try {
+        setVoiceError(null);
         // Store agent UIDs from backend
         if (config.agentUid) setAgentUid(config.agentUid);
         if (config.agentRtmUid) setAgentRtmUid(config.agentRtmUid);
@@ -232,22 +276,29 @@ export function useAgoraVoiceClient() {
           if (mediaType === "audio") {
             await rtcClient.subscribe(user, mediaType);
             user.audioTrack?.play();
+            remoteAudioUidRef.current = String(user.uid);
             setRemoteAudioTrack(user.audioTrack ?? null);
             setIsAgentSpeaking(true);
           }
         };
         const onUnpublished = (
-          _user: IAgoraRTCRemoteUser,
+          user: IAgoraRTCRemoteUser,
           mediaType: "audio" | "video",
         ) => {
-          if (mediaType === "audio") {
+          if (mediaType === "audio" && remoteAudioUidRef.current === String(user.uid)) {
             setIsAgentSpeaking(false);
             setRemoteAudioTrack(null);
+            remoteAudioUidRef.current = null;
           }
         };
-        const onLeft = () => {
+        const onLeft = (user: IAgoraRTCRemoteUser) => {
+          // During a controlled handoff the old specialist can leave after the
+          // new one has already published. Never let that late leave event
+          // detach the new specialist's audio track.
+          if (remoteAudioUidRef.current !== String(user.uid)) return;
           setIsAgentSpeaking(false);
           setRemoteAudioTrack(null);
+          remoteAudioUidRef.current = null;
           setRemoteUserLeftAt(Date.now());
         };
         rtcClient.on("user-published", onPublished);
@@ -283,6 +334,15 @@ export function useAgoraVoiceClient() {
               // `m.timestamp` returned undefined on every message, so the
               // sort below was comparing 0 - 0 and never reordered anything.
               timestamp: m._time,
+              // UID formatting varies between RTC and RTM. The toolkit's
+              // metadata.object is the authoritative speaker identity and
+              // must survive normalization; dropping it previously made the
+              // interview feed agent speech back as candidate answers.
+              source: m.metadata?.object === MessageType.USER_TRANSCRIPTION
+                ? "candidate" as const
+                : m.metadata?.object === MessageType.AGENT_TRANSCRIPTION
+                  ? "agent" as const
+                  : "unknown" as const,
             }));
 
             const completedMessages = convertedMessages
@@ -297,6 +357,30 @@ export function useAgoraVoiceClient() {
             setCurrentInProgressMessage(inProgress || null);
           },
         );
+        voiceAI.on(AgoraVoiceAIEvents.AGENT_LISTENING_CHANGED, (_uid, active) => {
+          setIsAgentListening(active);
+        });
+        voiceAI.on(AgoraVoiceAIEvents.AGENT_SPEAKING_CHANGED, (_uid, active) => {
+          setIsAgentSpeaking(active);
+          if (active) {
+            setAgentSpeakingStartedSequence((value) => value + 1);
+          } else {
+            // Some provider paths emit speaking=false before the richer
+            // turn-finished metric event. Either signal may yield the floor;
+            // the interview room de-duplicates the sequence.
+            setAgentTurnFinishedSequence((value) => value + 1);
+          }
+        });
+        voiceAI.on(AgoraVoiceAIEvents.AGENT_TURN_FINISHED, () => {
+          // A monotonic event counter is safer than a boolean: two consecutive
+          // agent turns cannot collapse into one React state value.
+          setAgentTurnFinishedSequence((value) => value + 1);
+          setIsAgentSpeaking(false);
+        });
+        voiceAI.on(AgoraVoiceAIEvents.AGENT_ERROR, (_uid, error) => {
+          const detail = typeof error === "object" ? JSON.stringify(error) : String(error);
+          setVoiceError(`Agora voice agent error: ${detail}`);
+        });
 
         voiceAIRef.current = voiceAI;
 
@@ -313,7 +397,7 @@ export function useAgoraVoiceClient() {
 
         // Create and publish audio track
         const audioTrack = await AgoraRTC.createMicrophoneAudioTrack({
-          encoderConfig: "high_quality_stereo",
+          encoderConfig: "speech_standard",
           AEC: true,
           ANS: true,
           AGC: true,
@@ -322,6 +406,7 @@ export function useAgoraVoiceClient() {
             : {}),
         });
         await rtcClient.publish([audioTrack]);
+        await audioTrack.setMuted(false);
 
         // Subscribe to AI messages on the channel
         voiceAI.subscribeMessage(config.channel);
@@ -329,10 +414,14 @@ export function useAgoraVoiceClient() {
         setLocalAudioTrack(audioTrack);
 
         localAudioTrackRef.current = audioTrack;
+        localVolumeIntervalRef.current = setInterval(() => {
+          setInputVolume(audioTrack.getVolumeLevel());
+        }, 200);
         setIsConnected(true);
         setMicState("listening");
       } catch (error) {
         console.error("Error joining channel:", error);
+        setVoiceError(describeVoiceError(error));
         throw error;
       }
     },
@@ -351,6 +440,24 @@ export function useAgoraVoiceClient() {
       console.error("Error toggling mute:", error);
     }
   }, [isMuted, localAudioTrack]);
+
+  /** Deterministic publication control for state-driven interview flows.
+   * Unlike toggleMute, callers can safely request a known state during a phase
+   * transition without racing React's previous isMuted value. The microphone
+   * device remains open; disabled tracks publish no candidate audio to Ari. */
+  const setMicrophoneEnabled = useCallback(async (enabled: boolean) => {
+    const track = localAudioTrackRef.current;
+    if (!track) return;
+    try {
+      // Keep capture alive during coding; only pause/resume transmission.
+      await track.setMuted(!enabled);
+      setIsMuted(!enabled);
+      setMicState(enabled ? "listening" : "idle");
+    } catch (error) {
+      console.error("Error setting microphone state:", error);
+      throw error;
+    }
+  }, []);
 
   const sendMessage = useCallback(
     async (message: string, targetUid?: string) => {
@@ -382,6 +489,18 @@ export function useAgoraVoiceClient() {
     [agentRtmUid],
   );
 
+  const interruptAgent = useCallback(async (targetUid: string) => {
+    const voiceAI = voiceAIRef.current;
+    if (!voiceAI) return;
+    try {
+      // Cancel the voice model's autonomous post-ASR response. The backend
+      // orchestrator will inject the only permitted acknowledgement/next turn.
+      await voiceAI.interrupt(targetUid);
+    } catch (error) {
+      console.warn("Could not interrupt pending agent speech:", error);
+    }
+  }, []);
+
   return {
     isConnected,
     isMuted,
@@ -389,11 +508,18 @@ export function useAgoraVoiceClient() {
     messageList,
     currentInProgressMessage,
     isAgentSpeaking,
+    isAgentListening,
+    inputVolume,
+    voiceError,
     localAudioTrack,
     joinChannel,
     leaveChannel,
     toggleMute,
+    setMicrophoneEnabled,
     sendMessage,
+    interruptAgent,
+    agentTurnFinishedSequence,
+    agentSpeakingStartedSequence,
     agentUid,
     rtmClientRef,
     remoteUserLeftAt,

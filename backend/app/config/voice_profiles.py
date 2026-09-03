@@ -435,17 +435,33 @@ def list_languages() -> list[dict]:
     ]
 
 
-def assign_voices(agent_ids: list[str], language_code: str | None) -> dict[str, str]:
-    """Deterministically give each agent its own voice from the language's pool.
+def assign_voices(
+    agent_ids: list[str],
+    language_code: str | None,
+    preferred: dict[str, str | None] | None = None,
+) -> dict[str, str]:
+    """Resolve one valid, preferably distinct voice for every interviewer.
 
-    Keyed on position in the panel, so the same panel config always produces the
-    same voices - important because the builder previews a voice name that the
-    live session then has to actually match. Panels with more agents than the
-    pool has voices wrap around and repeat; that's better than failing.
+    Explicit builder choices are honoured only when they belong to the active
+    language profile. Missing, stale or duplicate choices fall through to the
+    first unused managed voice. A very large panel may wrap once the pool is
+    exhausted, but ordinary three-person panels always sound distinct.
     """
     profile = get_profile(language_code)
     pool = profile.voices
-    return {agent_id: pool[i % len(pool)].id for i, agent_id in enumerate(agent_ids)}
+    valid_ids = {voice.id for voice in pool}
+    choices = preferred or {}
+    assigned: dict[str, str] = {}
+    used: set[str] = set()
+    for index, agent_id in enumerate(agent_ids):
+        requested = choices.get(agent_id)
+        if requested in valid_ids and requested not in used:
+            chosen = requested
+        else:
+            chosen = next((voice.id for voice in pool if voice.id not in used), pool[index % len(pool)].id)
+        assigned[agent_id] = chosen
+        used.add(chosen)
+    return assigned
 
 
 def voice_label(voice_id: str, language_code: str | None) -> str:

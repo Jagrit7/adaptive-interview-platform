@@ -375,17 +375,17 @@ def format_knowledge_block(knowledge, max_items: int = 40, language: str | None 
 
     if knowledge.strict:
         rules = (
-            "You are running from a fixed question bank. Ask ONLY questions from the list "
-            "below - do not invent your own. You may rephrase a question for natural "
-            "delivery, and you may ask a short clarifying follow-up about an answer the "
-            "candidate has just given, but you must not introduce new topics. When the "
-            "list is exhausted, say so and stop asking."
+            "You are running from a fixed written question bank. The application displays each "
+            "question; do not read or paraphrase it aloud and do not invent your own. You may ask "
+            "a short clarifying follow-up about the candidate's answer, but you must stay on the "
+            "same written question until the coordinator explicitly presents another one. When "
+            "the list is exhausted, say so and stop asking."
         )
     else:
         rules = (
-            "You have a prepared question bank. Work through the questions below first, in "
-            "order, before asking anything of your own. You may rephrase them for natural "
-            "delivery and follow up on the candidate's answers."
+            "You have a prepared written question bank. The application displays each question; "
+            "do not read or paraphrase it aloud. Stay on the current question until the coordinator "
+            "explicitly presents another one, and follow up only on the candidate's current answer."
         )
 
     # The bank is whatever the user uploaded, usually English. On a non-English
@@ -396,9 +396,9 @@ def format_knowledge_block(knowledge, max_items: int = 40, language: str | None 
         from app.config.voice_profiles import get_profile
         profile = get_profile(language)
         translation_note = (
-            f"\n\nThe question bank below is written in English but the interview is in "
-            f"{profile.label}. Ask each question in {profile.label}, preserving its meaning "
-            f"exactly. Translate; do not read the English out loud."
+            f"\n\nThe written bank may be English while the conversation is in {profile.label}. "
+            f"Give acknowledgements and follow-ups in {profile.label}, but do not translate or read "
+            "the displayed question aloud."
         )
 
     return (

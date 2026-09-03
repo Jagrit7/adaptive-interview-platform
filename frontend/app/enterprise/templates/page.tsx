@@ -1,7 +1,5 @@
-import { redirect } from 'next/navigation';
+import { EnterpriseTemplatesClient } from '@/components/console/EnterpriseInterviewManagement';
 
-// The real templates screen is /panels — it reads the panels you have actually
-// saved. This static version existed only to check the design.
-export default function Page() {
-  redirect('/panels');
+export default function InterviewTemplatesPage() {
+  return <EnterpriseTemplatesClient />;
 }

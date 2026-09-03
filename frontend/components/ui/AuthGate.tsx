@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { loginHref, type AccountRole } from '@/lib/authRoles';
 
 /**
  * Redirects to /login when there is no session, and keeps that decision live via
@@ -13,8 +14,15 @@ import { supabase } from '@/lib/supabaseClient';
  * redirect. What actually protects data is the RLS policies in
  * supabase/schema.sql - if those are wrong, this component does nothing to help.
  */
-export function AuthGate({ children }: { children: React.ReactNode }) {
+export function AuthGate({
+  children,
+  role = 'enterprise',
+}: {
+  children: React.ReactNode;
+  role?: AccountRole;
+}) {
   const router = useRouter();
+  const pathname = usePathname();
   const [state, setState] = useState<'checking' | 'in' | 'out'>('checking');
 
   useEffect(() => {
@@ -23,20 +31,20 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
       setState(data.session ? 'in' : 'out');
-      if (!data.session) router.replace('/login');
+      if (!data.session) router.replace(loginHref(role, pathname));
     });
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!active) return;
       setState(session ? 'in' : 'out');
-      if (!session) router.replace('/login');
+      if (!session) router.replace(loginHref(role, pathname));
     });
 
     return () => {
       active = false;
       sub.subscription.unsubscribe();
     };
-  }, [router]);
+  }, [pathname, role, router]);
 
   if (state === 'checking') {
     return (

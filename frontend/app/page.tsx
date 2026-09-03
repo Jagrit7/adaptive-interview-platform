@@ -1,8 +1,4 @@
-'use client';
-
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useBuilderStore } from '@/store/builderStore';
 
 /**
  * The unified landing page, from the photo.
@@ -25,9 +21,6 @@ const STATS = [
 ];
 
 export default function HomePage() {
-  const router = useRouter();
-  const newPanel = useBuilderStore((s) => s.newPanel);
-
   return (
     <div className="min-h-screen bg-[var(--color-practice-bg)] text-[var(--color-practice-ink)]">
       <header className="border-b border-[var(--color-practice-border)]
@@ -65,7 +58,7 @@ export default function HomePage() {
           title="Practise with AI mock interviews"
           body="Interviews by skill, role and language. Real feedback, a streak worth keeping, and a leaderboard to chase."
           cta="Start practising"
-          onClick={() => router.push('/practice')}
+          href="/individuals"
           variant="individual"
         />
         <PathCard
@@ -73,7 +66,7 @@ export default function HomePage() {
           title="Design and run your own interviews"
           body="Build the panel. Upload your questions and ideal answers. Set the pass marks. Review every candidate against the same bar."
           cta="Build an interview"
-          onClick={() => { newPanel(); router.push('/enterprise'); }}
+          href="/enterprise-landing"
           variant="enterprise"
         />
       </section>
@@ -123,8 +116,8 @@ export default function HomePage() {
                         text-[var(--color-practice-ink-mute)]">
           <span className="font-extrabold text-[var(--color-practice-deep)]">InterviewPro</span>
           <nav className="flex flex-wrap gap-6">
-            <Link href="/practice">Individuals</Link>
-            <Link href="/enterprise">Enterprises</Link>
+            <Link href="/individuals">Individuals</Link>
+            <Link href="/enterprise-landing">Enterprises</Link>
             <Link href="/leaderboard">Leaderboard</Link>
           </nav>
           <span>© 2026 InterviewPro</span>
@@ -134,14 +127,14 @@ export default function HomePage() {
   );
 }
 
-function PathCard({ eyebrow, title, body, cta, onClick, variant }: {
+function PathCard({ eyebrow, title, body, cta, href, variant }: {
   eyebrow: string; title: string; body: string; cta: string;
-  onClick: () => void; variant: 'individual' | 'enterprise';
+  href: string; variant: 'individual' | 'enterprise';
 }) {
   const individual = variant === 'individual';
   return (
-    <button
-      onClick={onClick}
+    <Link
+      href={href}
       className={`group text-left rounded-[var(--radius-panel)] p-9 min-h-[280px]
                   flex flex-col transition hover:-translate-y-1
                   hover:shadow-[0_18px_40px_rgba(15,23,42,0.16)] ${
@@ -164,6 +157,6 @@ function PathCard({ eyebrow, title, body, cta, onClick, variant }: {
       }`}>
         {cta}
       </span>
-    </button>
+    </Link>
   );
 }

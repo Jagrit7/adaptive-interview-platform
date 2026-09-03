@@ -5,7 +5,7 @@ import { PROFILE as P, USER } from '@/lib/mockData';
 
 export default function ProfilePage() {
   return (
-    <PracticeShell user={USER} active="Dashboard">
+    <PracticeShell user={USER}>
       <div className="flex flex-wrap items-start gap-6 mb-8">
         <div className="relative">
           <div className="w-28 h-28 rounded-full grid place-items-center text-4xl font-extrabold

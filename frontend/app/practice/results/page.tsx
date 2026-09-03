@@ -15,7 +15,7 @@ export default function ResultsPage() {
   const C = 2 * Math.PI * 54;
 
   return (
-    <PracticeShell user={USER} active="Dashboard">
+    <PracticeShell user={USER}>
       <section className="rounded-[var(--radius-panel)] bg-[var(--color-practice-sunken)]
                           p-8 mb-6 flex flex-col md:flex-row md:items-center gap-8">
         <div className="flex-1">

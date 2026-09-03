@@ -32,7 +32,7 @@ const NAV = [
 const RAIL = [
   { href: '/practice', label: 'Dashboard', icon: GridIcon },
   { href: '/skills',   label: 'Skill paths', icon: NodesIcon },
-  { href: '/profile',  label: 'Profile',     icon: PeopleIcon },
+  { href: '/job-panels', label: 'Job interviews', icon: BriefcaseIcon },
   { href: '/practice/behavioural', label: 'Behavioural', icon: TargetIcon },
   { href: '/practice/technical', label: 'Technical', icon: CodeIcon },
   { href: '/practice/case-study', label: 'Case study', icon: ChartIcon },
@@ -43,9 +43,22 @@ const RAIL = [
 ];
 
 export function PracticeShell({
-  user, active, children,
-}: { user: PracticeUser; active?: string; children: React.ReactNode }) {
+  user, children,
+}: { user: PracticeUser; children: React.ReactNode }) {
   const pathname = usePathname();
+
+  const isRailActive = (href: string) => {
+    if (pathname === href) return true;
+
+    // Configure and results belong to the dashboard journey, while category
+    // pages have their own, more specific rail entries.
+    if (href === '/practice') {
+      return pathname.startsWith('/practice/configure') ||
+             pathname.startsWith('/practice/results');
+    }
+
+    return pathname.startsWith(`${href}/`);
+  };
 
   return (
     <div className="min-h-screen bg-[var(--color-practice-bg)] text-[var(--color-practice-ink)]">
@@ -110,7 +123,7 @@ export function PracticeShell({
           </div>
 
           {RAIL.map((r) => {
-            const on = active === r.label;
+            const on = isRailActive(r.href);
             const Icon = r.icon;
             return (
               <Link
@@ -165,5 +178,6 @@ function ChartIcon()  { return <svg className={s} viewBox="0 0 24 24" {...p}><pa
 function NodesIcon()  { return <svg className={s} viewBox="0 0 24 24" {...p}><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><path d="M9 6h6a3 3 0 0 1 3 3v6"/></svg>; }
 function CogIcon()    { return <svg className={s} viewBox="0 0 24 24" {...p}><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>; }
 function PeopleIcon() { return <svg className={s} viewBox="0 0 24 24" {...p}><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0M17 11a3 3 0 1 0-2-5.2M21 20a5 5 0 0 0-4-4.9"/></svg>; }
+function BriefcaseIcon() { return <svg className={s} viewBox="0 0 24 24" {...p}><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18M10 12v2h4v-2"/></svg>; }
 function StarIcon()   { return <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 6.5 7 .9-5 4.9 1.2 7L12 18l-6.2 3.3L7 14.3l-5-4.9 7-.9z"/></svg>; }
 function GemIcon()    { return <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3h12l4 6-10 12L2 9z"/></svg>; }

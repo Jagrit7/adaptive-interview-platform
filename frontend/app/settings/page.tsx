@@ -11,7 +11,7 @@ export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('Profile');
 
   return (
-    <PracticeShell user={USER} active="Dashboard">
+    <PracticeShell user={USER}>
       <h1 className="text-4xl font-extrabold tracking-tight mb-2">Settings</h1>
       <p className="text-[var(--color-practice-ink-soft)] mb-8">
         Your profile, what you get told about, and how interviews run.

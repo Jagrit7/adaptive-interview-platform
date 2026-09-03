@@ -17,7 +17,7 @@ export default function CategoryPage({ params }: { params: Promise<{ category: s
   if (!c) notFound();
 
   return (
-    <PracticeShell user={USER} active="Dashboard">
+    <PracticeShell user={USER}>
       <div className="flex flex-wrap items-start justify-between gap-6 mb-8">
         <div className="max-w-[62ch]">
           <div className="text-[11px] font-bold tracking-[0.14em]

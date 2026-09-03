@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import type { Agent, Scorer } from '@/store/builderStore';
+import { inferQuestionDomain } from './questionDomains';
 
 /**
  * Every read and write of the `panels` table goes through here.
@@ -20,6 +21,32 @@ export interface PanelConfig {
   language: string;
   agents: Agent[];
   scorer: Scorer;
+  /** RecruitPro builder metadata. Kept inside config JSONB so the visual
+   * workflow can evolve without a database migration for every new field. */
+  enterprise?: {
+    status: 'draft' | 'published' | 'archived';
+    role: string;
+    department: string;
+    seniority: string;
+    duration: number;
+    description: string;
+    skills: string[];
+    stages: Array<{ id: string; title: string; duration: number }>;
+    questions: Array<{ id: string; text: string; category: string; difficulty: string; selected: boolean }>;
+    /** @deprecated Read only when upgrading panels saved before agent weights. */
+    rubric?: Array<{ id: string; name: string; weight: number; description: string }>;
+    candidateSettings: {
+      expiresInDays: number;
+      attempts: number;
+      cameraRequired: boolean;
+      identityCheck: boolean;
+      integrityMonitoring: boolean;
+      instructions: string;
+    };
+    publishedAt?: string;
+    publicCode?: string;
+    archivedFrom?: 'draft' | 'published';
+  };
 }
 
 export interface PanelRow {
@@ -38,6 +65,48 @@ export interface PanelSummary {
   updated_at: string;
   agentCount: number;
   language: string;
+  status: 'draft' | 'published' | 'archived';
+  role: string;
+}
+
+export type PanelLifecycleStatus = PanelSummary['status'];
+
+const difficultyNumber = (value: string) => {
+  const levels: Record<string, number> = { easy: 2, medium: 5, hard: 8 };
+  return levels[value.trim().toLowerCase()] ?? 5;
+};
+
+/** Converts RecruitPro's reviewed question list into the canonical runtime
+ * question bank. This also upgrades panels saved before written-question
+ * delivery was introduced, without mutating their stored JSON. */
+export function withEnterpriseQuestionBank(config: PanelConfig): PanelConfig {
+  const selected = config.enterprise?.questions.filter((question) => question.selected) ?? [];
+  if (selected.length === 0) return config;
+
+  const items = selected.map((question) => ({
+    id: question.id,
+    question: question.text,
+    idealAnswer: '',
+    tags: [question.category, question.difficulty],
+    difficulty: difficultyNumber(question.difficulty),
+    domain: inferQuestionDomain(question.category, question.text),
+  }));
+
+  return {
+    ...config,
+    agents: config.agents.map((agent) => agent.knowledge.bankId && agent.knowledge.bankId !== 'custom' ? agent : ({
+      ...agent,
+      knowledge: {
+        mode: 'knowledge_base',
+        strict: true,
+        sourceName: 'RecruitPro reviewed questions',
+        bankId: 'custom',
+        // New saves already contain the role-filtered private bank. Fall back
+        // to the legacy shared list only while upgrading an older panel.
+        items: agent.knowledge.items.length ? agent.knowledge.items : items,
+      },
+    })),
+  };
 }
 
 async function requireUserId(): Promise<string> {
@@ -64,6 +133,8 @@ export async function listPanels(): Promise<PanelSummary[]> {
     updated_at: row.updated_at as string,
     agentCount: (row.config as PanelConfig)?.agents?.length ?? 0,
     language: (row.config as PanelConfig)?.language ?? 'en-US',
+    status: (row.config as PanelConfig)?.enterprise?.status ?? 'draft',
+    role: (row.config as PanelConfig)?.enterprise?.role ?? 'Custom role',
   }));
 }
 
@@ -121,6 +192,51 @@ export async function savePanel(
 }
 
 export async function deletePanel(id: string): Promise<void> {
-  const { error } = await supabase.from('panels').delete().eq('id', id);
+  const { data, error } = await supabase
+    .from('panels')
+    .delete()
+    .eq('id', id)
+    .select('id')
+    .maybeSingle();
   if (error) throw new Error(`Could not delete that panel: ${error.message}`);
+  // Supabase RLS intentionally turns an unauthorized target into zero visible
+  // rows. Treat that as a failure instead of falsely removing the panel only
+  // from the browser and claiming the database deletion succeeded.
+  if (!data) throw new Error('That panel was not found or you do not have permission to delete it.');
+}
+
+/** Changes lifecycle state without rebuilding or losing any panel content.
+ * Publishing remains a builder-only operation because it must pass the full
+ * builder validation first. This function therefore accepts only archive and
+ * restore transitions from management screens. */
+export async function setPanelArchived(id: string, archived: boolean): Promise<PanelLifecycleStatus> {
+  const row = await loadPanel(id);
+  const enterprise = row.config.enterprise;
+  if (!enterprise) {
+    throw new Error('This legacy panel must be opened and saved in RecruitPro before its lifecycle can be changed.');
+  }
+
+  const nextStatus: PanelLifecycleStatus = archived
+    ? 'archived'
+    : enterprise.archivedFrom ?? (enterprise.publishedAt ? 'published' : 'draft');
+  const config: PanelConfig = {
+    ...row.config,
+    enterprise: {
+      ...enterprise,
+      status: nextStatus,
+      archivedFrom: archived
+        ? (enterprise.status === 'published' ? 'published' : 'draft')
+        : undefined,
+    },
+  };
+
+  const { data, error } = await supabase
+    .from('panels')
+    .update({ config })
+    .eq('id', id)
+    .select('id')
+    .maybeSingle();
+  if (error) throw new Error(`Could not ${archived ? 'archive' : 'restore'} that panel: ${error.message}`);
+  if (!data) throw new Error('That panel was not found or you do not have permission to update it.');
+  return nextStatus;
 }

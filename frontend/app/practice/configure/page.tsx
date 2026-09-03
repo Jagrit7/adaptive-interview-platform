@@ -12,7 +12,7 @@ export default function ConfigurePage() {
   const [liveFeedback, setLiveFeedback] = useState(true);
 
   return (
-    <PracticeShell user={USER} active="Dashboard">
+    <PracticeShell user={USER}>
       <span className="inline-flex px-4 py-1.5 rounded-full text-xs font-bold mb-6
                        bg-[color-mix(in_srgb,var(--color-practice-pass)_18%,white)]
                        text-[var(--color-practice-pass)]">

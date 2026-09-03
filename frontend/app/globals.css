@@ -83,6 +83,25 @@
   background-size: 48px 48px;
 }
 
+/* Individual DSA interview: the approved dark arena keeps the reference grid,
+   but adds restrained cyan/indigo light so it still belongs to InterviewPro. */
+.dsa-arena {
+  background-color: var(--color-arena-bg);
+  background-image:
+    radial-gradient(circle at 85% 8%, rgba(0, 229, 255, .07), transparent 28rem),
+    radial-gradient(circle at 5% 90%, rgba(79, 70, 229, .08), transparent 32rem),
+    linear-gradient(to right, rgba(255, 255, 255, .024) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, .024) 1px, transparent 1px);
+  background-size: auto, auto, 48px 48px, 48px 48px;
+}
+
+.dsa-arena ::-webkit-scrollbar { width: 8px; height: 8px; }
+.dsa-arena ::-webkit-scrollbar-track { background: #0c1018; }
+.dsa-arena ::-webkit-scrollbar-thumb {
+  background: var(--color-arena-line);
+  border-radius: 9999px;
+}
+
 /* Cyan edge on arena cards, as on the lobby's status tiles. */
 .arena-edge { box-shadow: inset 2px 0 0 0 var(--color-arena-cyan); }
 

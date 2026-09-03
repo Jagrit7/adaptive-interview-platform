@@ -11,14 +11,15 @@ Design notes worth reading before changing anything:
   punish a candidate for a competency being checked twice, which is a property of
   the panel, not of them.
 
-* `weight` finally does something. It was declared in `Scorer.competencies`,
-  editable in the builder, displayed in the read-only view - and read by nothing.
-  Every weight anyone set until now had no effect.
+* Each agent owns its criteria and has one panel-level weight. Its score is the
+  mean of the raw criterion scores it recorded from answers to its questions.
+  The overall is the weighted mean of those agent scores. This matches the
+  interview structure recruiters configure and prevents a large criterion list
+  from accidentally giving one interviewer more influence.
 
-* The overall score is a weighted mean of raw scores, not of the covered
-  booleans. Booleans throw away the difference between 0.79 and 0.10 against a
-  0.80 threshold, and that difference is most of what a report is for. The
-  covered checklist is reported alongside it, not instead of it.
+* Old saved panels have no `agent.scoring.weight`. For those only, the agent's
+  share is derived from the sum of its former panel-level competency weights.
+  If there are no legacy rules either, agents are weighted equally.
 """
 
 from __future__ import annotations
@@ -93,18 +94,6 @@ def build_report(state: SessionState, panel: Panel) -> InterviewReport:
             used_default_rule=rule is None,
         ))
 
-    # ---- the formula -------------------------------------------------------
-    #
-    #   overall = Σ(weight_c × score_c) / Σ(weight_c)
-    #
-    # A weight of 0 excludes a competency from the overall without hiding it from
-    # the checklist, which is a useful way to track something informally.
-    weight_sum = sum(c.weight for c in competencies)
-    overall = (
-        sum(c.weight * c.score for c in competencies) / weight_sum
-        if weight_sum > 0 else 0.0
-    )
-
     covered_count = sum(1 for c in competencies if c.covered)
 
     # ---- knowledge-base coverage, when there was a knowledge base ----------
@@ -113,6 +102,7 @@ def build_report(state: SessionState, panel: Panel) -> InterviewReport:
 
     # ---- per-agent breakdown ----------------------------------------------
     agent_reports: list[AgentReport] = []
+    weighted_agent_scores: list[tuple[float, float]] = []
     for agent_id, agent_state in state.agent_states.items():
         agent = agents_by_id.get(agent_id)
         if agent is None:
@@ -121,6 +111,18 @@ def build_report(state: SessionState, panel: Panel) -> InterviewReport:
             1 for t in state.transcript
             if t.agent_id == agent_id and t.speaker == "candidate"
         )
+        raw_scores = [item.score for item in agent_state.competency_scores.values()]
+        agent_score = sum(raw_scores) / len(raw_scores) if raw_scores else 0.0
+        if agent.scoring.weight is not None:
+            agent_weight = agent.scoring.weight
+        else:
+            # Compatibility for panels created before per-agent weights.
+            agent_weight = sum(
+                rules[name].weight
+                for name in agent.scoring.competencies
+                if name in rules
+            ) or 1.0
+        weighted_agent_scores.append((agent_score, agent_weight))
         agent_reports.append(AgentReport(
             agent_id=agent_id,
             name=agent.identity.name,
@@ -128,11 +130,28 @@ def build_report(state: SessionState, panel: Panel) -> InterviewReport:
             visits=agent_state.visit_count,
             questions_answered=asked,
             satisfaction=round(agent_state.satisfaction(), 3),
+            score=round(agent_score, 3),
+            weight=round(agent_weight, 3),
             force_closed=agent_state.force_closed,
             competencies=sorted(agent_state.competency_scores.keys()),
             knowledge_questions_asked=len(agent_state.asked_item_ids),
             knowledge_questions_total=len(agent.knowledge.items),
         ))
+
+    # ---- the formula -------------------------------------------------------
+    #
+    #   overall = Σ(agent_weight × agent_score) / Σ(agent_weight)
+    #
+    # A zero-weight observer can participate and leave evidence without
+    # affecting the final recommendation.
+    agent_weight_sum = sum(weight for _, weight in weighted_agent_scores)
+    overall = (
+        sum(score * weight for score, weight in weighted_agent_scores) / agent_weight_sum
+        if agent_weight_sum > 0 else 0.0
+    )
+    if agent_weight_sum > 0:
+        for agent_report in agent_reports:
+            agent_report.weight = round(agent_report.weight / agent_weight_sum, 3)
 
     # ---- flags raised anywhere in the interview ---------------------------
     flag_counts: dict[str, int] = {}
@@ -150,6 +169,7 @@ def build_report(state: SessionState, panel: Panel) -> InterviewReport:
             flags=t.flags,
             coverage=t.coverage,
             knowledge_item_id=t.knowledge_item_id,
+            question_score=t.question_score,
         )
         for t in state.transcript
     ]

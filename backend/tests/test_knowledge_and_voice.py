@@ -126,8 +126,8 @@ ok("walked the bank in order, then returned None when exhausted")
 print("\n=== 11. Prompt block: strict vs guided, and answer-leak guard ===")
 strict = format_knowledge_block(Knowledge(mode="knowledge_base", strict=True, items=bank))
 guided = format_knowledge_block(Knowledge(mode="knowledge_base", strict=False, items=bank))
-assert "ONLY questions from the list" in strict
-assert "Work through the questions below first" in guided
+assert "fixed written question bank" in strict
+assert "prepared written question bank" in guided
 assert "Never read out, quote, or hint at the expected answers" in strict
 assert format_knowledge_block(Knowledge(mode="llm", items=bank)) == ""
 assert format_knowledge_block(Knowledge(mode="knowledge_base", items=[])) == ""

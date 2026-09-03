@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { loginHref } from '@/lib/authRoles';
 
 /** The individuals landing page — the marketing front door for the practice
  *  side. Split hero, then the loop it sells: streak, XP, league, trophies. */
@@ -22,11 +23,11 @@ export default function IndividualsLanding() {
                                     text-[var(--color-practice-deep)]">InterviewPro</Link>
           <nav className="hidden md:flex items-center gap-7 text-sm
                           text-[var(--color-practice-ink-soft)]">
-            <Link href="/practice">Practice</Link>
-            <Link href="/skills">Skills</Link>
-            <Link href="/leaderboard">Leaderboard</Link>
+            <Link href={loginHref('individual', '/practice')}>Practice</Link>
+            <Link href={loginHref('individual', '/skills')}>Skills</Link>
+            <Link href={loginHref('individual', '/leaderboard')}>Leaderboard</Link>
           </nav>
-          <Link href="/login" className="ml-auto text-sm font-semibold
+          <Link href={loginHref('individual')} className="ml-auto text-sm font-semibold
                                          text-[var(--color-practice-accent)]">Sign in</Link>
         </div>
       </header>
@@ -46,12 +47,12 @@ export default function IndividualsLanding() {
             every round you finish, and build the confidence that only repetition gives you.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link href="/practice"
+            <Link href={loginHref('individual')}
                   className="px-7 py-3.5 rounded-[var(--radius-control)] font-semibold text-white
                              bg-[var(--color-practice-accent)] hover:brightness-110 transition">
               Start your journey
             </Link>
-            <Link href="/leaderboard"
+            <Link href={loginHref('individual', '/leaderboard')}
                   className="px-7 py-3.5 rounded-[var(--radius-control)] font-semibold
                              bg-[var(--color-practice-surface)]
                              border border-[var(--color-practice-border)]
@@ -118,8 +119,8 @@ export default function IndividualsLanding() {
                         justify-between text-sm text-[var(--color-practice-ink-mute)]">
           <span className="font-extrabold text-[var(--color-practice-deep)]">InterviewPro</span>
           <nav className="flex flex-wrap gap-6">
-            <Link href="/practice">Practice</Link>
-            <Link href="/skills">Skills</Link>
+            <Link href={loginHref('individual', '/practice')}>Practice</Link>
+            <Link href={loginHref('individual', '/skills')}>Skills</Link>
             <Link href="/enterprise-landing">For enterprises</Link>
           </nav>
           <span>© 2026 InterviewPro</span>

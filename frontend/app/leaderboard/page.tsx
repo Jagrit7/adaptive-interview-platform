@@ -14,7 +14,7 @@ export default function LeaderboardPage() {
   const progress = (USER.xp / USER.xpToNextRank) * 100;
 
   return (
-    <PracticeShell user={USER} active="Leaderboard">
+    <PracticeShell user={USER}>
       <div className="flex items-start justify-between gap-6 mb-8">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight

@@ -58,6 +58,8 @@ def apply_score_result(
     current_agent: Agent,
     result: ScoreResult,
     scorer_thresholds: dict[str, float],
+    *,
+    count_turn: bool = True,
 ) -> None:
     """Writes this turn's scores into session state. Call this before decide_next_step().
     scorer_thresholds: competency name -> threshold, from panel.scorer.competencies."""
@@ -70,7 +72,8 @@ def apply_score_result(
             score=best_score,
             covered=best_score >= threshold,
         )
-    state.current_visit_turn_count += 1
+    if count_turn:
+        state.current_visit_turn_count += 1
 
 
 def decide_next_step(

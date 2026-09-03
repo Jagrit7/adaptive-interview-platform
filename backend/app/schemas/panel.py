@@ -6,6 +6,9 @@ from app.config.voice_profiles import DEFAULT_LANGUAGE
 RoleType = Literal["Technical", "Hiring manager", "Product", "Customer", "Behavioural", "Custom"]
 
 KnowledgeMode = Literal["llm", "knowledge_base"]
+QuestionKind = Literal["coding", "written", "verbal"]
+QuestionBankId = Literal["dsa", "system-design", "custom"]
+QuestionDomain = Literal["dsa", "system_design", "behavioural", "product", "customer", "general"]
 
 
 class Identity(BaseModel):
@@ -16,12 +19,11 @@ class Identity(BaseModel):
 
 
 class Voice(BaseModel):
-    """Kept only so panels saved before the provider change still validate.
+    """Optional per-interviewer voice preference.
 
-    Nothing in this model is read at runtime any more. Language moved to
-    Panel.language (one language per session - see the note there) and the
-    STT/TTS vendor, model and voice are resolved from
-    app/config/voice_profiles.py, not from user input.
+    The backend accepts a voice only when it belongs to the selected panel
+    language. Older provider/language fields remain optional for saved-panel
+    compatibility; they never override the managed Agora speech stack.
     """
     provider: str | None = None
     voiceId: str | None = None
@@ -51,6 +53,10 @@ class KnowledgeItem(BaseModel):
     idealAnswer: str = ""
     tags: list[str] = Field(default_factory=list)
     difficulty: int | None = None
+    kind: QuestionKind | None = None
+    # Explicit ownership used by the orchestrator. Optional so older saved
+    # panels can be upgraded from their tags/text at session hydration.
+    domain: QuestionDomain | None = None
 
 
 class Knowledge(BaseModel):
@@ -68,6 +74,7 @@ class Knowledge(BaseModel):
     mode: KnowledgeMode = "llm"
     strict: bool = True
     sourceName: str = ""
+    bankId: QuestionBankId = "custom"
     items: list[KnowledgeItem] = Field(default_factory=list)
 
     def is_active(self) -> bool:
@@ -88,6 +95,10 @@ class TurnTaking(BaseModel):
 
 class Scoring(BaseModel):
     competencies: list[str]
+    # Share of the final panel score assigned to this interviewer. New panels
+    # set it explicitly; None keeps old saved panels valid so report generation
+    # can derive their previous share from the legacy panel-level rubric.
+    weight: float | None = Field(default=None, ge=0)
 
 
 class Agent(BaseModel):

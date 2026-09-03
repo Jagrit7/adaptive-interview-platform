@@ -1,7 +1,5 @@
-import { redirect } from 'next/navigation';
+import { EnterpriseReportsClient } from '@/components/console/EnterpriseReports';
 
-// The real report screen is /reports, backed by interview_reports. This static
-// version existed only to check the design.
-export default function Page() {
-  redirect('/reports');
+export default function CandidateReportAliasPage() {
+  return <EnterpriseReportsClient />;
 }

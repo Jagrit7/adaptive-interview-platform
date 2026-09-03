@@ -9,13 +9,13 @@ export default function SkillPathsPage() {
   const rest = SKILL_PATHS.filter((p) => !p.featured);
 
   return (
-    <PracticeShell user={USER} active="Dashboard">
+    <PracticeShell user={USER}>
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight mb-3">Skill paths</h1>
           <p className="text-[var(--color-practice-ink-soft)] max-w-[56ch]">
-            Track your mastery across the domains you are interviewing for. Finish modules
-            to level up and unlock the harder rounds.
+            Start with our complete DSA foundations path. The other interview
+            domains are visible as a preview while their paths are being built.
           </p>
         </div>
         <Link href="/practice"
@@ -34,7 +34,7 @@ export default function SkillPathsPage() {
           <span className="inline-flex px-3 py-1 rounded-full text-xs font-bold mb-4
                            bg-[color-mix(in_srgb,var(--color-practice-pass)_18%,white)]
                            text-[var(--color-practice-pass)]">
-            In progress
+            Available now
           </span>
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div className="flex-1 min-w-[260px]">
@@ -47,10 +47,11 @@ export default function SkillPathsPage() {
               </p>
               <Progress level={featured.level} done={featured.done} total={featured.total} />
             </div>
-            <button className="px-6 py-3 rounded-full font-semibold text-white
-                               bg-[var(--color-practice-accent)] hover:brightness-110 transition">
+            <Link href="/skills/dsa"
+              className="px-6 py-3 rounded-full font-semibold text-white
+                         bg-[var(--color-practice-accent)] hover:brightness-110 transition">
               Continue learning
-            </button>
+            </Link>
           </div>
         </section>
       )}

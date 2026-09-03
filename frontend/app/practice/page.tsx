@@ -3,7 +3,8 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { PracticeShell } from '@/components/practice/PracticeShell';
-import { INTERVIEWS, SKILLS, ROLES, LANGS, USER, type Difficulty } from '@/lib/mockData';
+import { AuthGate } from '@/components/ui/AuthGate';
+import { INTERVIEWS, ROLES, LANGS, USER, type Difficulty } from '@/lib/mockData';
 
 const DIFFICULTIES: Difficulty[] = ['Easy', 'Medium', 'Hard'];
 
@@ -36,7 +37,8 @@ export default function DiscoveryPage() {
   const clear = () => { setQuery(''); setDifficulty('All'); setRole('All'); setLanguage('All'); };
 
   return (
-    <PracticeShell user={USER} active="Dashboard">
+    <AuthGate role="individual">
+    <PracticeShell user={USER}>
       <section className="rounded-[var(--radius-panel)] bg-[var(--color-practice-sunken)]
                           p-8 mb-8">
         <h1 className="text-4xl font-extrabold tracking-tight mb-3">
@@ -149,6 +151,7 @@ export default function DiscoveryPage() {
         </div>
       )}
     </PracticeShell>
+    </AuthGate>
   );
 }
 

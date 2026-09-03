@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { loginHref } from '@/lib/authRoles';
 
 /** Enterprise marketing page. Serif headings and near-black actions, matching
  *  the console it leads into — a different temperature from the consumer side,
@@ -19,11 +20,11 @@ export default function EnterpriseLanding() {
                          bg-[var(--color-console-surface)]">
         <div className="mx-auto max-w-[1200px] px-6 h-16 flex items-center">
           <Link href="/" className="font-serif text-2xl font-bold tracking-tight">
-            InterviewPro
+            RecruitPro
           </Link>
           <span className="ml-3 text-[10px] tracking-[0.18em]
                            text-[var(--color-console-ink-mute)]">ENTERPRISE</span>
-          <Link href="/login" className="ml-auto text-sm font-semibold">Sign in</Link>
+          <Link href={loginHref('enterprise')} className="ml-auto text-sm font-semibold">Sign in</Link>
         </div>
       </header>
 
@@ -37,12 +38,12 @@ export default function EnterpriseLanding() {
             the same bar rather than against whoever interviewed them.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link href="/enterprise"
+            <Link href={loginHref('enterprise')}
                   className="px-7 py-3.5 rounded-lg font-semibold text-white
                              bg-[var(--color-console-accent)] hover:brightness-150 transition">
               Open the console
             </Link>
-            <Link href="/builder"
+            <Link href={loginHref('enterprise')}
                   className="px-7 py-3.5 rounded-lg font-semibold
                              bg-[var(--color-console-surface)]
                              border border-[var(--color-console-border)]
@@ -84,7 +85,7 @@ export default function EnterpriseLanding() {
               </li>
             ))}
           </ul>
-          <Link href="/enterprise" className="font-semibold hover:underline">
+          <Link href={loginHref('enterprise')} className="font-semibold hover:underline">
             Explore enterprise solutions →
           </Link>
         </div>
@@ -94,13 +95,13 @@ export default function EnterpriseLanding() {
         <div className="mx-auto max-w-[1200px] px-6 flex flex-wrap gap-6 items-center
                         justify-between text-sm text-[var(--color-console-ink-mute)]">
           <span className="font-serif text-lg font-bold
-                           text-[var(--color-console-ink)]">InterviewPro</span>
+                           text-[var(--color-console-ink)]">RecruitPro</span>
           <nav className="flex flex-wrap gap-6">
-            <Link href="/enterprise">Console</Link>
-            <Link href="/panels">Interviews</Link>
+            <Link href={loginHref('enterprise')}>Console</Link>
+            <Link href={loginHref('enterprise', '/panels')}>Interviews</Link>
             <Link href="/individuals">For individuals</Link>
           </nav>
-          <span>© 2026 InterviewPro</span>
+          <span>© 2026 RecruitPro</span>
         </div>
       </footer>
     </div>
