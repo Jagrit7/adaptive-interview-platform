@@ -10,7 +10,8 @@ In the Supabase SQL Editor, run these files in order:
 
 1. `schema.sql`
 2. `schema_reports.sql`
-3. `schema_dsa_question_bank.sql`
+3. `schema_invitations.sql`
+4. `schema_dsa_question_bank.sql`
 
 `schema_reports.sql` is also the upgrade migration for the earlier minimal
 `interview_reports` table. Re-run the whole file after pulling this version. It
@@ -43,6 +44,29 @@ are installed adds that foreign key safely.
 
 The DSA schema enables RLS and revokes browser access to the runtime view that
 contains hidden tests, reference solutions, and verbal rubrics.
+
+## Who can sit an interview
+
+`schema_invitations.sql` adds `interview_invitations`: one row per invited
+candidate, holding the email it was issued to and a 256-bit token that is the
+candidate's link.
+
+There is no shared interview link any more. The previous model put one
+8-character code on every published panel, which authorised anybody who had the
+URL, for unlimited attempts, under whatever name they typed. An email allowlist
+on its own would not have fixed that - addresses are public and guessable, so
+the shared link plus a guessed address is still enough. Both halves are now
+required: the token in the link, and confirmation of the address it was sent to.
+
+The table is owner-only under RLS, with no policy for anonymous readers. That is
+deliberate. Candidates never query it; they hand a token to FastAPI, which
+resolves it with the secret key and enforces expiry, revocation, and the attempt
+limit server-side. If the browser could read invitations by token, every one of
+those checks would be advisory.
+
+Attempts are counted when an interview *starts*, not when it finishes, so
+abandoning halfway still consumes one - otherwise `max_attempts` could be
+sidestepped by quitting before the last question.
 
 ## Publish the reviewed bank
 

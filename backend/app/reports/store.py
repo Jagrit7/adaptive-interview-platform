@@ -101,6 +101,7 @@ def persist_published_report(
     report: InterviewReport,
     panel_id: str,
     role_name: str | None = None,
+    candidate_email: str = "",
 ) -> str:
     """Store one finished published-interview report. Returns its row id.
 
@@ -120,6 +121,8 @@ def persist_published_report(
             "source": "published",
             "candidate_name": report.candidate_name,
             "candidate_ref": report.candidate_ref,
+            # From the invitation, not from anything the candidate typed.
+            "candidate_email": candidate_email.strip().lower(),
             "session_id": report.session_id,
             "panel_name": report.panel_name,
             "role_name": view["role"],

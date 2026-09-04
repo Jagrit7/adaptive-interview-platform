@@ -7,7 +7,7 @@ import { useBuilderStore, type Agent } from '@/store/builderStore';
 import { ArenaRoom, type Panelist } from '@/components/arena/ArenaRoom';
 import { CandidateForm } from './CandidateForm';
 import {
-  finalizePublishedReport,
+  finalizeInvitedReport,
   saveReport,
   toReportRecord,
   type InterviewReport,
@@ -64,14 +64,17 @@ export type PublishedPanelView = {
 export default function InterviewRoomLive({
   panelOverride,
   publishedPanel,
-  publishedAccess,
+  invitationAccess,
   overridePanelId,
   exitHref = '/builder',
   testMode = false,
 }: {
   panelOverride?: PanelConfig;
   publishedPanel?: PublishedPanelView;
-  publishedAccess?: { panelId: string; invite: string };
+  /** Present only for an invited candidate. The token is their credential and
+   *  the email is the address it was issued to; the backend re-checks both on
+   *  every call, so nothing here is trusted client-side. */
+  invitationAccess?: { token: string; email: string; candidateName: string };
   overridePanelId?: string;
   exitHref?: string;
   testMode?: boolean;
@@ -82,7 +85,7 @@ export default function InterviewRoomLive({
   const scorer = panelOverride?.scorer ?? storedPanel.scorer;
   const projectName = publishedPanel?.projectName ?? panelOverride?.projectName ?? storedPanel.projectName;
   const language = publishedPanel?.language ?? panelOverride?.language ?? storedPanel.language;
-  const panelId = publishedAccess?.panelId ?? overridePanelId ?? storedPanel.panelId;
+  const panelId = overridePanelId ?? storedPanel.panelId;
   const { activeSpeakerId, setActiveSpeakerId } = storedPanel;
 
   // The interview does not begin until the form is submitted, so the report
@@ -568,16 +571,18 @@ export default function InterviewRoomLive({
         // very fast opening cannot be clipped while HTTP returns session data.
         setAudibleAgentUid('1');
         turnRequestStartedAtRef.current = Date.now();
-        const startRes = await fetch(publishedAccess
-          ? `${BACKEND_URL}/published-panels/${encodeURIComponent(publishedAccess.panelId)}/sessions/start`
+        const startRes = await fetch(invitationAccess
+          ? `${BACKEND_URL}/invitations/${encodeURIComponent(invitationAccess.token)}/sessions/start`
           : `${BACKEND_URL}/sessions/start`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(publishedAccess ? {
-            invite: publishedAccess.invite,
+          // The invited path sends no candidate_name: the backend takes it from
+          // the invitation, so the report names who was actually invited rather
+          // than whoever is at the keyboard.
+          body: JSON.stringify(invitationAccess ? {
+            email: invitationAccess.email,
             channel,
             remote_uid: String(uid),
-            candidate_name: candidate.name,
             candidate_ref: candidate.ref,
           } : {
               panel: { projectName, language, agents, scorer },
@@ -698,10 +703,8 @@ export default function InterviewRoomLive({
       let report: InterviewReport;
       let storeError: string | null = null;
 
-      if (publishedAccess) {
-        const result = await finalizePublishedReport(
-          publishedAccess.panelId, publishedAccess.invite, sessionId,
-        );
+      if (invitationAccess) {
+        const result = await finalizeInvitedReport(invitationAccess.token, invitationAccess.email);
         report = result.report;
         // Storage failing is not the candidate's problem and does not cost them
         // their result - they still see it, with the reason shown above it.
@@ -723,7 +726,7 @@ export default function InterviewRoomLive({
       }
 
       const role = publishedPanel?.role ?? panelOverride?.enterprise?.role;
-      const record = toReportRecord(report, role, publishedAccess ? 'published' : 'self');
+      const record = toReportRecord(report, role, invitationAccess ? 'published' : 'self');
       reportRecordRef.current = record;
       setReportRecord(record);
       setReportError(storeError);
@@ -813,6 +816,7 @@ export default function InterviewRoomLive({
       <CandidateForm
         panelName={projectName}
         agentCount={agents.length}
+        fixedName={invitationAccess?.candidateName}
         onStart={setCandidate}
         onCancel={() => router.push(exitHref)}
       />

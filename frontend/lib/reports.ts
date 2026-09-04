@@ -95,27 +95,28 @@ export async function saveReport(report:InterviewReport,panelId:string|null,role
   return (data as {id:string}).id;
 }
 
-export interface FinalizedPublishedReport { report_id:string|null; stored:boolean; store_error:string|null; report:InterviewReport }
+export interface FinalizedInvitedReport { report_id:string|null; stored:boolean; store_error:string|null; report:InterviewReport }
 
 /**
- * Finish a published interview: the backend builds the report and stores it.
+ * Finish an invited candidate's interview: the backend builds and stores it.
  *
- * The candidate is anonymous, so the browser cannot write this row - it has no
- * Supabase session, and `interview_reports` is gated on `auth.uid() = user_id`.
- * The invite goes back with the request because the backend re-checks it before
- * writing anything under the panel owner's name.
+ * The candidate is anonymous - they hold an invitation token, not a Supabase
+ * session - so the browser cannot write this row: `interview_reports` is gated
+ * on `auth.uid() = user_id`. The token and email go back with the request
+ * because the backend re-authorises before writing anything under the panel
+ * owner's name, and closes out the invitation on success.
  *
  * A storage failure comes back as `stored: false` with the report still
  * attached, rather than as a thrown error. The candidate has finished a real
  * interview either way and should see the result.
  */
-export async function finalizePublishedReport(panelId:string,invite:string,sessionId:string):Promise<FinalizedPublishedReport> {
-  const response=await fetch(`${BACKEND_URL}/published-panels/${encodeURIComponent(panelId)}/sessions/${encodeURIComponent(sessionId)}/report`,{
-    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({invite}),
+export async function finalizeInvitedReport(token:string,email:string):Promise<FinalizedInvitedReport> {
+  const response=await fetch(`${BACKEND_URL}/invitations/${encodeURIComponent(token)}/report`,{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email}),
   });
   const data=await response.json().catch(()=>({}));
   if(!response.ok) throw new Error(typeof data.detail==='string'?data.detail:'The interview report could not be completed.');
-  return data as FinalizedPublishedReport;
+  return data as FinalizedInvitedReport;
 }
 
 const SUMMARY_COLUMNS='id,candidate_name,candidate_ref,panel_name,role_name,overall_score,band,recommendation,completed,created_at,finished_at,source';

@@ -102,3 +102,26 @@ def upsert(
         method="POST",
     )
     return _send(request, failure)
+
+def patch(
+    table: str,
+    match: dict[str, str],
+    changes: dict[str, Any],
+    failure: str,
+) -> list[dict[str, Any]]:
+    """Update the rows matching `match`.
+
+    `match` is a PostgREST filter (`{"id": "eq.<uuid>"}`), not a plain equality
+    map - an unfiltered PATCH updates the entire table, so the caller has to be
+    explicit about what it is narrowing on.
+    """
+    if not match:
+        raise ValueError("patch() without a filter would update every row in the table")
+    url, key = service_credentials()
+    request = Request(
+        f"{url}/rest/v1/{table}?{urlencode(match)}",
+        data=json.dumps(changes).encode("utf-8"),
+        headers=_headers(key, {"Prefer": "return=representation"}),
+        method="PATCH",
+    )
+    return _send(request, failure)

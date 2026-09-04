@@ -2,7 +2,7 @@ import {
   AuditScreen, BillingScreen, CandidateProfileScreen,
   CandidatesScreen, ComparisonScreen,
   IntegrationsScreen, InterviewDetailScreen, OnboardingScreen,
-  InvitationsScreen, LiveScreen, NotificationsScreen,
+  LiveScreen, NotificationsScreen,
   RolesScreen, SettingsScreen, SupportScreen,
   TeamScreen, UnknownEnterpriseScreen,
 } from '@/components/console/EnterpriseScreens';
@@ -14,6 +14,7 @@ import {
 import { EnterpriseInterviewBuilder } from '@/components/console/EnterpriseInterviewBuilder';
 import { EnterpriseInterviewDetailClient, EnterpriseInterviewsClient, EnterpriseTemplatesClient } from '@/components/console/EnterpriseInterviewManagement';
 import { EnterpriseInterviewTest } from '@/components/console/EnterpriseInterviewTest';
+import { EnterpriseInvitationsClient } from '@/components/console/EnterpriseInvitations';
 import { EnterpriseReportDetailClient, EnterpriseReportsClient } from '@/components/console/EnterpriseReports';
 import { redirect } from 'next/navigation';
 
@@ -31,7 +32,7 @@ export default async function EnterpriseViewPage({ params }: { params: Promise<{
   if (route.startsWith('candidates/') && route.endsWith('/report')) return <EnterpriseReportDetailClient candidateSlug={route.split('/')[1]} />;
   if (route.startsWith('candidates/') && route.endsWith('/activity')) return <CandidateActivityScreen candidateSlug={route.split('/')[1]} />;
   if (route.startsWith('candidates/')) return <CandidateProfileScreen />;
-  if (route === 'invitations') return <InvitationsScreen />;
+  if (route === 'invitations') return <EnterpriseInvitationsClient />;
   if (route === 'comparison') return <ComparisonScreen />;
   if (route === 'live') return <LiveScreen />;
   if (route === 'reports') return <EnterpriseReportsClient />;

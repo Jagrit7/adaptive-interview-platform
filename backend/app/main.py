@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.orchestrator.agent_launcher import start_agent_from_config
 from app.token_generator import generate_token
-from app.routes import config, dsa_sessions, job_panels, knowledge, published_panels, report_queries, sessions
+from app.routes import config, dsa_sessions, invitations, job_panels, knowledge, report_queries, sessions
 
 app = FastAPI(title="Adaptive Interview Platform")
 
@@ -27,7 +27,7 @@ app.include_router(sessions.router)
 app.include_router(dsa_sessions.router)
 app.include_router(job_panels.router)
 app.include_router(report_queries.router)
-app.include_router(published_panels.router)
+app.include_router(invitations.router)   # candidate-facing; see routes/invitations.py
 app.include_router(config.router)      # GET /config/languages
 app.include_router(knowledge.router)   # POST /knowledge/parse, /knowledge/parse-text
 

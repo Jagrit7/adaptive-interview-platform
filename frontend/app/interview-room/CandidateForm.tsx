@@ -10,21 +10,30 @@ import { generateCandidateRef } from '@/lib/reports';
  * the candidate before they begin. That ordering matters: if the backend
  * restarts mid-interview the session is lost, and a candidate who already wrote
  * their code down can still be matched to whatever was saved.
+ *
+ * `fixedName` is set for an invited candidate, whose name comes from the
+ * invitation the recruiter created. It is shown read-only rather than hidden,
+ * so somebody who was sent the wrong invitation notices before they start - but
+ * it is not editable, because a name typed here would not match the person the
+ * interview was authorised for. The backend ignores it either way.
  */
 export function CandidateForm({
   panelName,
   agentCount,
+  fixedName,
   onStart,
   onCancel,
 }: {
   panelName: string;
   agentCount: number;
+  fixedName?: string;
   onStart: (candidate: { name: string; ref: string }) => void;
   onCancel: () => void;
 }) {
-  const [name, setName] = useState('');
+  const invited = Boolean(fixedName?.trim());
+  const [name, setName] = useState(fixedName?.trim() ?? '');
   const [ref, setRef] = useState(() => generateCandidateRef());
-  const canStart = name.trim().length >= 2;
+  const canStart = invited || name.trim().length >= 2;
 
   return (
     <div style={{
@@ -46,9 +55,10 @@ export function CandidateForm({
         <label style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Candidate name</label>
         <input
           value={name}
-          autoFocus
+          autoFocus={!invited}
+          readOnly={invited}
           autoComplete="name"
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => { if (!invited) setName(e.target.value); }}
           onKeyDown={(e) => { if (e.key === 'Enter' && canStart) onStart({ name: name.trim(), ref }); }}
           placeholder="e.g. Priya Sharma"
           style={{
