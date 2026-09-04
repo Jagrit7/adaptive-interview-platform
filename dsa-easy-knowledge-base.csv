@@ -1,6 +1,0 @@
-question,ideal_answer,tags,difficulty
-"What is an array?","A collection of elements stored in contiguous memory, accessed by an index starting at 0.",arrays,1
-"What does LIFO stand for, and which data structure uses it?","Last In First Out. A stack uses LIFO - the most recently added element is the first one removed.",stacks,1
-"What is the time complexity of binary search on a sorted array?","O(log n), because each step cuts the remaining search space in half.",searching;complexity,2
-"What is the main difference between a stack and a queue?","A stack is LIFO (last in, first out); a queue is FIFO (first in, first out).",stacks;queues,1
-"What is the time complexity of accessing an element in an array by its index?","O(1), constant time, since the memory address can be computed directly from the index.",arrays;complexity,1
