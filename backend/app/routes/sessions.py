@@ -24,6 +24,7 @@ from app.question_banks import hydrate_panel_banks, remember_question
 from app.dsa.question_bank import public_question
 from app.dsa.code_runner import UnsafeCodeError, run_candidate_code
 from app.orchestrator.agent_launcher import (
+    AgentTaskGone,
     HOST_AGENT_ID,
     INACTIVE_REMOTE_UID,
     build_host_agent,
@@ -262,6 +263,76 @@ def _adapt_difficulty(state: SessionState, agent: Agent, result: ScoreResult) ->
     state.adaptive_difficulty[agent.id] = max(low, min(high, current))
 
 
+def _restart_agent_session(session_data: dict, agent_id: str) -> object:
+    """Start a fresh Agora task for one agent and swap it into the session.
+
+    Rebuilds exactly the arguments the original start used, from session_data,
+    so a revived agent is configured identically to the one it replaces - same
+    voice, same UID, same boundary instruction, same subscription.
+
+    What it cannot restore is the dead task's conversation history. That is
+    tolerable where this is reached: an agent whose task idled out is one that
+    has not been speaking, so there is little history to lose.
+    """
+    panel: Panel = session_data["panel"]
+    state: SessionState = session_data["state"]
+    is_host = agent_id == HOST_AGENT_ID
+
+    if is_host:
+        agent = build_host_agent(panel)
+    else:
+        agent = next((item for item in panel.agents if item.id == agent_id), None)
+        if agent is None:
+            raise HTTPException(status_code=500, detail="That interviewer is no longer part of this panel.")
+
+    old_session = session_data["agora_sessions"].get(agent_id)
+    if old_session is not None:
+        try:
+            old_session.stop()
+        except Exception:
+            # Already gone - which is the whole reason we are here.
+            pass
+
+    instance_id, new_session = start_session_agent(
+        agent,
+        session_data["channel"],
+        session_data["remote_uid"],
+        language=state.language or panel.language,
+        voice_id=session_data["voices"][agent_id],
+        patient_turn_taking=True,
+        agent_uid=session_data["agent_uids"][agent_id],
+        remote_uids=None if is_host or not session_data["use_llm_host"] else [INACTIVE_REMOTE_UID],
+        speak_greeting=False,
+        boundary_instruction="" if is_host else session_data["profiles"][agent_id].boundary_instruction,
+    )
+    session_data["agora_sessions"][agent_id] = new_session
+    session_data["agora_instance_ids"][agent_id] = instance_id
+    return new_session
+
+
+def _inject(session_data: dict, agent_id: str, instruction: str, *, replace_pending: bool = False) -> None:
+    """inject_followup, with one revival attempt if Agora lost the agent task.
+
+    Every think() in an interview goes through here. Before this existed, an
+    agent whose task Agora had ended took the whole interview down with a 500 -
+    the candidate's next answer returned an error and there was no way forward.
+    Restarting that one agent and retrying costs a second and keeps the
+    interview alive.
+
+    Deliberately one retry, not a loop: if the freshly started task is also
+    missing, something is wrong with Agora or the credentials, and hammering it
+    turns a broken interview into a broken interview plus a rate limit.
+    """
+    session = session_data["agora_sessions"].get(agent_id)
+    if session is None:
+        session = _restart_agent_session(session_data, agent_id)
+    try:
+        inject_followup(session, instruction, replace_pending=replace_pending)
+    except AgentTaskGone:
+        revived = _restart_agent_session(session_data, agent_id)
+        inject_followup(revived, instruction, replace_pending=replace_pending)
+
+
 def _ask_from_bank(session_data: dict, agent: Agent, state: SessionState,
                    language: str | None = None, *, introduce_agent: bool = False,
                    transition_instruction: str = "",
@@ -316,8 +387,9 @@ def _ask_from_bank(session_data: dict, agent: Agent, state: SessionState,
     opening = state.question_revision == 0
     state.question_revision += 1
     state.floor = "agent_speaking"
-    inject_followup(
-        session_data["agora_sessions"][agent.id],
+    _inject(
+        session_data,
+        agent.id,
         question_command(
             profile=profile,
             item=item,
@@ -439,8 +511,9 @@ def start_session(body: StartSessionRequest):
 
     opening_question = None
     if use_llm_host:
-        inject_followup(
-            agora_sessions[HOST_AGENT_ID],
+        _inject(
+            session_data,
+            HOST_AGENT_ID,
             "HOST OPENING. " + flow.host.openingInstruction +
             " Warmly disclose that you and every interviewer are AI — but frame it positively, "
             "like 'I should mention upfront that myself and the team today are AI interviewers, "
@@ -588,8 +661,9 @@ async def _process_turn(
             state.question_revision += 1
             state.floor = "agent_speaking"
             next_field = intro_fields[state.host_intake_index]
-            inject_followup(
-                session_data["agora_sessions"][HOST_AGENT_ID],
+            _inject(
+                session_data,
+                HOST_AGENT_ID,
                 f"HOST INTAKE. Acknowledge what they just shared with a warm, specific comment — "
                 f"show you were really listening. Then naturally transition to asking about: {next_field}. "
                 "Keep it conversational, like you're genuinely interested. "
@@ -743,7 +817,7 @@ async def _process_turn(
             "Do not reveal the answer, introduce another question, or mention a score. "
             "IMPORTANT: Complete your full thought before stopping — never cut off mid-sentence."
         )
-        inject_followup(agora_session, retry_instruction, replace_pending=True)
+        _inject(session_data, current_agent.id, retry_instruction, replace_pending=True)
         return NextTurnResponse(
             action=ActionType.FOLLOW_UP,
             current_agent_id=current_agent.id,
@@ -824,8 +898,9 @@ async def _process_turn(
             state.host_phase = "closing"
             state.question_revision += 1
             state.floor = "agent_speaking"
-            inject_followup(
-                host_session,
+            _inject(
+                session_data,
+                HOST_AGENT_ID,
                 "HOST CLOSE. " + flow.host.closingInstruction + " Speak for at most two sentences. "
                 "Do not ask another question or announce a score.",
                 replace_pending=True,
@@ -836,8 +911,9 @@ async def _process_turn(
             state.host_phase = "finished"
             state.floor = "finished"
             state.finished_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-            inject_followup(
-                agora_session,
+            _inject(
+                session_data,
+                current_agent.id,
                 "Thank the candidate warmly in one short sentence. Do not ask another question.",
                 replace_pending=True,
             )

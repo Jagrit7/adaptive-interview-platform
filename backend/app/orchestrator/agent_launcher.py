@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 from agora_agent import Agent as AgoraAgentBuilder, Agora, Area, DeepgramSTT, OpenAI, Groq, MiniMaxTTS
+from agora_agent.core.api_error import ApiError
 from dotenv import load_dotenv
 
 from app.config.voice_profiles import (
@@ -15,6 +16,30 @@ from app.config.voice_profiles import (
     language_directive,
 )
 from app.schemas.panel import Agent as PanelAgent, Panel
+
+
+# How long an Agora agent task may sit silent before Agora ends it.
+#
+# The 180s default is fine for an agent that is talking to somebody. It is
+# actively wrong for this panel design, where every specialist joins at session
+# start and then waits - subscribed to a deliberately absent UID - until the
+# host hands it the floor. A specialist that waits out one colleague's questions
+# is idle for far longer than three minutes, so Agora reaps its task, and the
+# next think() against it fails with 404 TaskNotFound. The symptom is the
+# interview dying at a handoff: the new interviewer never speaks.
+#
+# Sized for a whole interview rather than a turn. Override per deployment if
+# your panels run longer.
+IDLE_TIMEOUT_SECONDS = int(os.getenv("AGENT_IDLE_TIMEOUT_SECONDS", "1800"))
+
+
+class AgentTaskGone(RuntimeError):
+    """Agora no longer has the agent task this session refers to.
+
+    Raised instead of the raw ApiError so callers can tell "this agent needs
+    restarting" apart from every other way the Agora API can fail. Recoverable:
+    the caller restarts the agent and retries.
+    """
 
 load_dotenv()
 
@@ -269,7 +294,7 @@ def start_session_agent(
     agent_uid: str = AGENT_UID,
     remote_uids: list[str] | None = None,
     speak_greeting: bool = True,
-    idle_timeout: int = 180,
+    idle_timeout: int = IDLE_TIMEOUT_SECONDS,
     boundary_instruction: str = "",
 ):
     """Starts the ONE live Agora agent instance for a real session, using the
@@ -463,12 +488,28 @@ def inject_followup(session, instruction_text: str, replace_pending: bool = Fals
     question is injected immediately after the agent begins its greeting, and
     appending lets the greeting finish instead of being talked over.
     """
-    session.think(
-        instruction_text,
-        on_listening_action="inject",   # never talk over the candidate
-        on_thinking_action="interrupt" if replace_pending else "append",
-        # NEVER interrupt active speech — let the agent finish its current
-        # sentence before starting the new instruction.  "interrupt" caused
-        # mid-word cutoffs that made the host sound broken.
-        on_speaking_action="append",
-    )
+    try:
+        session.think(
+            instruction_text,
+            on_listening_action="inject",   # never talk over the candidate
+            on_thinking_action="interrupt" if replace_pending else "append",
+            # NEVER interrupt active speech — let the agent finish its current
+            # sentence before starting the new instruction.  "interrupt" caused
+            # mid-word cutoffs that made the host sound broken.
+            on_speaking_action="append",
+        )
+    except ApiError as exc:
+        # 404 / TaskNotFound means Agora has forgotten this agent - idle
+        # timeout, an ended task, or a restart on their side. That is
+        # recoverable by starting the agent again, and only the caller knows
+        # enough to do it, so translate rather than swallow.
+        if exc.status_code == 404 and _task_not_found(exc):
+            raise AgentTaskGone(str(getattr(exc, "body", exc))) from exc
+        raise
+
+
+def _task_not_found(exc: ApiError) -> bool:
+    body = getattr(exc, "body", None)
+    if isinstance(body, dict):
+        return body.get("reason") == "TaskNotFound" or "not found" in str(body.get("detail", "")).lower()
+    return "TaskNotFound" in str(body)
