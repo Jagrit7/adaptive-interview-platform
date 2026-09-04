@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RecruitPro - Reports Center</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Playfair+Display:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-low": "#f2f4f6",
+                      "primary-container": "#131b2e",
+                      "on-surface-variant": "#45464d",
+                      "on-primary": "#ffffff",
+                      "surface-container-highest": "#e0e3e5",
+                      "on-error": "#ffffff",
+                      "tertiary": "#000000",
+                      "secondary-container": "#d0e1fb",
+                      "surface-container-high": "#e6e8ea",
+                      "surface-bright": "#f7f9fb",
+                      "surface-tint": "#565e74",
+                      "on-background": "#191c1e",
+                      "on-tertiary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "on-secondary-container": "#54647a",
+                      "on-primary-container": "#7c839b",
+                      "on-tertiary-fixed-variant": "#41474e",
+                      "secondary-fixed": "#d3e4fe",
+                      "surface-dim": "#d8dadc",
+                      "surface-container-lowest": "#ffffff",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "secondary": "#505f76",
+                      "tertiary-fixed-dim": "#c1c7cf",
+                      "primary": "#000000",
+                      "surface": "#f7f9fb",
+                      "inverse-on-surface": "#eff1f3",
+                      "on-primary-fixed": "#131b2e",
+                      "error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-fixed": "#161c22",
+                      "on-primary-fixed-variant": "#3f465c",
+                      "on-secondary": "#ffffff",
+                      "tertiary-fixed": "#dde3eb",
+                      "inverse-primary": "#bec6e0",
+                      "inverse-surface": "#2d3133",
+                      "primary-fixed-dim": "#bec6e0",
+                      "background": "#f7f9fb",
+                      "tertiary-container": "#161c22",
+                      "on-secondary-fixed": "#0b1c30",
+                      "on-surface": "#191c1e",
+                      "primary-fixed": "#dae2fd",
+                      "outline-variant": "#c6c6cd",
+                      "on-tertiary-container": "#7e848c",
+                      "surface-container": "#eceef0",
+                      "surface-variant": "#e0e3e5",
+                      "outline": "#76777d"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "margin-desktop": "40px",
+                      "stack-md": "16px",
+                      "stack-lg": "32px",
+                      "margin-mobile": "16px",
+                      "unit": "8px",
+                      "stack-sm": "8px",
+                      "container-max-width": "1280px"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Playfair Display"
+                      ],
+                      "headline-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Playfair Display"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        }
+        .diffused-shadow {
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        }
+        
+        .nav-item.active {
+            font-weight: 700;
+            border-right: 2px solid #000000;
+            color: #000000;
+        }
+        
+        .ghost-btn {
+            border: 1px solid #E2E8F0;
+            color: #505f76;
+            transition: all 0.2s ease;
+        }
+        .ghost-btn:hover {
+            background-color: #f2f4f6;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex selection:bg-secondary-container selection:text-on-secondary-container">
+<!-- Side Navigation Shell -->
+<aside class="hidden md:flex h-screen w-64 fixed left-0 top-0 bg-surface border-r border-tertiary-fixed-dim flex-col py-stack-lg px-gutter z-50">
+<div class="mb-stack-lg">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">RecruitPro</h1>
+<p class="font-label-sm text-label-sm text-secondary">Enterprise Suite</p>
+</div>
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md py-3 rounded-DEFAULT mb-stack-lg flex items-center justify-center gap-2 hover:bg-tertiary-container transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+            New Interview
+        </button>
+<nav class="flex-1 flex flex-col gap-2">
+<a class="nav-item text-secondary font-medium font-label-md text-label-md py-2 px-3 rounded flex items-center gap-3 hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                Dashboard
+            </a>
+<a class="nav-item text-secondary font-medium font-label-md text-label-md py-2 px-3 rounded flex items-center gap-3 hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">event_note</span>
+                Interviews
+            </a>
+<a class="nav-item text-secondary font-medium font-label-md text-label-md py-2 px-3 rounded flex items-center gap-3 hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+                Candidates
+            </a>
+<a class="nav-item active py-2 px-3 rounded flex items-center gap-3 bg-surface-container-low transition-colors duration-200" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+                Reports
+            </a>
+<a class="nav-item text-secondary font-medium font-label-md text-label-md py-2 px-3 rounded flex items-center gap-3 hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">diversity_3</span>
+                Team
+            </a>
+<div class="mt-auto">
+<a class="nav-item text-secondary font-medium font-label-md text-label-md py-2 px-3 rounded flex items-center gap-3 hover:bg-surface-container-high transition-colors duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+                    Settings
+                </a>
+</div>
+</nav>
+</aside>
+<!-- Top Navigation Bar -->
+<header class="fixed top-0 right-0 left-0 md:left-64 h-16 bg-surface/80 backdrop-blur-md border-b border-tertiary-fixed-dim shadow-sm flex justify-between items-center px-margin-mobile md:px-margin-desktop z-40">
+<div class="md:hidden flex items-center gap-3">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">RecruitPro</h1>
+</div>
+<div class="hidden md:block"></div> <!-- Spacer for flex layout on desktop -->
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors scale-95 active:scale-90">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors scale-95 active:scale-90">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-highest border border-tertiary-fixed overflow-hidden ml-2 cursor-pointer">
+<img alt="User Profile Avatar" class="object-cover w-full h-full" data-alt="A professional corporate headshot of a recruitment executive. Clean, well-lit studio photography, light mode aesthetic, crisp white background. Minimalist styling, conveying authority and approachability in an enterprise software context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCijx0s_GS9wsCKCt7HNsYC_yBqlZha4OwJbA-MD-G5ByA4gOiJT9rqOI1s3Kdk9JyG3Rxf6gafvrQFPfQ8CaOAif6t-Lc1UR36MACfL_ykg16kqwHAVUG2MgiSCBU3jNPj0WjvbXE78w4kH-1Ce3Txm481YPgz9VA36QOVTeGHeIail0-jgTn3U7raxagEJjBK8mNzAVeuMmqnvwf-_8NAueNTRg2WVCSq5q5yoLUnL9qjK1Yufyzh"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 ml-0 md:ml-64 mt-16 p-margin-mobile md:p-margin-desktop bg-surface-bright min-h-screen overflow-y-auto">
+<div class="max-w-container-max-width mx-auto">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-stack-lg gap-4">
+<div>
+<h2 class="font-display-lg text-display-lg text-primary">Reports Center</h2>
+<p class="font-body-lg text-body-lg text-secondary mt-2">Analyze hiring performance and strategic metrics.</p>
+</div>
+<div class="flex gap-3">
+<button class="ghost-btn font-label-md text-label-md py-2 px-4 rounded-DEFAULT flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">filter_list</span>
+                        Filter
+                    </button>
+<button class="bg-primary text-on-primary font-label-md text-label-md py-2 px-4 rounded-DEFAULT flex items-center gap-2 hover:bg-tertiary-container transition-colors shadow-sm">
+<span class="material-symbols-outlined text-sm">download</span>
+                        Export PDF
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Main Analytics Section - 8 cols -->
+<div class="md:col-span-8 space-y-gutter">
+<!-- Primary Chart Card -->
+<div class="bg-surface-container-lowest rounded-lg diffused-shadow p-stack-lg border border-tertiary-fixed-dim">
+<div class="flex justify-between items-center mb-stack-md">
+<h3 class="font-headline-md text-headline-md text-primary">Hiring Funnel Conversion</h3>
+<select class="bg-surface-container-low border-none text-secondary font-label-sm text-label-sm rounded focus:ring-1 focus:ring-primary cursor-pointer py-1 px-2">
+<option>Last 30 Days</option>
+<option>This Quarter</option>
+<option>Year to Date</option>
+</select>
+</div>
+<div class="h-64 bg-surface-container-low rounded flex items-center justify-center border border-tertiary-fixed-dim relative overflow-hidden">
+<!-- Placeholder for Chart/Animation -->
+<p class="text-secondary font-label-sm">Chart Visualization Area</p>
+</div>
+<div class="flex justify-between mt-stack-md text-secondary font-label-md text-label-md">
+<span>Sourced: 450</span>
+<span class="material-symbols-outlined text-[10px]">arrow_forward</span>
+<span>Screened: 210</span>
+<span class="material-symbols-outlined text-[10px]">arrow_forward</span>
+<span>Interviewed: 85</span>
+<span class="material-symbols-outlined text-[10px]">arrow_forward</span>
+<span class="font-medium text-primary">Offers: 12</span>
+</div>
+</div>
+<!-- Secondary Metrics Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-gutter">
+<!-- Interview Performance -->
+<div class="bg-surface-container-lowest rounded-lg diffused-shadow p-stack-md border border-tertiary-fixed-dim">
+<h4 class="font-label-sm text-label-sm text-secondary uppercase tracking-wider mb-2">Interview Performance</h4>
+<div class="flex items-end gap-3 mb-4">
+<span class="font-headline-lg text-headline-lg text-primary">4.2</span>
+<span class="font-label-md text-label-md text-secondary pb-1">Avg Score</span>
+</div>
+<div class="space-y-2">
+<div class="flex items-center gap-2">
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary w-3/4"></div>
+</div>
+<span class="font-label-sm text-label-sm w-12 text-right">Tech</span>
+</div>
+<div class="flex items-center gap-2">
+<div class="h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-1/2"></div>
+</div>
+<span class="font-label-sm text-label-sm w-12 text-right">Culture</span>
+</div>
+</div>
+</div>
+<!-- Skill Gaps -->
+<div class="bg-surface-container-lowest rounded-lg diffused-shadow p-stack-md border border-tertiary-fixed-dim">
+<h4 class="font-label-sm text-label-sm text-secondary uppercase tracking-wider mb-2">Top Skill Gaps</h4>
+<ul class="space-y-3 mt-4">
+<li class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-primary">System Design</span>
+<span class="bg-surface-container-high text-secondary px-2 py-1 rounded text-xs">High Priority</span>
+</li>
+<li class="flex justify-between items-center">
+<span class="font-body-md text-body-md text-primary">React Native</span>
+<span class="bg-surface-container-high text-secondary px-2 py-1 rounded text-xs">Medium</span>
+</li>
+<li class="flex justify-between items-center border-t border-tertiary-fixed-dim pt-2 mt-2">
+<a class="font-label-sm text-label-sm text-secondary hover:text-primary flex items-center gap-1" href="#">View Full Analysis <span class="material-symbols-outlined text-[14px]">chevron_right</span></a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Right Sidebar Section - 4 cols -->
+<div class="md:col-span-4 space-y-gutter">
+<!-- Saved Reports Glass Panel -->
+<div class="glass-panel rounded-lg p-stack-md border border-tertiary-fixed-dim">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-label-md text-label-md font-semibold text-primary">Saved Reports</h3>
+<button class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[20px]">add_circle</span>
+</button>
+</div>
+<div class="space-y-3">
+<a class="block p-3 rounded bg-surface-container-lowest border border-tertiary-fixed-dim hover:border-primary transition-colors group" href="#">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded bg-surface-container-low flex items-center justify-center text-secondary group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[16px]">pie_chart</span>
+</div>
+<div>
+<h4 class="font-label-sm text-label-sm text-primary">Q3 Engineering Hires</h4>
+<p class="text-[10px] text-secondary mt-1">Generated: 2 days ago</p>
+</div>
+</div>
+</a>
+<a class="block p-3 rounded bg-surface-container-lowest border border-tertiary-fixed-dim hover:border-primary transition-colors group" href="#">
+<div class="flex items-center gap-3">
+<div class="h-8 w-8 rounded bg-surface-container-low flex items-center justify-center text-secondary group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[16px]">bar_chart</span>
+</div>
+<div>
+<h4 class="font-label-sm text-label-sm text-primary">Diversity Metrics 2024</h4>
+<p class="text-[10px] text-secondary mt-1">Generated: 1 week ago</p>
+</div>
+</div>
+</a>
+</div>
+</div>
+<!-- Scheduled Reports -->
+<div class="bg-surface-container-lowest rounded-lg diffused-shadow p-stack-md border border-tertiary-fixed-dim">
+<h3 class="font-label-md text-label-md font-semibold text-primary mb-4">Scheduled Deliveries</h3>
+<div class="space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-body-md text-body-md text-primary">Weekly Funnel Summary</h4>
+<p class="font-label-sm text-label-sm text-secondary flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span> Every Monday, 8:00 AM
+                                     </p>
+</div>
+<button class="text-secondary hover:text-primary"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
+</div>
+<div class="flex justify-between items-start pt-3 border-t border-tertiary-fixed-dim">
+<div>
+<h4 class="font-body-md text-body-md text-primary">Executive Dashboard</h4>
+<p class="font-label-sm text-label-sm text-secondary flex items-center gap-1 mt-1">
+<span class="material-symbols-outlined text-[14px]">schedule</span> Monthly, 1st Day
+                                     </p>
+</div>
+<button class="text-secondary hover:text-primary"><span class="material-symbols-outlined text-[18px]">more_vert</span></button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar (Mobile Only) - Suppressed on complex screens but included for structural completeness if requested by logic -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface border-t border-tertiary-fixed-dim flex justify-around items-center px-2 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
+<a class="flex flex-col items-center justify-center w-full h-full text-secondary hover:text-primary" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-medium mt-1">Home</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-primary font-bold" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="text-[10px] font-medium mt-1">Reports</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-secondary hover:text-primary" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="text-[10px] font-medium mt-1">Candidates</span>
+</a>
+</nav>
+</body></html>

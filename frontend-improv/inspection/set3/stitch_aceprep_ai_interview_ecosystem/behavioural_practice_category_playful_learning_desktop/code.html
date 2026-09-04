@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>InterviewPro - Behavioural Interview Practice</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed-dim": "#c0c1ff",
+                    "tertiary-container": "#a36700",
+                    "outline": "#767586",
+                    "on-secondary-fixed": "#002113",
+                    "on-error": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "outline-variant": "#c7c4d7",
+                    "secondary-fixed": "#6ffbbe",
+                    "secondary-fixed-dim": "#4edea3",
+                    "surface-container-low": "#eff4ff",
+                    "on-primary-container": "#fffbff",
+                    "on-secondary-fixed-variant": "#005236",
+                    "secondary": "#006c49",
+                    "on-primary-fixed-variant": "#2f2ebe",
+                    "surface-container-highest": "#d3e4fe",
+                    "on-error-container": "#93000a",
+                    "primary": "#4648d4",
+                    "on-secondary-container": "#00714d",
+                    "surface-variant": "#d3e4fe",
+                    "background": "#f8f9ff",
+                    "surface-bright": "#f8f9ff",
+                    "on-surface-variant": "#464554",
+                    "inverse-on-surface": "#eaf1ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#e5eeff",
+                    "inverse-surface": "#213145",
+                    "on-surface": "#0b1c30",
+                    "tertiary": "#825100",
+                    "tertiary-fixed-dim": "#ffb95f",
+                    "on-background": "#0b1c30",
+                    "on-primary-fixed": "#07006c",
+                    "primary-container": "#6063ee",
+                    "surface-container-high": "#dce9ff",
+                    "surface-tint": "#494bd6",
+                    "primary-fixed": "#e1e0ff",
+                    "error": "#ba1a1a",
+                    "secondary-container": "#6cf8bb",
+                    "on-tertiary-container": "#fffbff",
+                    "surface": "#f8f9ff",
+                    "surface-dim": "#cbdbf5",
+                    "on-tertiary-fixed": "#2a1700",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed": "#ffddb8",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "inverse-primary": "#c0c1ff",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "max-width": "1280px",
+                    "base": "8px",
+                    "margin-desktop": "64px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "display-lg-mobile": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "display-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "label-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "label-sm": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-md": [
+                            "Plus Jakarta Sans"
+                    ]
+            },
+            "fontSize": {
+                    "display-lg-mobile": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "800"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "56px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "800"
+                            }
+                    ],
+                    "label-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex font-body-md text-body-md bg-background">
+<!-- SideNavBar (Desktop Only) -->
+<aside class="hidden md:flex flex-col h-full w-64 fixed left-0 top-0 bg-surface-container-lowest dark:bg-surface-container-low shadow-md p-6 space-y-4 z-50">
+<div class="mb-8">
+<span class="font-display-lg text-display-lg text-primary">InterviewPro</span>
+</div>
+<div class="flex items-center space-x-4 mb-6 p-4 bg-surface-container rounded-lg">
+<img alt="Candidate level badge" class="w-12 h-12 rounded-full object-cover border-2 border-primary-fixed-dim" data-alt="A small, stylized avatar image of a smiling professional in a brightly lit modern office setting, representing a user profile, rendered in a clean, modern digital illustration style with soft pastel colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhomC0SMZLW-fKzgRVDiHRUZslXqslgol0HvEC9L66AdcVWZX8LEwsmm1i8sVbXypokG5qpBIGUfZ04c_CF300RjtHo7FyMRZ8PXYvr-2SGqItWvVGEsarOb6Eeyhe5D2VPjJrIIDQWpeKeIjjEkZvyQ926klvPtzPdulxGjQM29ZL0YwwpmBZSNIOjtd2Y7JtOMhZjPIhhH1jE0izV9z89bczjDUWql1PVecF7zHzQZSRcaVwCiL8"/>
+<div>
+<h3 class="font-label-md text-label-md font-bold text-on-surface">Level 12</h3>
+<p class="font-label-sm text-label-sm text-on-surface-variant">2,450 XP to Next Rank</p>
+</div>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg bg-primary-container text-on-primary-container rounded-lg font-bold hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined icon-filled" data-icon="fitness_center">fitness_center</span>
+<span class="font-label-md text-label-md">Practice</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span class="font-label-md text-label-md">Skills</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span class="font-label-md text-label-md">Leaderboard</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto">
+<button class="w-full py-3 px-4 bg-tertiary-container text-on-tertiary-container rounded-full font-label-md text-label-md font-bold hover:bg-tertiary transition-colors shadow-sm hover:shadow-md hover:scale-[1.02] active:scale-95 duration-200">
+                Upgrade to Pro
+            </button>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="flex-1 md:ml-64 flex flex-col min-h-screen">
+<!-- TopNavBar (Mobile Only) -->
+<header class="md:hidden w-full h-16 bg-surface dark:bg-surface-dim shadow-sm flex justify-between items-center px-margin-mobile z-40 relative">
+<span class="font-headline-md text-headline-md font-extrabold text-primary dark:text-primary-fixed-dim">InterviewPro</span>
+<div class="flex items-center space-x-4">
+<button class="text-primary dark:text-primary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors p-2 rounded-full scale-105 active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="diamond">diamond</span>
+</button>
+<button class="text-primary dark:text-primary-fixed-dim hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors p-2 rounded-full scale-105 active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<img alt="Candidate profile avatar" class="w-8 h-8 rounded-full object-cover" data-alt="A small, stylized avatar image of a smiling professional in a brightly lit modern office setting, representing a user profile, rendered in a clean, modern digital illustration style with soft pastel colors." src="https://lh3.googleusercontent.com/aida-public/AB6AXuChmKFqQIzNjC2W8vqRFf8ZRm_RqNB6Q1To3sMHlFbsFGBijnJK9Dd6Tjh7Xe9FBuyp3E6Sr9b1le35lyFO3azFqJLK9SkF-qA2Jd0OvUB_p92abFX07d8wc4TaDyEDaEsGM-aSZ2jlSxE4Ffy5ST5W_xFSpwrceWAenOmLdxZNK4aMeDN1p72NmfIzolkSyNJBLhmUT8shPP3-PyOCOYY_CodvNaw1XU-AYNNwkRK2ZI6qSu7I1-sw"/>
+</div>
+</header>
+<!-- Page Content -->
+<main class="flex-1 p-margin-mobile md:p-margin-desktop w-full max-w-max-width mx-auto">
+<!-- Header Section -->
+<div class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<div class="flex items-center space-x-2 text-on-surface-variant mb-2">
+<span class="font-label-sm text-label-sm uppercase tracking-wider">Practice Arena</span>
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+<span class="font-label-sm text-label-sm text-primary font-bold uppercase tracking-wider">Behavioural</span>
+</div>
+<h1 class="font-display-lg-mobile md:font-display-lg text-on-surface mb-4">Master Your Stories</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+                        Behavioral interviews assess your past experiences to predict future performance. Use the STAR method to structure your responses and build confident momentum.
+                    </p>
+</div>
+<button class="bg-primary text-on-primary font-label-md text-label-md font-bold py-4 px-8 rounded-full border-b-[3px] border-[#2f2ebe] hover:bg-primary-container hover:-translate-y-1 hover:shadow-lg active:translate-y-0 active:border-b-0 transition-all flex items-center justify-center space-x-2 group">
+<span class="material-symbols-outlined group-hover:rotate-12 transition-transform">rocket_launch</span>
+<span>Start Behavioural Interview</span>
+</button>
+</div>
+<!-- Main Layout Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+<!-- Left Column (Competencies & Filters) -->
+<div class="lg:col-span-2 space-y-gutter">
+<!-- STAR Practice Module (Bento Glassmorphism) -->
+<div class="bg-surface-container-lowest rounded-xl p-8 shadow-sm border border-surface-container relative overflow-hidden group">
+<div class="absolute -right-16 -top-16 w-64 h-64 bg-primary-fixed-dim/20 rounded-full blur-3xl group-hover:bg-primary-fixed/40 transition-all duration-700"></div>
+<div class="relative z-10">
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-headline-lg text-headline-lg text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-3xl">auto_awesome</span>
+                                    AI STAR Coach
+                                </h2>
+<span class="bg-tertiary-container text-on-tertiary-container px-3 py-1 rounded-full font-label-sm text-label-sm font-bold">Pro Feature</span>
+</div>
+<p class="text-on-surface-variant mb-8">Practice structuring your answers with real-time AI feedback.</p>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+<div class="bg-surface p-4 rounded-lg border-2 border-surface-variant hover:border-primary transition-colors cursor-pointer text-center">
+<span class="block font-headline-md text-primary mb-1">S</span>
+<span class="font-label-sm text-on-surface-variant">Situation</span>
+</div>
+<div class="bg-surface p-4 rounded-lg border-2 border-surface-variant hover:border-primary transition-colors cursor-pointer text-center">
+<span class="block font-headline-md text-primary mb-1">T</span>
+<span class="font-label-sm text-on-surface-variant">Task</span>
+</div>
+<div class="bg-surface p-4 rounded-lg border-2 border-surface-variant hover:border-primary transition-colors cursor-pointer text-center">
+<span class="block font-headline-md text-primary mb-1">A</span>
+<span class="font-label-sm text-on-surface-variant">Action</span>
+</div>
+<div class="bg-surface p-4 rounded-lg border-2 border-surface-variant hover:border-primary transition-colors cursor-pointer text-center">
+<span class="block font-headline-md text-primary mb-1">R</span>
+<span class="font-label-sm text-on-surface-variant">Result</span>
+</div>
+</div>
+<div class="bg-surface-container rounded-lg p-1">
+<textarea class="w-full bg-transparent border-none focus:ring-0 resize-none p-4 font-body-md text-on-surface placeholder-on-surface-variant/50" placeholder="Tell me about a time you had to deal with a difficult team member..." rows="3"></textarea>
+<div class="flex justify-end p-2">
+<button class="bg-secondary text-on-secondary px-6 py-2 rounded-full font-label-md font-bold hover:bg-on-secondary-fixed-variant transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">mic</span>
+                                        Analyze Draft
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Competency Categories (Grid) -->
+<div>
+<div class="flex items-center justify-between mb-6">
+<h2 class="font-headline-md text-headline-md text-on-surface">Core Competencies</h2>
+<div class="flex gap-2">
+<select class="bg-surface border-none rounded-lg text-label-sm font-label-sm text-on-surface shadow-sm focus:ring-2 focus:ring-primary">
+<option>All Difficulties</option>
+<option>Easy</option>
+<option>Medium</option>
+<option>Hard</option>
+</select>
+<select class="bg-surface border-none rounded-lg text-label-sm font-label-sm text-on-surface shadow-sm focus:ring-2 focus:ring-primary">
+<option>Any Duration</option>
+<option>15 mins</option>
+<option>30 mins</option>
+<option>60+ mins</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+<!-- Category Cards -->
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer border-t-4 border-primary group">
+<div class="w-12 h-12 bg-primary-fixed rounded-full flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform">
+<span class="material-symbols-outlined text-primary-fixed-variant">groups</span>
+</div>
+<h3 class="font-label-md text-label-md font-bold text-on-surface mb-1">Leadership</h3>
+<p class="text-label-sm text-on-surface-variant">24 Questions</p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer border-t-4 border-secondary group">
+<div class="w-12 h-12 bg-secondary-fixed rounded-full flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform">
+<span class="material-symbols-outlined text-secondary">handshake</span>
+</div>
+<h3 class="font-label-md text-label-md font-bold text-on-surface mb-1">Conflict Resolution</h3>
+<p class="text-label-sm text-on-surface-variant">18 Questions</p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer border-t-4 border-tertiary group">
+<div class="w-12 h-12 bg-tertiary-fixed rounded-full flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform">
+<span class="material-symbols-outlined text-tertiary">key</span>
+</div>
+<h3 class="font-label-md text-label-md font-bold text-on-surface mb-1">Ownership</h3>
+<p class="text-label-sm text-on-surface-variant">32 Questions</p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer border-t-4 border-primary-container group">
+<div class="w-12 h-12 bg-primary-fixed-dim rounded-full flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform">
+<span class="material-symbols-outlined text-on-primary-container">hub</span>
+</div>
+<h3 class="font-label-md text-label-md font-bold text-on-surface mb-1">Teamwork</h3>
+<p class="text-label-sm text-on-surface-variant">20 Questions</p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer border-t-4 border-error group">
+<div class="w-12 h-12 bg-error-container rounded-full flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform">
+<span class="material-symbols-outlined text-error">school</span>
+</div>
+<h3 class="font-label-md text-label-md font-bold text-on-surface mb-1">Failure &amp; Learning</h3>
+<p class="text-label-sm text-on-surface-variant">15 Questions</p>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl shadow-sm hover:shadow-md hover:scale-[1.02] transition-all cursor-pointer border-t-4 border-[#005236] group">
+<div class="w-12 h-12 bg-[#6cf8bb] rounded-full flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform">
+<span class="material-symbols-outlined text-[#005236]">forum</span>
+</div>
+<h3 class="font-label-md text-label-md font-bold text-on-surface mb-1">Communication</h3>
+<p class="text-label-sm text-on-surface-variant">28 Questions</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column (Sets & History) -->
+<div class="space-y-gutter">
+<!-- Recommended Sets -->
+<div class="bg-surface-container-highest rounded-xl p-6 shadow-sm border border-surface-dim">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary-container">stars</span>
+                            Curated Paths
+                        </h2>
+<div class="space-y-4">
+<!-- Path Card -->
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-start gap-4 hover:shadow-md transition-shadow cursor-pointer relative overflow-hidden group">
+<div class="absolute right-0 top-0 w-16 h-full bg-gradient-to-l from-primary/10 to-transparent"></div>
+<div class="w-10 h-10 bg-[#ffddb8] rounded-full flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#825100]">shopping_cart</span>
+</div>
+<div class="z-10">
+<h4 class="font-label-md text-label-md font-bold text-on-surface">Top 10 Amazon Leadership Principles</h4>
+<p class="text-label-sm text-on-surface-variant mt-1">Essential for FAANG preparation.</p>
+<div class="flex items-center gap-2 mt-3">
+<span class="px-2 py-1 bg-surface text-on-surface-variant text-[10px] uppercase font-bold rounded-full">Hard</span>
+<span class="px-2 py-1 bg-surface text-on-surface-variant text-[10px] uppercase font-bold rounded-full">45 Mins</span>
+</div>
+</div>
+</div>
+<!-- Path Card -->
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-start gap-4 hover:shadow-md transition-shadow cursor-pointer relative overflow-hidden group">
+<div class="absolute right-0 top-0 w-16 h-full bg-gradient-to-l from-secondary/10 to-transparent"></div>
+<div class="w-10 h-10 bg-surface-container rounded-full flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">foundation</span>
+</div>
+<div class="z-10">
+<h4 class="font-label-md text-label-md font-bold text-on-surface">Foundational Behavioral</h4>
+<p class="text-label-sm text-on-surface-variant mt-1">Perfect starting point for juniors.</p>
+<div class="flex items-center gap-2 mt-3">
+<span class="px-2 py-1 bg-surface text-on-surface-variant text-[10px] uppercase font-bold rounded-full">Easy</span>
+<span class="px-2 py-1 bg-surface text-on-surface-variant text-[10px] uppercase font-bold rounded-full">30 Mins</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Attempts -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-surface-container">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-4">Recent Activity</h2>
+<div class="relative border-l-2 border-surface-container ml-3 space-y-6">
+<!-- Timeline Item -->
+<div class="relative pl-6">
+<div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-secondary border-2 border-surface-container-lowest"></div>
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-label-md text-label-md font-bold text-on-surface">Leadership Core</h4>
+<p class="text-label-sm text-on-surface-variant">Completed • Score: 92%</p>
+</div>
+<span class="text-label-sm text-on-surface-variant">2d ago</span>
+</div>
+<button class="mt-2 text-primary font-label-sm text-label-sm hover:underline flex items-center gap-1">
+                                    Review Answers <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+<!-- Timeline Item -->
+<div class="relative pl-6">
+<div class="absolute -left-[9px] top-1 w-4 h-4 rounded-full bg-tertiary-fixed-dim border-2 border-surface-container-lowest"></div>
+<div class="flex justify-between items-start">
+<div>
+<h4 class="font-label-md text-label-md font-bold text-on-surface">Conflict Resolution</h4>
+<p class="text-label-sm text-on-surface-variant">In Progress • 3/5 Done</p>
+</div>
+<span class="text-label-sm text-on-surface-variant">5d ago</span>
+</div>
+<button class="mt-2 text-tertiary-container font-label-sm text-label-sm hover:underline flex items-center gap-1">
+                                    Resume <span class="material-symbols-outlined text-[14px]">play_arrow</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

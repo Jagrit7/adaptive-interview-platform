@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>InterviewPro - Interviews List</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Playfair+Display:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f2f4f6",
+                        "primary-container": "#131b2e",
+                        "on-surface-variant": "#45464d",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-error": "#ffffff",
+                        "tertiary": "#000000",
+                        "secondary-container": "#d0e1fb",
+                        "surface-container-high": "#e6e8ea",
+                        "surface-bright": "#f7f9fb",
+                        "surface-tint": "#565e74",
+                        "on-background": "#191c1e",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-secondary-container": "#54647a",
+                        "on-primary-container": "#7c839b",
+                        "on-tertiary-fixed-variant": "#41474e",
+                        "secondary-fixed": "#d3e4fe",
+                        "surface-dim": "#d8dadc",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "secondary": "#505f76",
+                        "tertiary-fixed-dim": "#c1c7cf",
+                        "primary": "#000000",
+                        "surface": "#f7f9fb",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-primary-fixed": "#131b2e",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#161c22",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#dde3eb",
+                        "inverse-primary": "#bec6e0",
+                        "inverse-surface": "#2d3133",
+                        "primary-fixed-dim": "#bec6e0",
+                        "background": "#f7f9fb",
+                        "tertiary-container": "#161c22",
+                        "on-secondary-fixed": "#0b1c30",
+                        "on-surface": "#191c1e",
+                        "primary-fixed": "#dae2fd",
+                        "outline-variant": "#c6c6cd",
+                        "on-tertiary-container": "#7e848c",
+                        "surface-container": "#eceef0",
+                        "surface-variant": "#e0e3e5",
+                        "outline": "#76777d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-desktop": "40px",
+                        "stack-md": "16px",
+                        "stack-lg": "32px",
+                        "margin-mobile": "16px",
+                        "unit": "8px",
+                        "stack-sm": "8px",
+                        "container-max-width": "1280px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Playfair Display"],
+                        "headline-lg-mobile": ["Playfair Display"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Playfair Display"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Playfair Display"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "label-sm": ["12px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Subtle diffussed shadow for level 1 surfaces */
+        .shadow-level-1 {
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased h-screen overflow-hidden flex">
+<!-- SideNavBar (Shared Component) -->
+<nav class="hidden md:flex flex-col h-full py-stack-lg px-gutter bg-surface w-64 fixed left-0 top-0 border-r border-tertiary transition-all duration-200 ease-in-out z-20">
+<!-- Header -->
+<div class="flex items-center gap-3 mb-10 px-2">
+<div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary text-sm" data-icon="corporate_fare">corporate_fare</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">RecruitPro</h1>
+<p class="font-label-sm text-label-sm text-secondary">Enterprise Suite</p>
+</div>
+</div>
+<!-- CTA -->
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md py-3 px-4 rounded-lg flex items-center justify-center gap-2 mb-8 hover:bg-surface-tint transition-colors">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+            New Interview
+        </button>
+<!-- Navigation Links -->
+<div class="flex flex-col gap-1 flex-1 overflow-y-auto">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-secondary font-medium hover:bg-surface-container-high transition-colors font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-primary font-bold border-r-2 border-primary bg-surface-container-low font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="event_note" data-weight="fill">event_note</span>
+                Interviews
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-secondary font-medium hover:bg-surface-container-high transition-colors font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+                Candidates
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-secondary font-medium hover:bg-surface-container-high transition-colors font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined" data-icon="diversity_3">diversity_3</span>
+                Team
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-secondary font-medium hover:bg-surface-container-high transition-colors font-label-md text-label-md mt-auto" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                Settings
+            </a>
+</div>
+</nav>
+<!-- TopNavBar (Shared Component) -->
+<header class="hidden md:flex justify-between items-center px-margin-desktop w-full fixed top-0 right-0 left-64 h-16 bg-surface/80 backdrop-blur-md border-b border-tertiary shadow-sm z-10">
+<!-- Search (on_right logic dictates position) -->
+<div class="flex-1"></div>
+<div class="flex items-center gap-6">
+<!-- Search Bar -->
+<div class="relative w-64">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]" data-icon="search">search</span>
+<input class="w-full bg-surface-container-lowest border border-tertiary rounded-full py-1.5 pl-10 pr-4 font-body-md text-body-md text-primary focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" placeholder="Search..." type="text"/>
+</div>
+<!-- Trailing Icons -->
+<div class="flex items-center gap-2">
+<button class="p-2 text-on-surface-variant hover:text-primary scale-95 active:scale-90 transition-transform rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary scale-95 active:scale-90 transition-transform rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+</div>
+<!-- Profile Image -->
+<div class="w-8 h-8 rounded-full overflow-hidden border border-tertiary ml-2 cursor-pointer">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A close-up portrait of a professional individual in a corporate setting, soft high-key lighting, bright white background, minimalist aesthetic, confident and approachable expression, wearing a tailored navy blazer, capturing a premium enterprise mood." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAC9PdEIcIb4oCBhYroL3mnrmXZHYQj_hZMjry5JqBsyWXS435G7e9lXgRw3o_r_SYAIH4OsC988tJ6hUHxl97CZkeWdpkThBLqw2sAwvk9gj7iPhCLDyC0U00lFf8PAXEmuAfn2UFV-4YNcE3_0Z9-_TYt4SOddARgHaiGAi4KKfAUeVa156OYfHjRT2iip9OGx-EQKrBA6ZasOAhkpItVl0OznLd4WFQ9kmFXsmPyZvPm8M51uDr4"/>
+</div>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 ml-0 md:ml-64 mt-0 md:mt-16 overflow-y-auto h-full p-margin-mobile md:p-margin-desktop bg-background">
+<div class="max-w-[1280px] mx-auto w-full">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-stack-lg gap-4">
+<div>
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary mb-1">Interviews</h2>
+<p class="font-body-md text-body-md text-secondary">Manage and track your organization's interview processes.</p>
+</div>
+<button class="bg-primary text-on-primary font-label-md text-label-md py-2.5 px-5 rounded-lg flex items-center gap-2 hover:bg-surface-tint transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                    Create New Interview
+                </button>
+</div>
+<!-- Tabs & Filters Bar -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-tertiary mb-stack-lg gap-4 pb-0">
+<!-- Tabs -->
+<div class="flex overflow-x-auto w-full md:w-auto hide-scrollbar -mb-[1px]">
+<button class="px-4 py-3 font-label-md text-label-md text-secondary hover:text-primary border-b-2 border-transparent transition-colors whitespace-nowrap">Draft</button>
+<button class="px-4 py-3 font-label-md text-label-md text-primary font-bold border-b-2 border-primary transition-colors whitespace-nowrap">Active</button>
+<button class="px-4 py-3 font-label-md text-label-md text-secondary hover:text-primary border-b-2 border-transparent transition-colors whitespace-nowrap">Scheduled</button>
+<button class="px-4 py-3 font-label-md text-label-md text-secondary hover:text-primary border-b-2 border-transparent transition-colors whitespace-nowrap">Paused</button>
+<button class="px-4 py-3 font-label-md text-label-md text-secondary hover:text-primary border-b-2 border-transparent transition-colors whitespace-nowrap">Completed</button>
+<button class="px-4 py-3 font-label-md text-label-md text-secondary hover:text-primary border-b-2 border-transparent transition-colors whitespace-nowrap">Archived</button>
+</div>
+<!-- Filters -->
+<div class="flex items-center gap-3 pb-3 md:pb-0 w-full md:w-auto overflow-x-auto hide-scrollbar">
+<button class="flex items-center gap-2 px-3 py-1.5 rounded border border-tertiary bg-surface-container-lowest text-secondary font-label-sm text-label-sm hover:bg-surface-container-low transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-[16px]" data-icon="filter_list">filter_list</span>
+                        Filter
+                    </button>
+<button class="flex items-center gap-2 px-3 py-1.5 rounded border border-tertiary bg-surface-container-lowest text-secondary font-label-sm text-label-sm hover:bg-surface-container-low transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-[16px]" data-icon="sort">sort</span>
+                        Sort: Newest
+                    </button>
+</div>
+</div>
+<!-- Data Table Container -->
+<div class="bg-surface-container-lowest rounded-lg border border-tertiary shadow-level-1 overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-tertiary font-label-sm text-label-sm text-secondary uppercase tracking-wider">
+<th class="p-4 font-semibold whitespace-nowrap">Interview Name</th>
+<th class="p-4 font-semibold whitespace-nowrap">Role</th>
+<th class="p-4 font-semibold whitespace-nowrap text-right">Candidates</th>
+<th class="p-4 font-semibold whitespace-nowrap">Completion Rate</th>
+<th class="p-4 font-semibold whitespace-nowrap text-right">Avg Score</th>
+<th class="p-4 font-semibold whitespace-nowrap">Owner</th>
+<th class="p-4 font-semibold whitespace-nowrap">Last Modified</th>
+<th class="p-4 font-semibold whitespace-nowrap text-center">Actions</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md text-primary divide-y divide-tertiary">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="p-4">
+<div class="font-medium text-primary">Senior Frontend Engineer - Q3</div>
+<div class="font-label-sm text-label-sm text-secondary mt-1">ID: INT-8021</div>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container-high text-secondary font-label-sm text-label-sm">Engineering</span>
+</td>
+<td class="p-4 text-right">42</td>
+<td class="p-4">
+<div class="flex items-center gap-2 w-32">
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 78%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">78%</span>
+</div>
+</td>
+<td class="p-4 text-right font-medium">8.4<span class="text-secondary text-sm">/10</span></td>
+<td class="p-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-label-sm text-label-sm">AS</div>
+<span class="text-sm">Alex S.</span>
+</div>
+</td>
+<td class="p-4 text-secondary text-sm">Today, 10:42 AM</td>
+<td class="p-4 text-center">
+<button class="text-secondary hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="p-4">
+<div class="font-medium text-primary">Director of Product Marketing</div>
+<div class="font-label-sm text-label-sm text-secondary mt-1">ID: INT-8019</div>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container-high text-secondary font-label-sm text-label-sm">Marketing</span>
+</td>
+<td class="p-4 text-right">18</td>
+<td class="p-4">
+<div class="flex items-center gap-2 w-32">
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 45%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">45%</span>
+</div>
+</td>
+<td class="p-4 text-right font-medium">7.2<span class="text-secondary text-sm">/10</span></td>
+<td class="p-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-label-sm text-label-sm">MR</div>
+<span class="text-sm">Maria R.</span>
+</div>
+</td>
+<td class="p-4 text-secondary text-sm">Yesterday, 4:15 PM</td>
+<td class="p-4 text-center">
+<button class="text-secondary hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="p-4">
+<div class="font-medium text-primary">Enterprise Sales Executive</div>
+<div class="font-label-sm text-label-sm text-secondary mt-1">ID: INT-8015</div>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container-high text-secondary font-label-sm text-label-sm">Sales</span>
+</td>
+<td class="p-4 text-right">104</td>
+<td class="p-4">
+<div class="flex items-center gap-2 w-32">
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 92%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">92%</span>
+</div>
+</td>
+<td class="p-4 text-right font-medium">6.8<span class="text-secondary text-sm">/10</span></td>
+<td class="p-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full overflow-hidden border border-tertiary">
+<img class="w-full h-full object-cover" data-alt="A small circular headshot of a smiling professional in a light grey suit, soft lighting, white background, minimalist and premium corporate style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB-YC9U37PdHkSCGUug0Bvk3CahkPxpRCAGCLMdXdxIfKqC0sTWz_dB9ETabaqX96ZNjTc2P935C6FQpxAYyagm7DzSHb1KMmciOLfHWZqKNhmUwAU6OGfJzqDuxNukwv__0UZ77HQHat92dHWZ91N3GP5CtBbcNUshskWdodtgcA_LMTTMyaHhRh2Fihja33O8RSRXC0gy212xidYOtGYmgZSPXlv8VfaQBd1LeGD-aJA5cGnIpbFJ"/>
+</div>
+<span class="text-sm">David K.</span>
+</div>
+</td>
+<td class="p-4 text-secondary text-sm">Oct 24, 2023</td>
+<td class="p-4 text-center">
+<button class="text-secondary hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-bright transition-colors group">
+<td class="p-4">
+<div class="font-medium text-primary">UX Research Lead</div>
+<div class="font-label-sm text-label-sm text-secondary mt-1">ID: INT-8012</div>
+</td>
+<td class="p-4">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container-high text-secondary font-label-sm text-label-sm">Design</span>
+</td>
+<td class="p-4 text-right">27</td>
+<td class="p-4">
+<div class="flex items-center gap-2 w-32">
+<div class="h-1.5 w-full bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 15%"></div>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">15%</span>
+</div>
+</td>
+<td class="p-4 text-right font-medium">--</td>
+<td class="p-4">
+<div class="flex items-center gap-2">
+<div class="w-6 h-6 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center font-label-sm text-label-sm">AS</div>
+<span class="text-sm">Alex S.</span>
+</div>
+</td>
+<td class="p-4 text-secondary text-sm">Oct 21, 2023</td>
+<td class="p-4 text-center">
+<button class="text-secondary hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="p-4 border-t border-tertiary flex items-center justify-between bg-surface-container-lowest">
+<span class="font-label-sm text-label-sm text-secondary">Showing 1-4 of 24 Active Interviews</span>
+<div class="flex items-center gap-2">
+<button class="p-1 rounded text-tertiary-fixed-dim cursor-not-allowed">
+<span class="material-symbols-outlined" data-icon="chevron_left">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded bg-surface-container-low text-primary font-label-sm text-label-sm flex items-center justify-center">1</button>
+<button class="w-8 h-8 rounded hover:bg-surface-container-low text-secondary font-label-sm text-label-sm flex items-center justify-center transition-colors">2</button>
+<button class="w-8 h-8 rounded hover:bg-surface-container-low text-secondary font-label-sm text-label-sm flex items-center justify-center transition-colors">3</button>
+<span class="text-secondary">...</span>
+<button class="p-1 rounded text-primary hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined" data-icon="chevron_right">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<style>
+        /* Utility to hide scrollbar but allow scrolling */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body></html>

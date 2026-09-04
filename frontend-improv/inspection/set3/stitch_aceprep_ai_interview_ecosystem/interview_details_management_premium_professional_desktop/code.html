@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RecruitPro - Interview Details</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f2f4f6",
+                        "primary-container": "#131b2e",
+                        "on-surface-variant": "#45464d",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-error": "#ffffff",
+                        "tertiary": "#000000",
+                        "secondary-container": "#d0e1fb",
+                        "surface-container-high": "#e6e8ea",
+                        "surface-bright": "#f7f9fb",
+                        "surface-tint": "#565e74",
+                        "on-background": "#191c1e",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-secondary-container": "#54647a",
+                        "on-primary-container": "#7c839b",
+                        "on-tertiary-fixed-variant": "#41474e",
+                        "secondary-fixed": "#d3e4fe",
+                        "surface-dim": "#d8dadc",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "secondary": "#505f76",
+                        "tertiary-fixed-dim": "#c1c7cf",
+                        "primary": "#000000",
+                        "surface": "#f7f9fb",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-primary-fixed": "#131b2e",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#161c22",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#dde3eb",
+                        "inverse-primary": "#bec6e0",
+                        "inverse-surface": "#2d3133",
+                        "primary-fixed-dim": "#bec6e0",
+                        "background": "#f7f9fb",
+                        "tertiary-container": "#161c22",
+                        "on-secondary-fixed": "#0b1c30",
+                        "on-surface": "#191c1e",
+                        "primary-fixed": "#dae2fd",
+                        "outline-variant": "#c6c6cd",
+                        "on-tertiary-container": "#7e848c",
+                        "surface-container": "#eceef0",
+                        "surface-variant": "#e0e3e5",
+                        "outline": "#76777d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-desktop": "40px",
+                        "stack-md": "16px",
+                        "stack-lg": "32px",
+                        "margin-mobile": "16px",
+                        "unit": "8px",
+                        "stack-sm": "8px",
+                        "container-max-width": "1280px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Playfair Display"],
+                        "headline-lg-mobile": ["Playfair Display"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Playfair Display"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Playfair Display"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "label-sm": ["12px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .diffused-shadow { box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04); }
+        .glass-panel { backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex antialiased">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-screen w-64 fixed left-0 top-0 bg-surface border-r border-tertiary py-stack-lg px-gutter z-40 transition-all duration-200 ease-in-out">
+<div class="mb-stack-lg">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">RecruitPro</h1>
+<p class="font-label-sm text-label-sm text-secondary mt-1">Enterprise Suite</p>
+</div>
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md py-3 rounded-lg mb-stack-lg hover:bg-on-surface-variant transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+            New Interview
+        </button>
+<ul class="flex flex-col gap-unit flex-grow">
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary font-medium font-label-md text-label-md hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+                    Dashboard
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-primary font-bold font-label-md text-label-md border-r-2 border-primary bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined">event_note</span>
+                    Interviews
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary font-medium font-label-md text-label-md hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+                    Candidates
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary font-medium font-label-md text-label-md hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">diversity_3</span>
+                    Team
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary font-medium font-label-md text-label-md hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+                    Settings
+                </a>
+</li>
+</ul>
+</nav>
+<!-- TopNavBar -->
+<header class="hidden md:flex fixed top-0 right-0 left-64 h-16 bg-surface/80 backdrop-blur-md border-b border-tertiary shadow-sm z-30 justify-between items-center px-margin-desktop w-[calc(100%-16rem)]">
+<div class="flex-1"></div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors scale-95 active:scale-90 flex items-center justify-center w-8 h-8 rounded-full">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors scale-95 active:scale-90 flex items-center justify-center w-8 h-8 rounded-full">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden border border-tertiary cursor-pointer hover:opacity-80 transition-opacity">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A high quality, professional corporate headshot of a person looking directly at the camera. The background is a clean, minimalist light grey studio backdrop. Lighting is soft, high-key, and flattering, creating a premium light-mode aesthetic. The subject is wearing modern business casual attire in dark navy, contrasting with the bright setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCeH1hgX6LzeJz9AeWZSFiCeE2TlFtnoe0647IuAtangfIdfY122lPkkdjS5xW_FUOIWObl7tX9k7u2UHNg0F3fFr95YTE3A6aHwFOawHEy4iUCM4MJCoSDIxf5easqobTMww9b_VrN_c1haYe8gcD7n_9hCX7iqidf01swYLGdx9hNMkB6A1MZYqd1nfyPfMJzc61DbEgXefBzdtLuESdq714PFMerssOC_xoMJGXgyAJaoRFKQPl5"/>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="w-full md:pl-64 pt-16 min-h-screen">
+<div class="max-w-[1280px] mx-auto p-margin-mobile md:p-margin-desktop space-y-stack-lg">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b border-tertiary pb-stack-md">
+<div>
+<div class="flex items-center gap-2 mb-2">
+<span class="bg-surface-container-low text-secondary px-2 py-1 rounded font-label-sm text-label-sm uppercase tracking-wide">Senior Engineering</span>
+<span class="bg-surface-container-low text-secondary px-2 py-1 rounded font-label-sm text-label-sm uppercase tracking-wide flex items-center gap-1"><span class="material-symbols-outlined" style="font-size: 14px;">circle</span> Active</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-primary">Frontend Architect Technical Screen</h2>
+<p class="font-body-md text-body-md text-secondary mt-1">Req ID: 899-FA • Last updated 2 hours ago</p>
+</div>
+<div class="flex gap-3 w-full md:w-auto">
+<button class="flex-1 md:flex-none px-4 py-2 border border-tertiary rounded-lg text-primary font-label-md text-label-md hover:bg-surface-container-low transition-colors">
+                        Edit Interview
+                    </button>
+<button class="flex-1 md:flex-none px-4 py-2 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:bg-on-surface-variant transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined" style="font-size: 18px;">person_add</span>
+                        Invite Candidates
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Overview & Funnel (Span 8) -->
+<div class="md:col-span-8 flex flex-col gap-gutter">
+<!-- Funnel Card -->
+<div class="bg-surface-container-lowest rounded-xl diffused-shadow p-stack-lg border border-tertiary/10">
+<h3 class="font-headline-md text-headline-md text-primary mb-stack-md">Candidate Pipeline</h3>
+<div class="relative pt-8 pb-4">
+<!-- Pipeline visualization - CSS only -->
+<div class="flex justify-between items-end h-32 w-full gap-2">
+<div class="w-1/4 bg-surface-container-low rounded-t-lg relative group transition-all hover:bg-surface-container-high cursor-pointer" style="height: 100%;">
+<div class="absolute -top-8 w-full text-center font-label-md text-label-md text-secondary">Invited</div>
+<div class="absolute bottom-2 w-full text-center font-headline-md text-headline-md text-primary font-bold">42</div>
+</div>
+<div class="w-1/4 bg-surface-container-low rounded-t-lg relative group transition-all hover:bg-surface-container-high cursor-pointer" style="height: 75%;">
+<div class="absolute -top-8 w-full text-center font-label-md text-label-md text-secondary">Scheduled</div>
+<div class="absolute bottom-2 w-full text-center font-headline-md text-headline-md text-primary font-bold">18</div>
+</div>
+<div class="w-1/4 bg-secondary-container/50 border border-secondary/20 rounded-t-lg relative group transition-all hover:bg-secondary-container cursor-pointer" style="height: 45%;">
+<div class="absolute -top-8 w-full text-center font-label-md text-label-md text-primary font-bold">Completed</div>
+<div class="absolute bottom-2 w-full text-center font-headline-md text-headline-md text-primary font-bold">8</div>
+</div>
+<div class="w-1/4 bg-surface-container-low rounded-t-lg relative group transition-all hover:bg-surface-container-high cursor-pointer" style="height: 15%;">
+<div class="absolute -top-8 w-full text-center font-label-md text-label-md text-secondary">Passed</div>
+<div class="absolute bottom-2 w-full text-center font-headline-md text-headline-md text-primary font-bold">2</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Upcoming Sessions List -->
+<div class="bg-surface-container-lowest rounded-xl diffused-shadow p-stack-lg border border-tertiary/10">
+<div class="flex justify-between items-center mb-stack-md">
+<h3 class="font-headline-md text-headline-md text-primary">Scheduled Sessions</h3>
+<a class="font-label-md text-label-md text-secondary hover:text-primary transition-colors" href="#">View All</a>
+</div>
+<div class="space-y-4">
+<!-- Session Item -->
+<div class="flex items-center justify-between p-4 border border-tertiary rounded-lg hover:border-primary/30 transition-colors cursor-pointer group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container-low rounded-lg flex flex-col items-center justify-center border border-tertiary">
+<span class="font-label-sm text-label-sm text-secondary uppercase">Oct</span>
+<span class="font-headline-md text-headline-md text-primary leading-none">24</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-primary font-bold">Sarah Jenkins</h4>
+<p class="font-body-md text-body-md text-secondary text-sm">10:00 AM - 11:30 AM PST</p>
+</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 transition-opacity text-primary border border-tertiary px-3 py-1 rounded font-label-sm text-label-sm">Join Lobby</button>
+</div>
+<!-- Session Item -->
+<div class="flex items-center justify-between p-4 border border-tertiary rounded-lg hover:border-primary/30 transition-colors cursor-pointer group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 bg-surface-container-low rounded-lg flex flex-col items-center justify-center border border-tertiary">
+<span class="font-label-sm text-label-sm text-secondary uppercase">Oct</span>
+<span class="font-headline-md text-headline-md text-primary leading-none">25</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-primary font-bold">David Chen</h4>
+<p class="font-body-md text-body-md text-secondary text-sm">1:00 PM - 2:30 PM PST</p>
+</div>
+</div>
+<button class="opacity-0 group-hover:opacity-100 transition-opacity text-primary border border-tertiary px-3 py-1 rounded font-label-sm text-label-sm">Join Lobby</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Config & Rubric (Span 4) -->
+<div class="md:col-span-4 flex flex-col gap-gutter">
+<!-- Configuration Summary -->
+<div class="bg-surface-container-lowest rounded-xl diffused-shadow p-stack-lg border border-tertiary/10">
+<h3 class="font-headline-md text-headline-md text-primary mb-4">Configuration</h3>
+<div class="space-y-4">
+<div>
+<span class="font-label-sm text-label-sm text-secondary block mb-1">Format</span>
+<div class="flex items-center gap-2 font-body-md text-body-md text-primary">
+<span class="material-symbols-outlined text-secondary" style="font-size: 18px;">videocam</span>
+                                    Virtual Video Technical
+                                </div>
+</div>
+<div class="border-t border-tertiary/30 pt-4">
+<span class="font-label-sm text-label-sm text-secondary block mb-1">Duration</span>
+<div class="flex items-center gap-2 font-body-md text-body-md text-primary">
+<span class="material-symbols-outlined text-secondary" style="font-size: 18px;">timer</span>
+                                    90 Minutes
+                                </div>
+</div>
+<div class="border-t border-tertiary/30 pt-4">
+<span class="font-label-sm text-label-sm text-secondary block mb-1">Environment</span>
+<div class="flex items-center gap-2 font-body-md text-body-md text-primary">
+<span class="material-symbols-outlined text-secondary" style="font-size: 18px;">terminal</span>
+                                    React / TypeScript IDE
+                                </div>
+</div>
+</div>
+</div>
+<!-- Evaluation Rubric Preview -->
+<div class="bg-surface-container-lowest rounded-xl diffused-shadow p-stack-lg border border-tertiary/10">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-headline-md text-headline-md text-primary">Rubric Overview</h3>
+<button class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">open_in_new</span>
+</button>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<span class="font-body-md text-body-md text-primary">System Design</span>
+<span class="bg-surface-container-low px-2 py-0.5 rounded text-secondary font-label-sm text-label-sm">30%</span>
+</div>
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary w-[30%] h-full"></div>
+</div>
+<div class="flex items-center justify-between pt-2">
+<span class="font-body-md text-body-md text-primary">React Knowledge</span>
+<span class="bg-surface-container-low px-2 py-0.5 rounded text-secondary font-label-sm text-label-sm">40%</span>
+</div>
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary w-[40%] h-full"></div>
+</div>
+<div class="flex items-center justify-between pt-2">
+<span class="font-body-md text-body-md text-primary">Communication</span>
+<span class="bg-surface-container-low px-2 py-0.5 rounded text-secondary font-label-sm text-label-sm">30%</span>
+</div>
+<div class="w-full bg-surface-container-low h-1.5 rounded-full overflow-hidden">
+<div class="bg-primary w-[30%] h-full"></div>
+</div>
+</div>
+</div>
+<!-- Collaborators -->
+<div class="bg-surface-container-lowest rounded-xl diffused-shadow p-stack-lg border border-tertiary/10">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-headline-md text-headline-md text-primary">Collaborators</h3>
+<button class="text-secondary hover:text-primary transition-colors">
+<span class="material-symbols-outlined" style="font-size: 20px;">add_circle</span>
+</button>
+</div>
+<div class="flex flex-wrap gap-2">
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden border border-tertiary" title="Elena Rostova (Lead)">
+<img alt="Collaborator 1" class="w-full h-full object-cover" data-alt="A small circular avatar portrait of a professional woman with dark hair, smiling subtly. High-key lighting, bright minimalist background. Enterprise business attire." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDq3rdprB-dpYY-u5zwTB5rpEU8FwIDUVsPYs3NHnpSdpMuKGL6NxYWzZLGaI3B3WOEHo4PjqisrMnTwPQ_hs4LWCDpH38L0PIl3YxY-TsEaIjL-403j_OOIUL52v-l_pUx1R775cZTa_jBDQNfScv49InFH36ISH22b5WkKy9qz6qzUoNR6ojYmwoh_cOuex4PggUzTzr2-EKRi7ZVAJpf_2HQEjcXVh6Gp99UWmRZQgMLf4fTF3KK"/>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden border border-tertiary" title="Marcus Vance">
+<img alt="Collaborator 2" class="w-full h-full object-cover" data-alt="A small circular avatar portrait of a professional man with short hair and glasses. Minimalist studio lighting, crisp corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAr68uRRM4VeiFi_zy3z0NI5XIWuCudeh-aiHxrMQ72CrCxVzhVjg6JYBjvhg_wmv-kxeXh5ofhClrwmT53kqQb90IPywGitaxwZh9YjbSvB9Ejh4qNQxY5x_EqJ0DqLw0VG2xSlA7nc8dVYA8v0Smar6D18M8Xzuak6Std0uuOw3oo6Y3Z4NmudZDimQK0elJ8CE59H09bM5erbaIymf1bPQSz03T-ZeFPbYKubRBTETIYsdYYUUcS"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

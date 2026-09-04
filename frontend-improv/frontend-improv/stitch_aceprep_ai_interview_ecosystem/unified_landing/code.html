@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>InterviewPro - Master your next interview</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#bec6e0",
+                        "on-error-container": "#93000a",
+                        "surface-container-high": "#e6e8ea",
+                        "surface-bright": "#f7f9fb",
+                        "background": "#f7f9fb",
+                        "surface-tint": "#4d44e3",
+                        "primary-container": "#4f46e5",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed-variant": "#3f465c",
+                        "on-primary-fixed": "#0f0069",
+                        "on-secondary-container": "#5c647a",
+                        "secondary-container": "#dae2fd",
+                        "primary-fixed": "#e2dfff",
+                        "on-tertiary-container": "#67f4b7",
+                        "secondary-fixed": "#dae2fd",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed": "#131b2e",
+                        "primary": "#3525cd",
+                        "surface-container-low": "#f2f4f6",
+                        "on-primary-fixed-variant": "#3323cc",
+                        "surface-container-highest": "#e0e3e5",
+                        "outline-variant": "#c7c4d8",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#005236",
+                        "secondary": "#565e74",
+                        "inverse-primary": "#c3c0ff",
+                        "on-background": "#191c1e",
+                        "enterprise-muted": "#64748B",
+                        "inverse-on-surface": "#eff1f3",
+                        "outline": "#777587",
+                        "tertiary": "#005338",
+                        "warm-highlight": "#F59E0B",
+                        "on-surface": "#191c1e",
+                        "tertiary-fixed-dim": "#4edea3",
+                        "surface-variant": "#e0e3e5",
+                        "inverse-surface": "#2d3133",
+                        "on-error": "#ffffff",
+                        "on-tertiary-fixed": "#002113",
+                        "border-subtle": "#E2E8F0",
+                        "tertiary-fixed": "#6ffbbe",
+                        "error": "#ba1a1a",
+                        "surface-dim": "#d8dadc",
+                        "surface-white": "#FFFFFF",
+                        "surface-container": "#eceef0",
+                        "primary-fixed-dim": "#c3c0ff",
+                        "on-primary-container": "#dad7ff",
+                        "on-surface-variant": "#464555",
+                        "tertiary-container": "#006e4b",
+                        "surface": "#f7f9fb",
+                        "individual-accent": "#7C3AED",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-desktop": "40px",
+                        "stack-sm": "8px",
+                        "margin-mobile": "16px",
+                        "container-max": "1280px",
+                        "base": "8px",
+                        "stack-md": "16px",
+                        "stack-lg": "32px",
+                        "gutter": "24px",
+                        "section-gap": "64px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Plus Jakarta Sans"],
+                        "display-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md antialiased pt-24">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-surface/80 dark:bg-inverse-surface/80 backdrop-blur-md border-b border-outline-variant/20">
+<div class="flex justify-between items-center px-margin-desktop py-4 max-w-container-max mx-auto">
+<div class="text-headline-md font-headline-md font-extrabold text-primary dark:text-primary-fixed-dim">
+                InterviewPro
+            </div>
+<div class="hidden md:flex space-x-8">
+<a class="text-primary dark:text-primary-fixed-dim font-bold border-b-2 border-primary pb-1" href="#">Product</a>
+<a class="text-on-surface-variant dark:text-on-secondary-fixed-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-300 pb-1" href="#">For Individuals</a>
+<a class="text-on-surface-variant dark:text-on-secondary-fixed-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-300 pb-1" href="#">For Enterprises</a>
+<a class="text-on-surface-variant dark:text-on-secondary-fixed-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-300 pb-1" href="#">How It Works</a>
+<a class="text-on-surface-variant dark:text-on-secondary-fixed-variant hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-300 pb-1" href="#">Pricing</a>
+</div>
+<div>
+<a class="text-primary dark:text-primary-fixed-dim font-body-md hover:text-primary dark:hover:text-primary-fixed-dim transition-colors duration-300 scale-95 active:scale-90 transition-transform" href="#">Sign In</a>
+</div>
+</div>
+</nav>
+<main>
+<!-- Hero Section -->
+<section class="px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto pt-16 pb-section-gap text-center">
+<h1 class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-on-surface mb-stack-md max-w-4xl mx-auto">
+                Master your next interview. Build your perfect hiring process.
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-section-gap max-w-3xl mx-auto">
+                The AI-powered ecosystem that empowers individuals to excel and enterprises to hire with confidence.
+            </p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter text-left">
+<!-- Individual Card -->
+<div class="rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(15,23,42,0.05)] hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(99,102,241,0.15)] transition-all duration-300 bg-gradient-to-br from-[#6366f1] to-[#8b5cf6] text-white p-8 relative min-h-[400px] flex flex-col justify-end">
+<div class="absolute inset-0 opacity-20 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
+<div class="relative z-10">
+<span class="inline-block px-3 py-1 bg-white/20 rounded-full font-label-sm text-label-sm mb-4 backdrop-blur-sm">For Individuals</span>
+<h2 class="font-headline-lg text-headline-lg mb-4">Practice with AI mock interviews.</h2>
+<p class="font-body-md text-body-md mb-6 opacity-90">
+                            Skills, roles and language-based interviews. Personalized feedback. Progress tracking.
+                        </p>
+<button class="bg-white text-[#6366f1] font-label-md text-label-md px-6 py-3 rounded-lg border-b-2 border-gray-200 hover:bg-gray-50 transition-colors">
+                            Start Practicing
+                        </button>
+</div>
+</div>
+<!-- Enterprise Card -->
+<div class="rounded-xl overflow-hidden shadow-[0_4px_20px_rgba(15,23,42,0.05)] hover:scale-[1.02] hover:shadow-[0_8px_30px_rgba(15,23,42,0.2)] transition-all duration-300 bg-gradient-to-br from-[#0f172a] to-[#1e293b] text-white p-8 relative min-h-[400px] flex flex-col justify-end">
+<div class="absolute inset-0 opacity-10 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.2)_50%,transparent_75%)] bg-[length:20px_20px]"></div>
+<div class="relative z-10">
+<span class="inline-block px-3 py-1 bg-white/10 rounded-full font-label-sm text-label-sm mb-4 backdrop-blur-sm border border-white/20">For Enterprises</span>
+<h2 class="font-headline-lg text-headline-lg mb-4">Design and conduct intelligent interviews.</h2>
+<p class="font-body-md text-body-md mb-6 opacity-80">
+                            Custom interview builder. AI interviewer configuration. Candidate evaluation. Analytics.
+                        </p>
+<button class="bg-primary text-white font-label-md text-label-md px-6 py-3 rounded-lg hover:bg-primary/90 transition-colors">
+                            Build an Interview
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Product Preview -->
+<section class="bg-surface-container-low py-section-gap">
+<div class="px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+<img alt="Product Preview" class="w-full h-auto rounded-xl shadow-lg" data-alt="A split-screen digital product mockup. The left side shows a bright, gamified user interface with floating gems, colorful progress bars, and cartoon avatars, representing a light-mode individual learning app. The right side shows a dark-mode, professional analytics dashboard with bar charts, candidate data, and sleek glassmorphism panels, representing an enterprise recruitment tool. High-quality render, modern corporate UI aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA8YC2y60Kk7Ql3v-IH67mhHpVwluT2KOlHJVgQRAozs9NSILY49bBp1cudDflabJsJ2Y4RZykygo4P6tvKGSFyYFkCgxnAsHJDli9njRnIW0OF3CyBf0kmrWiz90ujv2mZb-ioepHsw83Vkp8Ko4JYT4LF9chb_YxNOeDQfTph6v4Dk-lQe8_a3QctE5BJH5zmcs9rwQ1xNK3nIZRNRN0pxs9n4lKZ-iBI-uqOTgxIRbrmbd3jYAfD"/>
+</div>
+</section>
+<!-- Shared Benefit -->
+<section class="px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto py-section-gap text-center">
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-stack-md">One platform, two tailored experiences</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+                Powered by a single, advanced AI engine that adapts to your needs, whether you're climbing the career ladder or building a world-class team.
+            </p>
+</section>
+<!-- How It Works -->
+<section class="bg-surface-white py-section-gap">
+<div class="px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
+<h2 class="font-headline-lg text-headline-lg text-on-surface text-center mb-stack-lg">How It Works</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<div class="text-center p-6 bg-surface-container rounded-xl">
+<div class="w-16 h-16 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center mx-auto mb-4">
+<span class="material-symbols-outlined text-3xl">settings</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-2">1. Setup</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Configure your profile or define the role requirements in minutes.</p>
+</div>
+<div class="text-center p-6 bg-surface-container rounded-xl">
+<div class="w-16 h-16 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center mx-auto mb-4">
+<span class="material-symbols-outlined text-3xl">forum</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-2">2. Interview</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Engage in realistic, AI-driven conversations tailored to the specific domain.</p>
+</div>
+<div class="text-center p-6 bg-surface-container rounded-xl">
+<div class="w-16 h-16 bg-primary-container text-on-primary-container rounded-full flex items-center justify-center mx-auto mb-4">
+<span class="material-symbols-outlined text-3xl">analytics</span>
+</div>
+<h3 class="font-headline-md text-headline-md mb-2">3. Evaluate</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Receive comprehensive feedback or detailed candidate assessments instantly.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Stats -->
+<section class="px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto py-section-gap">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter text-center divide-y md:divide-y-0 md:divide-x divide-outline-variant/30">
+<div class="py-4">
+<div class="font-display-lg text-display-lg text-primary mb-2">2.5M+</div>
+<div class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Interviews Conducted</div>
+</div>
+<div class="py-4">
+<div class="font-display-lg text-display-lg text-primary mb-2">99.8%</div>
+<div class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Uptime</div>
+</div>
+<div class="py-4">
+<div class="font-display-lg text-display-lg text-primary mb-2">150+</div>
+<div class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">Technologies</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="w-full py-stack-lg border-t border-outline-variant bg-surface-container-lowest dark:bg-inverse-surface">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-gutter px-margin-desktop max-w-container-max mx-auto">
+<div class="col-span-2 md:col-span-4 mb-4">
+<div class="text-headline-md font-headline-md font-bold text-on-surface dark:text-inverse-on-surface">InterviewPro</div>
+<div class="font-label-md text-label-md text-secondary dark:text-secondary-fixed-dim mt-2">© 2024 InterviewPro. Empowered Professionalism for everyone.</div>
+</div>
+<a class="font-label-md text-label-md text-enterprise-muted dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Product</a>
+<a class="font-label-md text-label-md text-enterprise-muted dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Individuals</a>
+<a class="font-label-md text-label-md text-enterprise-muted dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Enterprises</a>
+<a class="font-label-md text-label-md text-enterprise-muted dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Careers</a>
+<a class="font-label-md text-label-md text-enterprise-muted dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Privacy</a>
+<a class="font-label-md text-label-md text-enterprise-muted dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-tertiary-fixed transition-colors opacity-80 hover:opacity-100" href="#">Terms</a>
+</div>
+</footer>
+</body></html>

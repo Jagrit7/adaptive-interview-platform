@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>InterviewPro - Skill Analytics Loading</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed": "#6ffbbe",
+                        "surface-bright": "#f8f9ff",
+                        "on-primary-fixed": "#07006c",
+                        "secondary": "#006c49",
+                        "surface-tint": "#494bd6",
+                        "on-error-container": "#93000a",
+                        "on-background": "#0b1c30",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-error": "#ffffff",
+                        "inverse-primary": "#c0c1ff",
+                        "on-primary": "#ffffff",
+                        "surface-container-low": "#eff4ff",
+                        "surface-container-high": "#dce9ff",
+                        "surface-variant": "#d3e4fe",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "on-secondary-container": "#00714d",
+                        "primary-fixed-dim": "#c0c1ff",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#2a1700",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "on-surface-variant": "#464554",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "surface-dim": "#cbdbf5",
+                        "outline-variant": "#c7c4d7",
+                        "on-tertiary-container": "#fffbff",
+                        "background": "#f8f9ff",
+                        "on-secondary-fixed": "#002113",
+                        "secondary-fixed-dim": "#4edea3",
+                        "primary": "#4648d4",
+                        "surface-container": "#e5eeff",
+                        "on-surface": "#0b1c30",
+                        "outline": "#767586",
+                        "tertiary-container": "#a36700",
+                        "on-secondary-fixed-variant": "#005236",
+                        "inverse-surface": "#213145",
+                        "primary-fixed": "#e1e0ff",
+                        "surface": "#f8f9ff",
+                        "tertiary": "#825100",
+                        "secondary-container": "#6cf8bb",
+                        "error-container": "#ffdad6",
+                        "on-primary-container": "#fffbff",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#6063ee",
+                        "tertiary-fixed": "#ffddb8"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-mobile": "16px",
+                        "max-width": "1280px",
+                        "base": "8px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "display-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .pulse-skeleton {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        
+        .spinner {
+            animation: spin 1.5s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex">
+<!-- SideNavBar (from JSON) -->
+<nav class="h-full w-64 left-0 fixed bg-surface-container-low flex flex-col py-8 gap-4 z-20 shadow-sm border-r border-surface-variant">
+<div class="px-6 mb-8 flex flex-col items-center">
+<div class="w-16 h-16 rounded-full bg-surface-container-highest mb-4 overflow-hidden relative">
+<img class="w-full h-full object-cover" data-alt="A brightly lit, professional headshot of a young woman smiling confidently, wearing a modern blue blazer against a clean, minimal white background with soft, playful lighting typical of a modern e-learning platform." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDmBwEaSWTxxQUpYD0z5WXS6CQdkczoXCYgdmfAAp7BlYyJVUtYXrcx_z7Aj5LanzaLmB8irlnJ3R7NHxf__RurlsD1lTayO-SAFwJ6JdYQ86b7VAOVpZM0t1FCmckcri1ZYYYELfvppSSnSUmtrbSFHjFhZ5aoLQEbOSe5zYG5pzFyu6B8Sf7TibFWc0cN1ZPe_AcD-xCiUse-xJbr6rDR-aXHrVejxSCp_7jvsmxk20ZyZ_-fc1Mq"/>
+</div>
+<h2 class="font-headline-md text-headline-md font-bold text-primary text-center">Welcome back</h2>
+<p class="font-body-md text-body-md text-on-surface-variant text-center">Level 12 • 2,450 XP</p>
+</div>
+<ul class="flex-1 w-full">
+<li class="w-full">
+<a class="flex items-center px-6 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-4" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+</li>
+<li class="w-full">
+<a class="flex items-center px-6 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-4" data-icon="forum">forum</span>
+<span class="font-label-md text-label-md">Mock Interviews</span>
+</a>
+</li>
+<li class="w-full">
+<a class="flex items-center px-6 py-3 text-primary font-bold bg-primary-container/10 rounded-r-full transition-all duration-150 scale-98 shadow-sm" href="#">
+<span class="material-symbols-outlined mr-4" data-icon="terminal" style="font-variation-settings: 'FILL' 1;">terminal</span>
+<span class="font-label-md text-label-md">Skill Paths</span>
+</a>
+</li>
+<li class="w-full">
+<a class="flex items-center px-6 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-4" data-icon="emoji_events">emoji_events</span>
+<span class="font-label-md text-label-md">Leaderboard</span>
+</a>
+</li>
+<li class="w-full">
+<a class="flex items-center px-6 py-3 text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined mr-4" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</li>
+</ul>
+<div class="px-6 mt-auto">
+<button class="w-full py-3 bg-tertiary-container text-on-tertiary-container rounded-full font-label-md text-label-md shadow-sm hover:scale-105 transition-transform duration-200 border-b-[3px] border-tertiary font-bold">
+                Upgrade to Pro
+            </button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="ml-64 flex-1 flex flex-col min-h-screen relative">
+<!-- Top App Bar (Simplified for contextual page) -->
+<header class="h-20 px-margin-desktop flex items-center justify-between sticky top-0 bg-surface/80 backdrop-blur-md z-10">
+<div>
+<h1 class="font-headline-lg text-headline-lg text-primary">Skill Analytics</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Tracking your progress and mastery.</p>
+</div>
+</header>
+<!-- Skeleton Layout (Background) -->
+<div class="p-margin-desktop pt-8 grid grid-cols-12 gap-gutter relative flex-1 pointer-events-none">
+<!-- Overall Mastery Score Skeleton -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container-lowest rounded-DEFAULT p-6 shadow-sm border border-surface-variant flex flex-col items-center justify-center min-h-[300px]">
+<div class="w-32 h-32 rounded-full border-8 border-surface-container-high pulse-skeleton mb-6"></div>
+<div class="h-8 w-24 bg-surface-container-high rounded-full pulse-skeleton mb-3"></div>
+<div class="h-4 w-48 bg-surface-container-low rounded-full pulse-skeleton"></div>
+</div>
+<!-- Performance Chart Skeleton -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest rounded-DEFAULT p-6 shadow-sm border border-surface-variant min-h-[300px] flex flex-col">
+<div class="h-6 w-48 bg-surface-container-high rounded-full pulse-skeleton mb-8"></div>
+<div class="flex-1 flex items-end gap-4 justify-between w-full h-full pb-4">
+<div class="w-full bg-surface-container-high rounded-t-lg pulse-skeleton h-[20%]"></div>
+<div class="w-full bg-surface-container-high rounded-t-lg pulse-skeleton h-[40%]"></div>
+<div class="w-full bg-surface-container-high rounded-t-lg pulse-skeleton h-[70%]"></div>
+<div class="w-full bg-surface-container-high rounded-t-lg pulse-skeleton h-[50%]"></div>
+<div class="w-full bg-surface-container-high rounded-t-lg pulse-skeleton h-[90%]"></div>
+<div class="w-full bg-surface-container-high rounded-t-lg pulse-skeleton h-[30%]"></div>
+<div class="w-full bg-surface-container-high rounded-t-lg pulse-skeleton h-[60%]"></div>
+</div>
+<div class="flex justify-between w-full border-t border-surface-variant pt-4 mt-auto">
+<div class="h-3 w-12 bg-surface-container-high rounded-full pulse-skeleton"></div>
+<div class="h-3 w-12 bg-surface-container-high rounded-full pulse-skeleton"></div>
+<div class="h-3 w-12 bg-surface-container-high rounded-full pulse-skeleton"></div>
+<div class="h-3 w-12 bg-surface-container-high rounded-full pulse-skeleton"></div>
+</div>
+</div>
+<!-- Detailed Skills List Skeleton -->
+<div class="col-span-12 bg-surface-container-lowest rounded-DEFAULT p-6 shadow-sm border border-surface-variant mt-4">
+<div class="h-6 w-32 bg-surface-container-high rounded-full pulse-skeleton mb-6"></div>
+<div class="space-y-4">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-high pulse-skeleton"></div>
+<div class="flex-1">
+<div class="h-4 w-1/4 bg-surface-container-high rounded-full pulse-skeleton mb-2"></div>
+<div class="w-full h-2 bg-surface-container-low rounded-full pulse-skeleton"></div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-high pulse-skeleton"></div>
+<div class="flex-1">
+<div class="h-4 w-1/3 bg-surface-container-high rounded-full pulse-skeleton mb-2"></div>
+<div class="w-full h-2 bg-surface-container-low rounded-full pulse-skeleton"></div>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-high pulse-skeleton"></div>
+<div class="flex-1">
+<div class="h-4 w-1/5 bg-surface-container-high rounded-full pulse-skeleton mb-2"></div>
+<div class="w-full h-2 bg-surface-container-low rounded-full pulse-skeleton"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Semi-transparent Loading Overlay -->
+<div class="absolute inset-0 bg-surface-bright/60 backdrop-blur-sm z-30 flex flex-col items-center justify-center p-8 text-center rounded-tl-xl overflow-hidden mt-20">
+<!-- Animated Spinner / Graphic -->
+<div class="relative w-32 h-32 mb-8 flex items-center justify-center">
+<!-- Outer rotating ring -->
+<svg class="absolute inset-0 w-full h-full text-primary spinner" fill="none" viewbox="0 0 100 100">
+<circle class="opacity-80" cx="50" cy="50" r="45" stroke="currentColor" stroke-dasharray="140 140" stroke-linecap="round" stroke-width="4"></circle>
+<circle class="text-secondary-container" cx="50" cy="50" r="45" stroke="currentColor" stroke-dasharray="60 220" stroke-dashoffset="50" stroke-linecap="round" stroke-width="4"></circle>
+</svg>
+<!-- Inner floating icon -->
+<span class="material-symbols-outlined text-4xl text-primary transform transition-transform duration-1000 ease-in-out hover:scale-110 pulse-skeleton" data-icon="auto_awesome" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<!-- Loading Message -->
+<h3 class="font-headline-lg text-headline-lg text-primary mb-2">Analyzing your performance...</h3>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-md">Hang tight! We're calculating your mastery levels and finding new insights. You're doing great!</p>
+<!-- Decorative Element -->
+<div class="mt-12 flex gap-3 opacity-50 pulse-skeleton">
+<div class="w-2 h-2 rounded-full bg-primary"></div>
+<div class="w-2 h-2 rounded-full bg-primary" style="animation-delay: 0.2s"></div>
+<div class="w-2 h-2 rounded-full bg-primary" style="animation-delay: 0.4s"></div>
+</div>
+</div>
+</main>
+</body></html>

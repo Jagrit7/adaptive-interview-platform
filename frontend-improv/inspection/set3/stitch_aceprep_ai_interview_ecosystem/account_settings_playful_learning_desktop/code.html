@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>InterviewPro - Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed-dim": "#c0c1ff",
+                        "tertiary-container": "#a36700",
+                        "outline": "#767586",
+                        "on-secondary-fixed": "#002113",
+                        "on-error": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#c7c4d7",
+                        "secondary-fixed": "#6ffbbe",
+                        "secondary-fixed-dim": "#4edea3",
+                        "surface-container-low": "#eff4ff",
+                        "on-primary-container": "#fffbff",
+                        "on-secondary-fixed-variant": "#005236",
+                        "secondary": "#006c49",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-error-container": "#93000a",
+                        "primary": "#4648d4",
+                        "on-secondary-container": "#00714d",
+                        "surface-variant": "#d3e4fe",
+                        "background": "#f8f9ff",
+                        "surface-bright": "#f8f9ff",
+                        "on-surface-variant": "#464554",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#e5eeff",
+                        "inverse-surface": "#213145",
+                        "on-surface": "#0b1c30",
+                        "tertiary": "#825100",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "on-background": "#0b1c30",
+                        "on-primary-fixed": "#07006c",
+                        "primary-container": "#6063ee",
+                        "surface-container-high": "#dce9ff",
+                        "surface-tint": "#494bd6",
+                        "primary-fixed": "#e1e0ff",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#6cf8bb",
+                        "on-tertiary-container": "#fffbff",
+                        "surface": "#f8f9ff",
+                        "surface-dim": "#cbdbf5",
+                        "on-tertiary-fixed": "#2a1700",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "inverse-primary": "#c0c1ff",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "max-width": "1280px",
+                        "base": "8px",
+                        "margin-desktop": "64px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #4648d4;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #4648d4;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen flex overflow-hidden">
+<!-- SideNavBar (Desktop) -->
+<nav class="hidden md:flex flex-col h-full w-64 fixed left-0 top-0 bg-surface-container-lowest dark:bg-surface-container-low shadow-md p-6 space-y-4 z-50">
+<div class="mb-8">
+<h1 class="font-display-lg text-display-lg text-primary tracking-tighter">InterviewPro</h1>
+</div>
+<div class="flex-1 space-y-2">
+<a class="flex items-center space-x-3 p-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all font-label-md text-label-md hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center space-x-3 p-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all font-label-md text-label-md hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="fitness_center">fitness_center</span>
+<span>Practice</span>
+</a>
+<a class="flex items-center space-x-3 p-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all font-label-md text-label-md hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+<span>Skills</span>
+</a>
+<a class="flex items-center space-x-3 p-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all font-label-md text-label-md hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="leaderboard">leaderboard</span>
+<span>Leaderboard</span>
+</a>
+<a class="flex items-center space-x-3 p-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all font-label-md text-label-md hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span>Profile</span>
+</a>
+<a class="flex items-center space-x-3 p-3 rounded-lg bg-primary-container text-on-primary-container font-bold font-label-md text-label-md transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</div>
+<div class="mt-auto bg-surface-container rounded-lg p-4 flex items-center space-x-3">
+<img alt="Candidate level badge" class="w-10 h-10 rounded-full object-cover shadow-sm border-2 border-primary-fixed" data-alt="A stylized 3D rendered profile avatar of a confident professional in a vibrant, friendly style suitable for a learning platform. Bright, cheerful lighting with a soft gradient background in shades of light blue." src="https://lh3.googleusercontent.com/aida-public/AB6AXuACMzr2eVF2gsUim72ue2F01FHNMFGKapgF3bYd76WhDyiFA2NDgYLcaAx6u6fEcR7s_fQVa58vI2uy1B4rhC91dN-HeUkSgKiEI8WwqB4a3NBzhmrdOrqGgAP0cjkkHJJB3XqApBgi-seCV3TDXvYbDJ-9QjC6OkfBI4_1qiDTn2lMJ_cNA3L_hCIEB2Bzgm0-p2qpPacFeXevd_L3epyFOH34V3W5xNi-VD4NtvPrIN-EZD9l4jnh"/>
+<div>
+<p class="font-label-md text-label-md font-bold text-primary">Level 12</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">2,450 XP to Next Rank</p>
+</div>
+</div>
+<button class="w-full mt-4 py-3 bg-tertiary-fixed text-on-tertiary-fixed-variant rounded-full font-label-md text-label-md font-bold shadow-sm hover:scale-[1.02] active:scale-95 transition-all border-b-[3px] border-tertiary-container">
+            Upgrade to Pro
+        </button>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 overflow-y-auto w-full">
+<!-- TopNavBar (Mobile) -->
+<header class="md:hidden flex justify-between items-center px-margin-mobile w-full h-16 bg-surface dark:bg-surface-dim shadow-sm sticky top-0 z-40">
+<h1 class="font-headline-md text-headline-md font-extrabold text-primary dark:text-primary-fixed-dim">InterviewPro</h1>
+<div class="flex space-x-4">
+<span class="material-symbols-outlined text-primary" data-icon="diamond">diamond</span>
+<span class="material-symbols-outlined text-primary" data-icon="notifications">notifications</span>
+</div>
+</header>
+<div class="max-w-5xl mx-auto px-margin-mobile md:px-margin-desktop py-8 pb-32">
+<header class="mb-12">
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-primary mb-2">Account Settings</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Manage your preferences and personalize your learning journey.</p>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Column: Primary Settings -->
+<div class="lg:col-span-8 space-y-gutter">
+<!-- Account Info Card -->
+<section class="bg-surface-container-lowest rounded-[2rem] p-8 shadow-[0_4px_24px_rgba(70,72,212,0.05)] border border-surface-variant hover:shadow-[0_8px_32px_rgba(70,72,212,0.08)] transition-shadow duration-300">
+<div class="flex items-center space-x-4 mb-6">
+<div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined" data-icon="badge">badge</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Account Info</h2>
+</div>
+<div class="space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant block">Full Name</label>
+<input class="w-full bg-surface-container-low border-2 border-outline-variant rounded-xl px-4 py-3 font-body-md text-on-surface focus:border-primary focus:ring-0 transition-colors" type="text" value="Alex Rivera"/>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant block">Username</label>
+<input class="w-full bg-surface-container-low border-2 border-outline-variant rounded-xl px-4 py-3 font-body-md text-on-surface focus:border-primary focus:ring-0 transition-colors" type="text" value="arivera_dev"/>
+</div>
+</div>
+<div class="space-y-2">
+<label class="font-label-md text-label-md text-on-surface-variant block">Email Address</label>
+<input class="w-full bg-surface-container-low border-2 border-outline-variant rounded-xl px-4 py-3 font-body-md text-on-surface focus:border-primary focus:ring-0 transition-colors" type="email" value="alex.rivera@example.com"/>
+</div>
+</div>
+<div class="mt-8 flex justify-end">
+<button class="px-8 py-3 bg-primary text-on-primary rounded-full font-label-md text-label-md font-bold shadow-sm hover:scale-[1.02] active:scale-95 transition-all border-b-[3px] border-[#2f2ebe]">
+                                Save Changes
+                            </button>
+</div>
+</section>
+<!-- Interview Preferences Bento -->
+<section class="bg-surface-container-highest rounded-[2rem] p-8 relative overflow-hidden">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary opacity-5 rounded-full blur-3xl -mr-20 -mt-20"></div>
+<div class="flex items-center space-x-4 mb-6 relative z-10">
+<div class="w-12 h-12 rounded-full bg-surface-container-lowest flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="work">work</span>
+</div>
+<h2 class="font-headline-md text-headline-md text-on-surface">Interview Preferences</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-surface-variant">
+<h3 class="font-label-md text-label-md text-on-surface mb-4">Preferred Roles</h3>
+<div class="flex flex-wrap gap-2">
+<span class="px-4 py-2 bg-primary text-on-primary rounded-full font-label-sm text-label-sm shadow-sm cursor-pointer hover:bg-primary-fixed-dim hover:text-on-primary-fixed transition-colors">Frontend Eng</span>
+<span class="px-4 py-2 bg-primary text-on-primary rounded-full font-label-sm text-label-sm shadow-sm cursor-pointer hover:bg-primary-fixed-dim hover:text-on-primary-fixed transition-colors">Mobile Dev</span>
+<span class="px-4 py-2 bg-surface-container-low text-on-surface-variant border border-outline-variant rounded-full font-label-sm text-label-sm cursor-pointer hover:border-primary transition-colors flex items-center">
+<span class="material-symbols-outlined text-[16px] mr-1" data-icon="add">add</span> Add Role
+                                    </span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-surface-variant">
+<h3 class="font-label-md text-label-md text-on-surface mb-4">Languages</h3>
+<div class="flex flex-wrap gap-2">
+<span class="px-4 py-2 bg-secondary text-on-secondary rounded-full font-label-sm text-label-sm shadow-sm">English</span>
+<span class="px-4 py-2 bg-secondary text-on-secondary rounded-full font-label-sm text-label-sm shadow-sm">Hindi</span>
+<span class="px-4 py-2 bg-surface-container-low text-on-surface-variant border border-outline-variant rounded-full font-label-sm text-label-sm cursor-pointer hover:border-secondary transition-colors flex items-center">
+<span class="material-symbols-outlined text-[16px] mr-1" data-icon="add">add</span> Add Language
+                                    </span>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Right Column: Secondary Settings -->
+<div class="lg:col-span-4 space-y-gutter">
+<!-- Subscription Mini-Card -->
+<section class="bg-gradient-to-br from-tertiary-fixed to-surface-container-lowest rounded-[2rem] p-6 shadow-sm border border-tertiary-fixed-dim relative overflow-hidden group">
+<div class="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
+<span class="material-symbols-outlined text-[120px]" data-icon="workspace_premium">workspace_premium</span>
+</div>
+<h3 class="font-label-md text-label-md text-on-tertiary-fixed-variant mb-1 uppercase tracking-wider">Current Plan</h3>
+<div class="font-headline-lg text-headline-lg text-tertiary mb-4">Free Tier</div>
+<button class="w-full py-3 bg-tertiary text-on-tertiary rounded-full font-label-md text-label-md font-bold shadow-sm hover:scale-[1.02] active:scale-95 transition-all border-b-[3px] border-tertiary-container flex items-center justify-center space-x-2">
+<span class="material-symbols-outlined" data-icon="rocket_launch">rocket_launch</span>
+<span>Upgrade to Pro</span>
+</button>
+</section>
+<!-- Notifications -->
+<section class="bg-surface-container-lowest rounded-[2rem] p-6 shadow-sm border border-surface-variant">
+<div class="flex items-center space-x-3 mb-6">
+<span class="material-symbols-outlined text-primary" data-icon="notifications_active">notifications_active</span>
+<h2 class="font-label-md text-label-md text-on-surface font-bold text-lg">Notifications</h2>
+</div>
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md text-on-surface">Email Updates</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Tips and weekly digests</p>
+</div>
+<label class="flex items-center cursor-pointer">
+<div class="relative">
+<input checked="" class="sr-only toggle-checkbox" type="checkbox"/>
+<div class="block bg-surface-container-highest w-14 h-8 rounded-full toggle-label transition-colors"></div>
+<div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform translate-x-6 shadow-sm"></div>
+</div>
+</label>
+</div>
+<div class="flex items-center justify-between">
+<div>
+<p class="font-label-md text-label-md text-on-surface">Push Notifications</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">Practice reminders</p>
+</div>
+<label class="flex items-center cursor-pointer">
+<div class="relative">
+<input class="sr-only toggle-checkbox" type="checkbox"/>
+<div class="block bg-surface-container-highest w-14 h-8 rounded-full toggle-label transition-colors"></div>
+<div class="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform shadow-sm"></div>
+</div>
+</label>
+</div>
+</div>
+</section>
+<!-- Danger Zone -->
+<section class="bg-error-container/30 rounded-[2rem] p-6 border border-error-container">
+<div class="flex items-center space-x-3 mb-4">
+<span class="material-symbols-outlined text-error" data-icon="warning">warning</span>
+<h2 class="font-label-md text-label-md text-error font-bold">Danger Zone</h2>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6 text-sm">Once you delete your account, there is no going back. Please be certain.</p>
+<button class="w-full py-3 bg-surface-container-lowest text-error border-2 border-error-container rounded-full font-label-md text-label-md font-bold hover:bg-error-container hover:text-on-error-container transition-colors">
+                            Delete Account
+                        </button>
+</section>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Simple toggle interaction logic for visual feedback
+        document.querySelectorAll('.toggle-checkbox').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                const dot = this.parentElement.querySelector('.dot');
+                if(this.checked) {
+                    dot.classList.add('translate-x-6');
+                    this.nextElementSibling.classList.add('bg-primary');
+                    this.nextElementSibling.classList.remove('bg-surface-container-highest');
+                } else {
+                    dot.classList.remove('translate-x-6');
+                    this.nextElementSibling.classList.remove('bg-primary');
+                    this.nextElementSibling.classList.add('bg-surface-container-highest');
+                }
+            });
+            // Initialize state
+            if(toggle.checked) {
+                toggle.nextElementSibling.classList.add('bg-primary');
+            }
+        });
+    </script>
+</body></html>

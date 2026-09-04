@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profile Overview - InterviewPro</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts: Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "primary-fixed-dim": "#c0c1ff",
+                    "tertiary-container": "#a36700",
+                    "outline": "#767586",
+                    "on-secondary-fixed": "#002113",
+                    "on-error": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "outline-variant": "#c7c4d7",
+                    "secondary-fixed": "#6ffbbe",
+                    "secondary-fixed-dim": "#4edea3",
+                    "surface-container-low": "#eff4ff",
+                    "on-primary-container": "#fffbff",
+                    "on-secondary-fixed-variant": "#005236",
+                    "secondary": "#006c49",
+                    "on-primary-fixed-variant": "#2f2ebe",
+                    "surface-container-highest": "#d3e4fe",
+                    "on-error-container": "#93000a",
+                    "primary": "#4648d4",
+                    "on-secondary-container": "#00714d",
+                    "surface-variant": "#d3e4fe",
+                    "background": "#f8f9ff",
+                    "surface-bright": "#f8f9ff",
+                    "on-surface-variant": "#464554",
+                    "inverse-on-surface": "#eaf1ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-container": "#e5eeff",
+                    "inverse-surface": "#213145",
+                    "on-surface": "#0b1c30",
+                    "tertiary": "#825100",
+                    "tertiary-fixed-dim": "#ffb95f",
+                    "on-background": "#0b1c30",
+                    "on-primary-fixed": "#07006c",
+                    "primary-container": "#6063ee",
+                    "surface-container-high": "#dce9ff",
+                    "surface-tint": "#494bd6",
+                    "primary-fixed": "#e1e0ff",
+                    "error": "#ba1a1a",
+                    "secondary-container": "#6cf8bb",
+                    "on-tertiary-container": "#fffbff",
+                    "surface": "#f8f9ff",
+                    "surface-dim": "#cbdbf5",
+                    "on-tertiary-fixed": "#2a1700",
+                    "error-container": "#ffdad6",
+                    "tertiary-fixed": "#ffddb8",
+                    "on-tertiary-fixed-variant": "#653e00",
+                    "inverse-primary": "#c0c1ff",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "margin-mobile": "16px",
+                    "max-width": "1280px",
+                    "base": "8px",
+                    "margin-desktop": "64px",
+                    "gutter": "24px"
+            },
+            "fontFamily": {
+                    "display-lg-mobile": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "display-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "label-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "label-sm": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-md": [
+                            "Plus Jakarta Sans"
+                    ]
+            },
+            "fontSize": {
+                    "display-lg-mobile": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "800"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "display-lg": [
+                            "48px",
+                            {
+                                    "lineHeight": "56px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "800"
+                            }
+                    ],
+                    "label-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "0.01em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+          },
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f8f9ff;
+        }
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #eff4ff; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c7c4d7; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #767586; 
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background antialiased flex h-screen overflow-hidden font-body-md">
+<!-- SideNavBar (Desktop) -->
+<nav class="hidden md:flex flex-col h-full w-64 fixed left-0 top-0 bg-surface-container-lowest dark:bg-surface-container-low shadow-md p-6 space-y-4 z-50">
+<div class="mb-8">
+<h1 class="font-display-lg text-display-lg text-primary">InterviewPro</h1>
+</div>
+<div class="flex items-center space-x-4 mb-8 p-4 bg-surface-container-low rounded-xl">
+<div class="relative">
+<img alt="Candidate level badge" class="w-12 h-12 rounded-full object-cover border-2 border-primary" data-alt="A small, stylized 3D avatar of a young professional smiling confidently. The avatar is rendered in a modern, playful light-mode aesthetic with soft studio lighting, set against a pristine white background with subtle indigo accents. High quality, crisp details." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAu-6G8syQ-CaaeINhS0eH4vNx8EVKN8KdHLMy7R8Z2Om3KB_dhlIhD5xsy_KwZuUklovrd3OvsQPrHJmH8X_rL_mL3tn1hd4_6of97TP7ZloxWzRicMLLVp4UG-jo2rlHrNUOKdapJ3t86y5wjde3FKYpnGN1I9YCogFMa4ojUI4t8TN-Sn4I-izL9eq2Sxyo7k3VwAa006Xu3nPk0YuWt2sSFGyJuF8sonvzxtpa25_F_JYd_F2_t"/>
+<div class="absolute -bottom-1 -right-1 bg-secondary text-on-secondary text-xs font-bold px-1.5 py-0.5 rounded-full border-2 border-white">
+                    12
+                </div>
+</div>
+<div>
+<h2 class="font-label-md text-label-md font-bold text-on-surface">Level 12</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant">2,450 XP to Next Rank</p>
+</div>
+</div>
+<div class="flex flex-col space-y-2 flex-grow">
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined">fitness_center</span>
+<span class="font-label-md text-label-md">Practice</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span class="font-label-md text-label-md">Skills</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span class="font-label-md text-label-md">Leaderboard</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-lg font-bold hover:translate-x-1 duration-300 transition-transform" href="#">
+<span class="material-symbols-outlined icon-fill">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+<div class="mt-auto pt-4">
+<button class="w-full py-3 bg-tertiary text-on-tertiary rounded-full font-label-md text-label-md font-bold shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all flex items-center justify-center space-x-2 border-b-4 border-tertiary-container">
+<span class="material-symbols-outlined icon-fill text-tertiary-fixed">workspace_premium</span>
+<span>Upgrade to Pro</span>
+</button>
+</div>
+</nav>
+<!-- TopNavBar (Mobile) -->
+<header class="md:hidden flex justify-between items-center px-margin-mobile w-full h-16 bg-surface shadow-sm fixed top-0 z-50">
+<h1 class="font-headline-md text-headline-md font-extrabold text-primary">InterviewPro</h1>
+<div class="flex items-center space-x-4 text-primary">
+<button class="scale-105 active:scale-95 transition-transform duration-200 p-2 hover:bg-surface-container-low rounded-full">
+<span class="material-symbols-outlined">diamond</span>
+</button>
+<button class="scale-105 active:scale-95 transition-transform duration-200 p-2 hover:bg-surface-container-low rounded-full relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<img alt="Candidate profile avatar" class="w-8 h-8 rounded-full border-2 border-primary-container" data-alt="A small, stylized 3D avatar of a young professional smiling confidently. The avatar is rendered in a modern, playful light-mode aesthetic with soft studio lighting, set against a pristine white background with subtle indigo accents. High quality, crisp details." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqvq2aUjHxwO2iADyCffMRazWkSqa2mSvVQhNyBDgKMcnHO3aT27lbMaTaVRGsUcq61itimarJTqlXa8_FptAgopDFqxu2HnjPGewzKIB_DAiz8ytDHRQHD5CGVi2YdTAXwkpwsnIeQedZStd0cyGQXIUb5-M3Oo4PmK2UFqiRaHjU0M3eLuJhWuVQTV6IgdBhLLFhXaBPq_oR8-s7O41wBnmpCaC6444rEBFmnCCMbz7E6L6lyWDF"/>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 mt-16 md:mt-0 p-margin-mobile md:p-margin-desktop overflow-y-auto w-full max-w-max-width mx-auto">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row items-center md:items-start justify-between mb-12 space-y-6 md:space-y-0">
+<div class="flex flex-col md:flex-row items-center md:items-start space-y-4 md:space-y-0 md:space-x-8">
+<div class="relative group">
+<img alt="Alex Chen Avatar" class="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-surface-container shadow-md group-hover:scale-105 transition-transform duration-300" data-alt="A large, highly detailed 3D avatar of Alex Chen, a young frontend developer. Alex is smiling, wearing casual professional attire, rendered in a bright, modern, playful light-mode style. The lighting is soft and inviting, emphasizing a confident and friendly mood. Background is a clean, subtle indigo gradient." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSDBjKiXMTCn5iREr7julVrC_8l_l7PDYmVOKdJthOWWf-25GBQi7o1f4dvKS_KKodB8a8KXN-D9A0wuK5HiUjgv1Jpq-OoqhaTHlVSUq9TF9CGdlaaJJ0GNq5WVkGMl6OxuLE7f9FTFA8CbYjVd0Mp7yacX58_ZVPDXZC6gujBrZSCvFDMsVkBCc0hEj8EqHDeYojJHvN9CCS1cHfO4zRk6_LxUnmJk6OZTDTd-dyYcfCa6tHXoMn"/>
+<div class="absolute -bottom-2 right-4 bg-primary text-on-primary font-bold px-3 py-1 rounded-full border-4 border-surface shadow-sm text-sm">
+                        Lvl 12
+                    </div>
+</div>
+<div class="text-center md:text-left pt-2">
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-1">Alex Chen</h1>
+<p class="font-headline-md text-headline-md text-primary font-bold mb-2">Frontend Aspirant</p>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center justify-center md:justify-start space-x-2">
+<span class="material-symbols-outlined text-sm">work</span>
+<span>Goal: Junior Frontend Engineer</span>
+</p>
+</div>
+</div>
+<div class="flex flex-col space-y-3 w-full md:w-auto">
+<button class="px-6 py-3 bg-primary text-on-primary rounded-full font-label-md text-label-md font-bold shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all border-b-4 border-primary-container flex items-center justify-center space-x-2">
+<span class="material-symbols-outlined icon-fill">edit</span>
+<span>Edit Profile</span>
+</button>
+<button class="px-6 py-3 bg-surface-container-high text-on-surface rounded-full font-label-md text-label-md font-bold shadow-sm hover:bg-surface-variant hover:scale-105 active:scale-95 transition-all flex items-center justify-center space-x-2">
+<span class="material-symbols-outlined">settings</span>
+<span>Account Settings</span>
+</button>
+</div>
+</div>
+<!-- Stats Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter mb-12">
+<!-- XP Progress Card -->
+<div class="col-span-1 md:col-span-8 bg-surface-container-lowest rounded-xl shadow-sm p-6 border border-surface-container-low hover:shadow-md transition-shadow">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary icon-fill">stars</span>
+<span>Experience Points</span>
+</h3>
+<span class="font-label-md text-label-md text-on-surface-variant bg-surface-container px-3 py-1 rounded-full">Total: 15,400 XP</span>
+</div>
+<div class="relative pt-1">
+<div class="flex mb-2 items-center justify-between">
+<div>
+<span class="text-xs font-bold inline-block py-1 px-2 uppercase rounded-full text-primary bg-primary-fixed">
+                                Level 12
+                            </span>
+</div>
+<div class="text-right">
+<span class="text-xs font-bold inline-block text-on-surface-variant">
+                                75% to Level 13
+                            </span>
+</div>
+</div>
+<div class="overflow-hidden h-4 mb-4 text-xs flex rounded-full bg-surface-container-high border-inner border-surface-variant inset-shadow-sm">
+<div class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-primary" style="width: 75%"></div>
+</div>
+</div>
+<div class="flex justify-between mt-4">
+<div class="flex items-center space-x-2">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined icon-fill">local_fire_department</span>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Streak</p>
+<p class="font-headline-md text-headline-md text-on-surface leading-none">12 Days</p>
+</div>
+</div>
+<div class="flex items-center space-x-2">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed">
+<span class="material-symbols-outlined icon-fill">diamond</span>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Gems</p>
+<p class="font-headline-md text-headline-md text-on-surface leading-none">45</p>
+</div>
+</div>
+<div class="flex items-center space-x-2">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed">
+<span class="material-symbols-outlined icon-fill">emoji_events</span>
+</div>
+<div>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Trophies</p>
+<p class="font-headline-md text-headline-md text-on-surface leading-none">3</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Readiness Score Card -->
+<div class="col-span-1 md:col-span-4 bg-primary text-on-primary rounded-xl shadow-sm p-6 relative overflow-hidden hover:scale-[1.02] transition-transform duration-300">
+<div class="absolute -right-10 -top-10 w-40 h-40 bg-white opacity-10 rounded-full blur-xl"></div>
+<div class="absolute -left-10 -bottom-10 w-32 h-32 bg-secondary opacity-20 rounded-full blur-xl"></div>
+<h3 class="font-headline-md text-headline-md mb-2 relative z-10 flex items-center space-x-2">
+<span class="material-symbols-outlined">analytics</span>
+<span>Readiness Score</span>
+</h3>
+<p class="font-body-md text-body-md opacity-90 mb-6 relative z-10">Based on recent interview performance</p>
+<div class="flex items-end justify-center relative z-10 mb-4">
+<span class="text-6xl font-extrabold tracking-tighter">82</span>
+<span class="text-2xl font-bold opacity-70 mb-1">/100</span>
+</div>
+<div class="text-center relative z-10">
+<span class="inline-block px-4 py-1 bg-secondary-fixed text-on-secondary-fixed rounded-full font-label-sm text-label-sm font-bold uppercase tracking-wide">
+                        Interview Ready
+                    </span>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 w-full h-16 bg-surface shadow-[0_-2px_10px_rgba(0,0,0,0.05)] flex justify-around items-center px-4 z-50 pb-safe">
+<a class="flex flex-col items-center justify-center w-16 h-full text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-semibold mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center w-16 h-full text-on-surface-variant" href="#">
+<span class="material-symbols-outlined">fitness_center</span>
+<span class="text-[10px] font-semibold mt-1">Practice</span>
+</a>
+<a class="flex flex-col items-center justify-center w-16 h-full text-primary font-bold" href="#">
+<span class="material-symbols-outlined icon-fill">person</span>
+<span class="text-[10px] font-semibold mt-1">Profile</span>
+</a>
+</nav>
+</body></html>

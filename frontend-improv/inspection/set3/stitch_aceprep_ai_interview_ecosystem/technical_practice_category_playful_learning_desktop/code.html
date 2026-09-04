@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>InterviewPro - Technical Interview</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "primary-fixed-dim": "#c0c1ff",
+                      "tertiary-container": "#a36700",
+                      "outline": "#767586",
+                      "on-secondary-fixed": "#002113",
+                      "on-error": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "outline-variant": "#c7c4d7",
+                      "secondary-fixed": "#6ffbbe",
+                      "secondary-fixed-dim": "#4edea3",
+                      "surface-container-low": "#eff4ff",
+                      "on-primary-container": "#fffbff",
+                      "on-secondary-fixed-variant": "#005236",
+                      "secondary": "#006c49",
+                      "on-primary-fixed-variant": "#2f2ebe",
+                      "surface-container-highest": "#d3e4fe",
+                      "on-error-container": "#93000a",
+                      "primary": "#4648d4",
+                      "on-secondary-container": "#00714d",
+                      "surface-variant": "#d3e4fe",
+                      "background": "#f8f9ff",
+                      "surface-bright": "#f8f9ff",
+                      "on-surface-variant": "#464554",
+                      "inverse-on-surface": "#eaf1ff",
+                      "surface-container-lowest": "#ffffff",
+                      "surface-container": "#e5eeff",
+                      "inverse-surface": "#213145",
+                      "on-surface": "#0b1c30",
+                      "tertiary": "#825100",
+                      "tertiary-fixed-dim": "#ffb95f",
+                      "on-background": "#0b1c30",
+                      "on-primary-fixed": "#07006c",
+                      "primary-container": "#6063ee",
+                      "surface-container-high": "#dce9ff",
+                      "surface-tint": "#494bd6",
+                      "primary-fixed": "#e1e0ff",
+                      "error": "#ba1a1a",
+                      "secondary-container": "#6cf8bb",
+                      "on-tertiary-container": "#fffbff",
+                      "surface": "#f8f9ff",
+                      "surface-dim": "#cbdbf5",
+                      "on-tertiary-fixed": "#2a1700",
+                      "error-container": "#ffdad6",
+                      "tertiary-fixed": "#ffddb8",
+                      "on-tertiary-fixed-variant": "#653e00",
+                      "inverse-primary": "#c0c1ff",
+                      "on-tertiary": "#ffffff",
+                      "on-secondary": "#ffffff"
+              },
+              "borderRadius": {
+                      "DEFAULT": "1rem",
+                      "lg": "2rem",
+                      "xl": "3rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-mobile": "16px",
+                      "max-width": "1280px",
+                      "base": "8px",
+                      "margin-desktop": "64px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "display-lg-mobile": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "display-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "body-md": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-lg": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "label-sm": [
+                              "Plus Jakarta Sans"
+                      ],
+                      "headline-md": [
+                              "Plus Jakarta Sans"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "800"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md text-body-md antialiased h-screen flex overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar -->
+<nav class="h-full w-64 fixed left-0 top-0 bg-surface-container-lowest dark:bg-surface-container-low shadow-md flex flex-col p-6 space-y-4 z-40 hidden md:flex">
+<div class="mb-8">
+<span class="font-display-lg text-display-lg text-primary tracking-tight">InterviewPro</span>
+</div>
+<div class="flex items-center space-x-3 mb-8 p-4 bg-surface-container-low rounded-DEFAULT">
+<img alt="Candidate level badge" class="w-12 h-12 rounded-full object-cover shadow-sm" data-alt="A stylized 3D avatar of a professional candidate in a light blue minimalist environment, conveying professional growth and gamified achievement. The avatar is wearing smart casual attire and has a confident expression. High-key lighting, modern and soft aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC04-TaovQSRIk0jHB2OIvyexXQ871l9uITJl7bBlS7C1lTHexTBTRG-QAnPxRKfoquJeYgCKK8djdD7M-jJKXOFrTu_0zR7PzBjoeuMUolUDHZafjvJn79E0cyzmloMkFiNzMUXhPvXLN4r3PwY74qRpMXDv0UMa7iQk5gc_ZLo0gKyk1lasTyjuoSm798PFIEYnSSBCGzocaJiHsGExLJcumM1ZYz56xWv3V6o3p9ypEXyp0KaREq"/>
+<div>
+<p class="font-headline-md text-label-md font-bold text-on-surface">Level 12</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">2,450 XP to Next Rank</p>
+</div>
+</div>
+<ul class="flex flex-col space-y-2 flex-grow">
+<!-- Dashboard -->
+<li>
+<a class="flex items-center space-x-3 p-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all font-label-md text-label-md group hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+</li>
+<!-- Practice (ACTIVE) -->
+<li>
+<a class="flex items-center space-x-3 p-3 bg-primary-container text-on-primary-container rounded-lg font-bold transition-all font-label-md text-label-md group hover:translate-x-1 duration-300 shadow-sm relative overflow-hidden" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">fitness_center</span>
+<span>Practice</span>
+<div class="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+</a>
+<!-- Sub-menu for Practice -->
+<ul class="ml-9 mt-2 space-y-1">
+<li>
+<a class="block py-1.5 px-2 text-primary font-label-md text-label-md rounded hover:bg-surface-container-high transition-colors" href="#">Technical</a>
+</li>
+<li>
+<a class="block py-1.5 px-2 text-on-surface-variant font-label-md text-label-md rounded hover:bg-surface-container-high transition-colors" href="#">Behavioral</a>
+</li>
+</ul>
+</li>
+<!-- Skills -->
+<li>
+<a class="flex items-center space-x-3 p-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all font-label-md text-label-md group hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined">psychology</span>
+<span>Skills</span>
+</a>
+</li>
+<!-- Leaderboard -->
+<li>
+<a class="flex items-center space-x-3 p-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all font-label-md text-label-md group hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined">leaderboard</span>
+<span>Leaderboard</span>
+</a>
+</li>
+<!-- Profile -->
+<li>
+<a class="flex items-center space-x-3 p-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all font-label-md text-label-md group hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined">person</span>
+<span>Profile</span>
+</a>
+</li>
+<!-- Settings -->
+<li>
+<a class="flex items-center space-x-3 p-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 transition-all font-label-md text-label-md group hover:translate-x-1 duration-300" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span>Settings</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto pt-4">
+<button class="w-full bg-surface-container-high text-primary font-label-md text-label-md font-bold py-3 px-4 rounded-full hover:bg-primary-container hover:text-on-primary-container transition-all hover:-translate-y-1 shadow-sm hover:shadow-md border-b-[3px] border-surface-container-highest hover:border-primary-fixed">
+                Upgrade to Pro
+            </button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 bg-background relative overflow-y-auto">
+<!-- Mobile Top Nav Bar -->
+<div class="md:hidden sticky top-0 z-30 bg-surface dark:bg-surface-dim shadow-sm w-full h-16 flex justify-between items-center px-margin-mobile">
+<div class="font-headline-md text-headline-md font-extrabold text-primary dark:text-primary-fixed-dim">
+                InterviewPro
+            </div>
+<div class="flex items-center space-x-4 text-primary dark:text-primary-fixed-dim">
+<button class="hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors p-2 rounded-full">
+<span class="material-symbols-outlined">diamond</span>
+</button>
+<button class="hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors p-2 rounded-full relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-error rounded-full border-2 border-surface"></span>
+</button>
+<img alt="Candidate profile avatar" class="w-8 h-8 rounded-full object-cover shadow-sm" data-alt="A small 3D avatar of a professional candidate in a light blue minimalist environment, conveying professional growth and gamified achievement. High-key lighting, modern and soft aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdHm3AZN-vxBU6cH-JUMcKawcDR9JxurDCyy5vG46pEOd6VhcLLlkLqS8c2sYGjh-rh9my5EXinLuavm3UJW_2O-mpSqOuU0dF9UgZR28FGGPSDXb8K-zMBbyVk7hIkyEMDfu3zROKO8oWkN0MhWk31i5jv1RYmgrNf0iWYgh5j3NcxjW27mM0kPv87HFW4r3yQHCPpeqJiDnRjrQmA35cL1Rxgc9nRKeTHmmEfiyUFNj4MP4yPlm4"/>
+</div>
+</div>
+<!-- Desktop Header Content Area -->
+<header class="hidden md:flex justify-between items-center px-margin-desktop py-6 max-w-max-width mx-auto">
+<div class="flex-1">
+<div class="relative max-w-md">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full pl-12 pr-4 py-3 bg-surface-container-low border-2 border-transparent rounded-full focus:border-primary focus:bg-surface focus:outline-none transition-all font-body-md text-body-md" placeholder="Search challenges, skills..." type="text"/>
+</div>
+</div>
+<div class="flex items-center space-x-4 text-primary dark:text-primary-fixed-dim">
+<button class="hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors p-2 rounded-full scale-105 active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined">diamond</span>
+</button>
+<button class="hover:bg-surface-container-low dark:hover:bg-surface-container-high transition-colors p-2 rounded-full relative scale-105 active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-error rounded-full border-2 border-surface"></span>
+</button>
+<img alt="Candidate profile avatar" class="w-10 h-10 rounded-full object-cover shadow-sm ml-2" data-alt="A small 3D avatar of a professional candidate in a light blue minimalist environment, conveying professional growth and gamified achievement. High-key lighting, modern and soft aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA7H1QGlEqivqajNAw6rD6NBWKx0ro-1_Xskv09ugnWpgeLXGBYuo_VIlz4xrzIyZSLghQOWbmblCEkeOOc57nJRqNd1Ox4qBY07pvf_eJldovjorZfjHR-f_dwDWCU0syniUCxAqtgT_tfqNbWCQwha_1JePB2i5ZO4wKlzXVxJbQlejtimbSPR32EkHUeSmXMSH3fwJdSn9dc1RD4ZQcG1KqDDqUxMSBB_PSW3jdMEw4MYF0stq-c"/>
+</div>
+</header>
+<!-- Page Content -->
+<div class="p-margin-mobile md:p-margin-desktop max-w-max-width mx-auto pb-24">
+<!-- Header Section -->
+<div class="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<div class="flex items-center space-x-2 text-primary font-label-sm text-label-sm uppercase tracking-widest mb-2">
+<span class="material-symbols-outlined text-sm">terminal</span>
+<span>Practice Arena</span>
+</div>
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-4">Technical Interview</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">Sharpen your coding skills with role-specific challenges, algorithmic puzzles, and real-world debugging scenarios designed to simulate actual technical rounds.</p>
+</div>
+<button class="shrink-0 bg-primary text-on-primary font-label-md text-label-md font-bold py-4 px-8 rounded-full hover:bg-primary-container transition-all hover:-translate-y-1 shadow-md hover:shadow-lg border-b-[3px] border-primary-fixed-dim active:border-b-0 active:translate-y-0">
+                    Start Technical Interview
+                </button>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter mb-12">
+<!-- Main Feature: Recommended Challenge -->
+<div class="md:col-span-8 bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/30 p-8 relative overflow-hidden group hover:shadow-md transition-shadow">
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
+<div class="flex items-center space-x-2 mb-6">
+<span class="bg-tertiary-container/20 text-tertiary-container font-label-sm text-label-sm px-3 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">local_fire_department</span>
+                            Trending
+                        </span>
+</div>
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2">Blind 75 Essentials</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-8 max-w-md">The definitive collection of the most frequent Data Structures &amp; Algorithms questions asked by top tech companies.</p>
+<div class="flex items-center gap-4">
+<button class="bg-surface-container-high text-primary font-label-md text-label-md px-6 py-2 rounded-full hover:bg-primary-fixed-dim/30 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined">play_arrow</span>
+                            Resume
+                        </button>
+<div class="flex -space-x-3">
+<img alt="Node 1" class="w-10 h-10 rounded-full border-2 border-surface object-cover bg-surface-container" data-alt="A glowing blue conceptual node in a 3D glassmorphic style, representing a data structure in a minimalist environment. Soft high-key lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiqBUgBR6rJ8ZJo2ip8KXLV1Ax_P58ui8zxbjmZDo_6Jw-vx50HtGHv-KRhY-xVsaijO2yvAJH1NS-vhpVo0sOV3-VAhAQS2qnkK9hXsgdubCDFgNkGV5uNPqSCkTvAaX67zc6_wT5tbWCspm57EqW2-pUoXdTN6zRuUToNoMWzfm6_Ap_JtC_wdOE30C961X47i3h9osKSlVUgpwlD4QpKyQuGyKaSqEGgWE_Q0wusYw-lnKJUrma"/>
+<img alt="Node 2" class="w-10 h-10 rounded-full border-2 border-surface object-cover bg-surface-container" data-alt="A glowing purple conceptual node in a 3D glassmorphic style, representing an algorithm in a minimalist environment. Soft high-key lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDCt9UcbEnBI4DFBh2XIgQIftUS_OQDyAkczpl02nYo1Cs4dkxoy6aoHemNnogXYiAZ_VxZjImhXSz5196gKftu9dvHcoZu7zm9i4RDwuNBQEHa_ZMn1p_vCRGN7u5pM79pRK2o1-sdkjMcLF-k8mqZXPFFGvHhEyUebFQwL2qmQzYEzSz_luWHY1rd4-fKbkKE1DRCeKL9VWEHnvkkuc8VuLNKXpLBWP6huO2bnsH4kIKBuZ7No7LV"/>
+<div class="w-10 h-10 rounded-full border-2 border-surface bg-surface-variant flex items-center justify-center font-label-sm text-label-sm text-on-surface-variant z-10">+73</div>
+</div>
+</div>
+</div>
+<!-- Secondary Feature: Quick Challenge -->
+<div class="md:col-span-4 bg-primary-container text-on-primary-container rounded-xl shadow-sm p-8 flex flex-col justify-between hover:shadow-md transition-shadow hover:-translate-y-1 duration-300 relative overflow-hidden">
+<div class="absolute bottom-0 right-0 p-4 opacity-20 transform translate-x-4 translate-y-4">
+<span class="material-symbols-outlined text-[120px]">speed</span>
+</div>
+<div>
+<div class="flex justify-between items-start mb-4">
+<span class="bg-on-primary-container/20 text-on-primary-container font-label-sm text-label-sm px-3 py-1 rounded-full backdrop-blur-sm">Daily Byte</span>
+</div>
+<h3 class="font-headline-md text-headline-md font-bold mb-2">React Performance Tips</h3>
+<p class="font-body-md text-body-md text-on-primary-container/80 mb-6">Master memoization and render optimization in 5 minutes.</p>
+</div>
+<button class="self-start bg-on-primary text-primary font-label-md text-label-md px-5 py-2 rounded-full hover:bg-surface-container-low transition-colors shadow-sm">
+                        Start Quick Quiz
+                    </button>
+</div>
+</div>
+<!-- Role Grid -->
+<section class="mb-16">
+<div class="flex justify-between items-end mb-6">
+<h3 class="font-headline-md text-headline-md text-on-surface">Explore by Role</h3>
+<button class="text-primary font-label-md text-label-md hover:underline">View All Paths</button>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+<!-- Frontend -->
+<a class="bg-surface-container-lowest rounded-lg p-5 border border-outline-variant/30 hover:border-primary/50 hover:shadow-sm hover:bg-surface-container-low transition-all text-center group" href="#">
+<div class="w-12 h-12 mx-auto bg-surface-container-high text-primary rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">web</span>
+</div>
+<p class="font-label-md text-label-md text-on-surface mb-1">Frontend</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">142 Challenges</p>
+</a>
+<!-- Backend -->
+<a class="bg-surface-container-lowest rounded-lg p-5 border border-outline-variant/30 hover:border-primary/50 hover:shadow-sm hover:bg-surface-container-low transition-all text-center group" href="#">
+<div class="w-12 h-12 mx-auto bg-surface-container-high text-primary rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">dns</span>
+</div>
+<p class="font-label-md text-label-md text-on-surface mb-1">Backend</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">156 Challenges</p>
+</a>
+<!-- Fullstack -->
+<a class="bg-surface-container-lowest rounded-lg p-5 border border-outline-variant/30 hover:border-primary/50 hover:shadow-sm hover:bg-surface-container-low transition-all text-center group" href="#">
+<div class="w-12 h-12 mx-auto bg-surface-container-high text-primary rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">layers</span>
+</div>
+<p class="font-label-md text-label-md text-on-surface mb-1">Fullstack</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">89 Challenges</p>
+</a>
+<!-- Mobile -->
+<a class="bg-surface-container-lowest rounded-lg p-5 border border-outline-variant/30 hover:border-primary/50 hover:shadow-sm hover:bg-surface-container-low transition-all text-center group" href="#">
+<div class="w-12 h-12 mx-auto bg-surface-container-high text-primary rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">smartphone</span>
+</div>
+<p class="font-label-md text-label-md text-on-surface mb-1">Mobile</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">64 Challenges</p>
+</a>
+<!-- DevOps -->
+<a class="bg-surface-container-lowest rounded-lg p-5 border border-outline-variant/30 hover:border-primary/50 hover:shadow-sm hover:bg-surface-container-low transition-all text-center group" href="#">
+<div class="w-12 h-12 mx-auto bg-surface-container-high text-primary rounded-full flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">cloud_sync</span>
+</div>
+<p class="font-label-md text-label-md text-on-surface mb-1">DevOps</p>
+<p class="font-label-sm text-label-sm text-on-surface-variant">45 Challenges</p>
+</a>
+</div>
+</section>
+</div>
+</main>
+<!-- Mobile Bottom Navigation (Hidden on Desktop) -->
+<nav class="md:hidden fixed bottom-0 w-full bg-surface dark:bg-surface-dim shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-50 px-4 py-2 flex justify-around items-center">
+<a class="flex flex-col items-center p-2 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span class="font-label-sm text-[10px] font-medium">Home</span>
+</a>
+<a class="flex flex-col items-center p-2 text-primary font-bold" href="#">
+<div class="bg-primary-container/20 px-4 py-1 rounded-full mb-1">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">fitness_center</span>
+</div>
+<span class="font-label-sm text-[10px] font-bold">Practice</span>
+</a>
+<a class="flex flex-col items-center p-2 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined mb-1">leaderboard</span>
+<span class="font-label-sm text-[10px] font-medium">Rank</span>
+</a>
+<a class="flex flex-col items-center p-2 text-on-surface-variant" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-label-sm text-[10px] font-medium">Profile</span>
+</a>
+</nav>
+</body></html>

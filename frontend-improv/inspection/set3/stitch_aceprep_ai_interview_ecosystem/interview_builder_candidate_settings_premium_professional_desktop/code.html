@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Interview Builder: Candidate Settings - RecruitPro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f2f4f6",
+                        "primary-container": "#131b2e",
+                        "on-surface-variant": "#45464d",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-error": "#ffffff",
+                        "tertiary": "#000000",
+                        "secondary-container": "#d0e1fb",
+                        "surface-container-high": "#e6e8ea",
+                        "surface-bright": "#f7f9fb",
+                        "surface-tint": "#565e74",
+                        "on-background": "#191c1e",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-secondary-container": "#54647a",
+                        "on-primary-container": "#7c839b",
+                        "on-tertiary-fixed-variant": "#41474e",
+                        "secondary-fixed": "#d3e4fe",
+                        "surface-dim": "#d8dadc",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "secondary": "#505f76",
+                        "tertiary-fixed-dim": "#c1c7cf",
+                        "primary": "#000000",
+                        "surface": "#f7f9fb",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-primary-fixed": "#131b2e",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#161c22",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#dde3eb",
+                        "inverse-primary": "#bec6e0",
+                        "inverse-surface": "#2d3133",
+                        "primary-fixed-dim": "#bec6e0",
+                        "background": "#f7f9fb",
+                        "tertiary-container": "#161c22",
+                        "on-secondary-fixed": "#0b1c30",
+                        "on-surface": "#191c1e",
+                        "primary-fixed": "#dae2fd",
+                        "outline-variant": "#c6c6cd",
+                        "on-tertiary-container": "#7e848c",
+                        "surface-container": "#eceef0",
+                        "surface-variant": "#e0e3e5",
+                        "outline": "#76777d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-desktop": "40px",
+                        "stack-md": "16px",
+                        "stack-lg": "32px",
+                        "margin-mobile": "16px",
+                        "unit": "8px",
+                        "stack-sm": "8px",
+                        "container-max-width": "1280px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Playfair Display"],
+                        "headline-lg-mobile": ["Playfair Display"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Playfair Display"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Playfair Display"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "label-sm": ["12px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #F8FAFC; color: #191c1e; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        }
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(12, minmax(0, 1fr));
+            gap: 24px;
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #e0e3e5; border-radius: 4px; }
+        
+        /* Toggle Switch Styles */
+        .toggle-checkbox:checked { right: 0; border-color: #000; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #000; }
+        .toggle-checkbox:checked + .toggle-label:after { transform: translateX(100%); border-color: white; }
+        .toggle-label { width: 44px; height: 24px; background-color: #e0e3e5; border-radius: 9999px; position: relative; cursor: pointer; transition: background-color .2s; }
+        .toggle-label:after { content: ''; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background-color: white; border-radius: 50%; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="font-body-md text-body-md antialiased min-h-screen">
+<!-- TopNavBar -->
+<nav class="fixed top-0 right-0 left-64 h-16 bg-surface/80 dark:bg-inverse-surface/80 text-primary dark:text-inverse-primary backdrop-blur-md border-b border-tertiary dark:border-outline-variant shadow-sm flex justify-between items-center px-margin-desktop w-full z-50">
+<div class="flex items-center gap-4 hidden md:flex">
+<!-- Placeholder for Top Nav Left side, usually breadcrumbs or title in this context -->
+<span class="font-label-sm text-label-sm text-on-surface-variant">Interviews / Builder / Candidate Settings</span>
+</div>
+<div class="flex items-center gap-gutter">
+<div class="flex gap-4">
+<button class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-inverse-primary transition-colors scale-95 active:scale-90 transition-transform flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-inverse-primary transition-colors scale-95 active:scale-90 transition-transform flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-container-low">
+<span class="material-symbols-outlined" data-icon="help_outline">help_outline</span>
+</button>
+</div>
+<div class="w-8 h-8 rounded-full bg-surface-container-high overflow-hidden border border-outline-variant">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A small, circular avatar image showing a professional headshot of a person in a minimalist corporate environment. High key lighting, neutral tones. Used as a user profile picture in an enterprise software top navigation bar." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgl41JdoeFCZUMZzq4Gc-usNv6hxUJeku170O3XyahfIOx7JdkFceoFfN4WPGBv0WLoZo9jFlBYNyp2JDlbdpT1VIIZcx5CQ9z3teKJAJxfeHVypUwNTQw6tQvsHq1K7wr3y2SmYZdJzd2OJRNrPK4TMrGxyTLbilWjywqtvFXnIL74XpfBVZi1GQEcL0R2U-zFuwKxijEZP-QYNnxAKRSc03HYFJmuUtIEHPNfz83N6BK7IRjX6UY"/>
+</div>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="bg-surface dark:bg-inverse-surface text-primary dark:text-inverse-primary h-screen w-64 fixed left-0 top-0 border-r border-tertiary dark:border-outline-variant flat no shadows transition-all duration-200 ease-in-out flex flex-col h-full py-stack-lg px-gutter z-50">
+<div class="mb-stack-lg">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-primary text-on-primary flex items-center justify-center font-headline-md font-bold">R</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary tracking-tight">RecruitPro</h1>
+<p class="font-label-sm text-label-sm text-secondary">Enterprise Suite</p>
+</div>
+</div>
+</div>
+<button class="w-full bg-primary text-on-primary font-label-md text-label-md py-3 rounded-lg mb-stack-lg hover:bg-tertiary-container transition-colors shadow-sm flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            New Interview
+        </button>
+<nav class="flex-1 flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-primary dark:text-inverse-primary font-bold border-r-2 border-primary bg-surface-container-low transition-colors group" href="#">
+<span class="material-symbols-outlined" data-icon="event_note">event_note</span>
+<span class="font-label-md text-label-md">Interviews</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="group">group</span>
+<span class="font-label-md text-label-md">Candidates</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="diversity_3">diversity_3</span>
+<span class="font-label-md text-label-md">Team</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</nav>
+<div class="mt-auto pt-stack-md border-t border-outline-variant">
+<div class="flex items-center gap-3 text-secondary">
+<span class="material-symbols-outlined text-[18px]">account_balance</span>
+<span class="font-label-sm text-label-sm">Acme Corp</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="ml-64 pt-16 min-h-screen p-margin-desktop bg-background custom-scrollbar overflow-y-auto">
+<div class="max-w-container-max-width mx-auto">
+<!-- Header Section -->
+<header class="mb-stack-lg flex justify-between items-end">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-primary mb-2">Candidate Settings</h2>
+<p class="font-body-md text-body-md text-secondary max-w-2xl">Configure the candidate experience, access controls, and technical requirements for this interview suite.</p>
+</div>
+<div class="flex gap-4">
+<button class="px-6 py-2 border border-tertiary text-primary rounded-lg font-label-md text-label-md hover:bg-surface-container-low transition-colors">Discard</button>
+<button class="px-6 py-2 bg-primary text-on-primary rounded-lg font-label-md text-label-md hover:bg-tertiary-container transition-colors shadow-sm">Save Changes</button>
+</div>
+</header>
+<!-- Settings Bento Grid -->
+<div class="bento-grid">
+<!-- Access & Deadlines (Span 8) -->
+<div class="col-span-12 lg:col-span-8 bg-surface-container-lowest rounded-lg p-stack-lg shadow-[0_4px_20px_rgba(15,23,42,0.04)] border border-outline-variant/30 flex flex-col gap-stack-lg">
+<div class="flex items-center gap-3 border-b border-outline-variant/50 pb-4">
+<span class="material-symbols-outlined text-primary">lock_open</span>
+<h3 class="font-headline-md text-headline-md text-primary">Access &amp; Deadlines</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Invite Method -->
+<div class="flex flex-col gap-2">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Invite Method</label>
+<div class="relative">
+<select class="w-full appearance-none bg-surface border border-outline-variant rounded-lg px-4 py-3 font-body-md text-primary focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer">
+<option value="email">Direct Email Invitation</option>
+<option value="link">Public Magic Link</option>
+<option value="api">ATS Integration (API)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-secondary pointer-events-none">expand_more</span>
+</div>
+<p class="font-label-sm text-label-sm text-secondary mt-1">Direct email provides the highest security and tracking.</p>
+</div>
+<!-- Deadline -->
+<div class="flex flex-col gap-2">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Completion Deadline</label>
+<div class="relative">
+<input class="w-full bg-surface border border-outline-variant rounded-lg px-4 py-3 font-body-md text-primary focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors cursor-pointer" type="date" value="2024-11-30"/>
+</div>
+<div class="flex items-center gap-2 mt-2">
+<div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 opacity-0" id="rolling_deadline" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer" for="rolling_deadline"></label>
+</div>
+<span class="font-label-sm text-label-sm text-secondary">Rolling (7 days from invite)</span>
+</div>
+</div>
+</div>
+<!-- Attempt Limits -->
+<div class="border-t border-outline-variant/50 pt-stack-md">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-4 block">Attempt Limits &amp; Retakes</label>
+<div class="flex items-center justify-between bg-surface-container-low p-4 rounded-lg border border-outline-variant/50">
+<div>
+<h4 class="font-label-md text-label-md text-primary">Allow Retakes</h4>
+<p class="font-label-sm text-label-sm text-secondary">Permit candidates to re-record answers.</p>
+</div>
+<select class="appearance-none bg-white border border-outline-variant rounded-lg px-4 py-2 font-body-md text-primary focus:outline-none focus:border-primary text-center cursor-pointer min-w-[120px]">
+<option value="0">No Retakes</option>
+<option value="1">1 Retake</option>
+<option value="2">2 Retakes</option>
+<option value="unlimited">Unlimited</option>
+</select>
+</div>
+</div>
+</div>
+<!-- Identity & Environment (Span 4) -->
+<div class="col-span-12 lg:col-span-4 bg-surface-container-lowest rounded-lg p-stack-lg shadow-[0_4px_20px_rgba(15,23,42,0.04)] border border-outline-variant/30 flex flex-col gap-stack-lg">
+<div class="flex items-center gap-3 border-b border-outline-variant/50 pb-4">
+<span class="material-symbols-outlined text-primary">verified_user</span>
+<h3 class="font-headline-md text-headline-md text-primary">Verification</h3>
+</div>
+<div class="flex flex-col gap-6">
+<!-- ID Check -->
+<div class="flex items-start gap-4">
+<div class="mt-1">
+<div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 opacity-0" id="toggle_id" name="toggle_id" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer" for="toggle_id"></label>
+</div>
+</div>
+<div>
+<label class="font-label-md text-label-md text-primary cursor-pointer block mb-1" for="toggle_id">Identity Verification</label>
+<p class="font-label-sm text-label-sm text-secondary">Require candidates to scan government ID before starting.</p>
+</div>
+</div>
+<!-- Hardware Requirements -->
+<div class="pt-4 border-t border-outline-variant/50">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-4 block">Hardware Rules</label>
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between p-3 border border-outline-variant/50 rounded-lg bg-surface">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">videocam</span>
+<span class="font-label-md text-label-md text-primary">Camera Required</span>
+</div>
+<input checked="" class="w-4 h-4 text-primary bg-white border-outline-variant rounded focus:ring-primary focus:ring-2 accent-primary cursor-pointer" type="checkbox"/>
+</div>
+<div class="flex items-center justify-between p-3 border border-outline-variant/50 rounded-lg bg-surface">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">mic</span>
+<span class="font-label-md text-label-md text-primary">Microphone Required</span>
+</div>
+<input checked="" class="w-4 h-4 text-primary bg-white border-outline-variant rounded focus:ring-primary focus:ring-2 accent-primary cursor-pointer" type="checkbox"/>
+</div>
+<div class="flex items-center justify-between p-3 border border-outline-variant/50 rounded-lg bg-surface opacity-60">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">desktop_windows</span>
+<span class="font-label-md text-label-md text-primary">Screen Sharing</span>
+</div>
+<input class="w-4 h-4 text-primary bg-gray-200 border-outline-variant rounded cursor-not-allowed" disabled="" type="checkbox"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Instructions & Accessibility (Span 12) -->
+<div class="col-span-12 bg-surface-container-lowest rounded-lg p-stack-lg shadow-[0_4px_20px_rgba(15,23,42,0.04)] border border-outline-variant/30 flex flex-col lg:flex-row gap-gutter">
+<!-- Instructions -->
+<div class="flex-1 flex flex-col gap-4 border-b lg:border-b-0 lg:border-r border-outline-variant/50 pb-stack-lg lg:pb-0 lg:pr-stack-lg">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">description</span>
+<h3 class="font-headline-md text-headline-md text-primary">Candidate Instructions</h3>
+</div>
+<p class="font-label-sm text-label-sm text-secondary">These instructions appear before the interview begins.</p>
+<div class="mt-2 flex-1">
+<div class="border border-outline-variant rounded-lg overflow-hidden flex flex-col h-full min-h-[200px]">
+<!-- Faux Toolbar -->
+<div class="bg-surface border-b border-outline-variant px-3 py-2 flex items-center gap-2">
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-high text-secondary"><span class="material-symbols-outlined text-[18px]">format_bold</span></button>
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-high text-secondary"><span class="material-symbols-outlined text-[18px]">format_italic</span></button>
+<div class="w-[1px] h-4 bg-outline-variant mx-1"></div>
+<button class="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-high text-secondary"><span class="material-symbols-outlined text-[18px]">format_list_bulleted</span></button>
+</div>
+<textarea class="flex-1 w-full p-4 bg-white border-none focus:ring-0 resize-none font-body-md text-primary" placeholder="Enter greeting and instructions...">Welcome to the Technical Assessment for the Senior Frontend Role. 
+
+Please ensure you are in a quiet room with a stable internet connection. You will have 45 minutes to complete 3 sections.
+
+Best of luck!</textarea>
+</div>
+</div>
+</div>
+<!-- Accessibility -->
+<div class="flex-1 flex flex-col gap-4 lg:pl-stack-sm pt-stack-lg lg:pt-0">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">accessibility_new</span>
+<h3 class="font-headline-md text-headline-md text-primary">Accessibility Accommodations</h3>
+</div>
+<p class="font-label-sm text-label-sm text-secondary">Adjust global settings to accommodate diverse candidate needs.</p>
+<div class="flex flex-col gap-4 mt-2">
+<div class="flex items-start gap-4 p-4 rounded-lg border border-outline-variant/50 bg-surface">
+<div class="mt-1">
+<div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 opacity-0" id="toggle_time" name="toggle_time" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer" for="toggle_time"></label>
+</div>
+</div>
+<div>
+<label class="font-label-md text-label-md text-primary cursor-pointer block mb-1" for="toggle_time">Time Extension Pool</label>
+<p class="font-label-sm text-label-sm text-secondary mb-2">Automatically grant up to 50% extra time if requested prior to start.</p>
+<div class="flex items-center gap-2">
+<input class="w-20 bg-white border border-outline-variant rounded px-2 py-1 font-body-md text-center focus:border-primary focus:ring-1 focus:ring-primary" type="number" value="50"/>
+<span class="font-label-sm text-label-sm text-secondary">% max extension</span>
+</div>
+</div>
+</div>
+<div class="flex items-start gap-4 p-4 rounded-lg border border-outline-variant/50 bg-surface">
+<div class="mt-1">
+<div class="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 opacity-0" id="toggle_cc" name="toggle_cc" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer" for="toggle_cc"></label>
+</div>
+</div>
+<div>
+<label class="font-label-md text-label-md text-primary cursor-pointer block mb-1" for="toggle_cc">Closed Captions</label>
+<p class="font-label-sm text-label-sm text-secondary">Force enable AI-generated captions for all video prompts.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

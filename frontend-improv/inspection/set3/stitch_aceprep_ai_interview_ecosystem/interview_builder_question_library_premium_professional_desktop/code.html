@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RecruitPro - Question Library</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f2f4f6",
+                        "primary-container": "#131b2e",
+                        "on-surface-variant": "#45464d",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e0e3e5",
+                        "on-error": "#ffffff",
+                        "tertiary": "#000000",
+                        "secondary-container": "#d0e1fb",
+                        "surface-container-high": "#e6e8ea",
+                        "surface-bright": "#f7f9fb",
+                        "surface-tint": "#565e74",
+                        "on-background": "#191c1e",
+                        "on-tertiary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "on-secondary-container": "#54647a",
+                        "on-primary-container": "#7c839b",
+                        "on-tertiary-fixed-variant": "#41474e",
+                        "secondary-fixed": "#d3e4fe",
+                        "surface-dim": "#d8dadc",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "secondary": "#505f76",
+                        "tertiary-fixed-dim": "#c1c7cf",
+                        "primary": "#000000",
+                        "surface": "#f7f9fb",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-primary-fixed": "#131b2e",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "on-error-container": "#93000a",
+                        "on-tertiary-fixed": "#161c22",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "on-secondary": "#ffffff",
+                        "tertiary-fixed": "#dde3eb",
+                        "inverse-primary": "#bec6e0",
+                        "inverse-surface": "#2d3133",
+                        "primary-fixed-dim": "#bec6e0",
+                        "background": "#f7f9fb",
+                        "tertiary-container": "#161c22",
+                        "on-secondary-fixed": "#0b1c30",
+                        "on-surface": "#191c1e",
+                        "primary-fixed": "#dae2fd",
+                        "outline-variant": "#c6c6cd",
+                        "on-tertiary-container": "#7e848c",
+                        "surface-container": "#eceef0",
+                        "surface-variant": "#e0e3e5",
+                        "outline": "#76777d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-desktop": "40px",
+                        "stack-md": "16px",
+                        "stack-lg": "32px",
+                        "margin-mobile": "16px",
+                        "unit": "8px",
+                        "stack-sm": "8px",
+                        "container-max-width": "1280px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Playfair Display"],
+                        "headline-lg-mobile": ["Playfair Display"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Playfair Display"],
+                        "label-md": ["Inter"],
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Playfair Display"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "label-sm": ["12px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "500" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #f7f9fb; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        }
+    </style>
+</head>
+<body class="h-full font-body-md text-on-surface antialiased">
+<!-- TopNavBar -->
+<header class="fixed top-0 right-0 left-64 h-16 bg-surface/80 dark:bg-inverse-surface/80 backdrop-blur-md border-b border-tertiary dark:border-outline-variant shadow-sm flex justify-between items-center px-margin-desktop w-[calc(100%-16rem)] z-30 transition-transform duration-200">
+<div class="flex items-center gap-4">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary">RecruitPro</span>
+<span class="text-secondary">/ Interview Builder</span>
+</div>
+<div class="flex items-center gap-stack-md">
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-highest border-none rounded-full text-label-md w-64 focus:ring-1 focus:ring-primary focus:outline-none transition-shadow" placeholder="Search..." type="text"/>
+</div>
+<button class="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container-high">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-secondary-container border border-tertiary-fixed overflow-hidden flex items-center justify-center">
+<span class="material-symbols-outlined text-on-secondary-container">person</span>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<nav class="h-screen w-64 fixed left-0 top-0 bg-surface dark:bg-inverse-surface border-r border-tertiary dark:border-outline-variant flex flex-col h-full py-stack-lg px-gutter z-40 transition-all duration-200 ease-in-out">
+<div class="mb-stack-lg flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary" data-weight="fill">work</span>
+</div>
+<div>
+<div class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary leading-tight">RecruitPro</div>
+<div class="font-label-sm text-label-sm text-secondary">Enterprise Suite</div>
+</div>
+</div>
+<button class="mb-stack-lg w-full bg-primary text-on-primary font-label-md text-label-md py-3 px-4 rounded-lg flex items-center justify-center gap-2 hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm">
+<span class="material-symbols-outlined">add</span>
+            New Interview
+        </button>
+<ul class="flex flex-col gap-unit flex-1">
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-primary dark:text-inverse-primary font-bold border-r-2 border-primary bg-surface-container-high" href="#">
+<span class="material-symbols-outlined">event_note</span>
+<span class="font-label-md text-label-md">Interviews</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-md text-label-md">Candidates</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">diversity_3</span>
+<span class="font-label-md text-label-md">Team</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="ml-64 mt-16 p-margin-desktop min-h-screen bg-background">
+<!-- Breadcrumbs & Header -->
+<div class="mb-stack-lg">
+<div class="flex items-center gap-2 text-label-sm text-secondary mb-2">
+<span>Interviews</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span>Senior Frontend Engineer</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="text-primary font-bold">Stage 3: Question Library</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-primary mb-2">Question Library</h1>
+<p class="font-body-md text-secondary max-w-2xl">Curate the perfect interview script. Select questions from our validated bank, leverage AI suggestions based on the role, or write your own.</p>
+</div>
+<div class="grid grid-cols-12 gap-gutter">
+<!-- Left Column: Search & Library (8 cols) -->
+<div class="col-span-12 lg:col-span-8 flex flex-col gap-stack-lg">
+<!-- Filters & Search -->
+<div class="bg-surface-container-lowest rounded-lg p-6 shadow-sm border border-tertiary-fixed">
+<div class="flex flex-col gap-4">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">search</span>
+<input class="w-full pl-12 pr-4 py-3 bg-surface-container-low border-none rounded-lg text-body-md focus:ring-1 focus:ring-primary focus:outline-none transition-shadow" placeholder="Search questions by keyword or concept..." type="text"/>
+</div>
+<div class="flex flex-wrap gap-3">
+<select class="bg-surface border border-outline-variant text-label-md rounded-full px-4 py-1.5 focus:ring-primary focus:border-primary appearance-none pr-8 relative">
+<option>All Skills</option>
+<option>React</option>
+<option>System Design</option>
+</select>
+<select class="bg-surface border border-outline-variant text-label-md rounded-full px-4 py-1.5 focus:ring-primary focus:border-primary appearance-none pr-8">
+<option>Any Difficulty</option>
+<option>Junior</option>
+<option>Mid-Level</option>
+<option>Senior</option>
+</select>
+<select class="bg-surface border border-outline-variant text-label-md rounded-full px-4 py-1.5 focus:ring-primary focus:border-primary appearance-none pr-8">
+<option>All Types</option>
+<option>Technical</option>
+<option>Behavioral</option>
+</select>
+<button class="text-primary font-label-md text-label-md ml-auto hover:underline">Clear Filters</button>
+</div>
+</div>
+</div>
+<!-- Question Bank List -->
+<div class="flex flex-col gap-3">
+<h2 class="font-headline-md text-headline-md text-primary mb-2">Available Questions</h2>
+<!-- Question Card 1 -->
+<div class="bg-surface-container-lowest rounded-lg p-5 border border-tertiary-fixed shadow-sm hover:shadow-md transition-shadow group">
+<div class="flex justify-between items-start gap-4">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2">
+<span class="bg-surface-container-high text-secondary px-2 py-0.5 rounded text-label-sm">React</span>
+<span class="bg-surface-container-high text-secondary px-2 py-0.5 rounded text-label-sm">Senior</span>
+<span class="flex items-center text-secondary text-label-sm gap-1"><span class="material-symbols-outlined text-[14px]">schedule</span> 10m</span>
+</div>
+<h3 class="font-label-md text-label-md text-primary mb-1">Explain the nuances of React's Virtual DOM and reconciliation process.</h3>
+<p class="font-body-md text-secondary text-sm line-clamp-2">Looking for deep understanding of fiber architecture, diffing algorithm complexities, and when manual memoization is necessary vs counterproductive.</p>
+</div>
+<button class="bg-surface-container-low border border-outline-variant p-2 rounded-full hover:bg-primary hover:text-on-primary hover:border-primary transition-colors flex-shrink-0">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+<!-- Question Card 2 (AI Suggested) -->
+<div class="bg-surface-container-lowest rounded-lg p-5 border border-primary-fixed shadow-sm relative overflow-hidden group">
+<div class="absolute top-0 right-0 bg-primary-fixed text-primary px-3 py-1 rounded-bl-lg font-label-sm text-[10px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[12px]">auto_awesome</span> AI Suggested
+                        </div>
+<div class="flex justify-between items-start gap-4 mt-2">
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-2">
+<span class="bg-surface-container-high text-secondary px-2 py-0.5 rounded text-label-sm">Architecture</span>
+<span class="bg-surface-container-high text-secondary px-2 py-0.5 rounded text-label-sm">Senior</span>
+<span class="flex items-center text-secondary text-label-sm gap-1"><span class="material-symbols-outlined text-[14px]">schedule</span> 15m</span>
+</div>
+<h3 class="font-label-md text-label-md text-primary mb-1">Design a large-scale frontend application state management strategy for a collaborative editing tool.</h3>
+<p class="font-body-md text-secondary text-sm line-clamp-2">Assessing architectural decision-making, understanding of CRDTs vs OT, local-first principles, and handling optimistic UI updates.</p>
+</div>
+<button class="bg-surface-container-low border border-outline-variant p-2 rounded-full hover:bg-primary hover:text-on-primary hover:border-primary transition-colors flex-shrink-0">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Selected Panel (4 cols) -->
+<div class="col-span-12 lg:col-span-4">
+<div class="glass-panel rounded-xl p-6 sticky top-24 flex flex-col h-[calc(100vh-8rem)]">
+<div class="flex justify-between items-center mb-6">
+<h2 class="font-headline-md text-headline-md text-primary">Interview Script</h2>
+<span class="bg-surface-container-high text-primary px-3 py-1 rounded-full font-label-sm">Total: 45m</span>
+</div>
+<div class="flex-1 overflow-y-auto pr-2 space-y-3">
+<!-- Selected Question 1 -->
+<div class="bg-surface-container-lowest p-4 rounded-lg border border-tertiary-fixed shadow-sm cursor-grab active:cursor-grabbing hover:border-outline-variant transition-colors flex gap-3">
+<div class="flex flex-col items-center justify-center text-outline-variant">
+<span class="material-symbols-outlined cursor-ns-resize">drag_indicator</span>
+</div>
+<div class="flex-1">
+<h4 class="font-label-md text-label-md text-primary mb-1 text-sm line-clamp-2">Describe a time you had to resolve a significant technical debt issue while maintaining product velocity.</h4>
+<div class="flex justify-between items-center mt-2">
+<span class="flex items-center text-secondary text-xs gap-1"><span class="material-symbols-outlined text-[12px]">schedule</span> 10m</span>
+<button class="text-on-surface-variant hover:text-error transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-6 pt-6 border-t border-tertiary-fixed flex gap-3">
+<button class="flex-1 border border-outline-variant text-secondary font-label-md py-2.5 rounded-lg hover:bg-surface-container-low transition-colors">Save Draft</button>
+<button class="flex-1 bg-primary text-on-primary font-label-md py-2.5 rounded-lg hover:bg-primary-container hover:text-on-primary-container transition-colors shadow-sm">Finalize Script</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

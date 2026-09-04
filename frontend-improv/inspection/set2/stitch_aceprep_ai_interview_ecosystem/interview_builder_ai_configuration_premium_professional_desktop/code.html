@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>AI Interviewer Configuration - RecruitPro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary": "#000000",
+                        "surface-tint": "#565e74",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#45464d",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "on-tertiary-fixed": "#161c22",
+                        "surface": "#f7f9fb",
+                        "tertiary-fixed-dim": "#c1c7cf",
+                        "on-tertiary-fixed-variant": "#41474e",
+                        "primary": "#000000",
+                        "secondary-container": "#d0e1fb",
+                        "on-error-container": "#93000a",
+                        "outline": "#76777d",
+                        "primary-container": "#131b2e",
+                        "inverse-primary": "#bec6e0",
+                        "inverse-on-surface": "#eff1f3",
+                        "on-tertiary-container": "#7e848c",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "inverse-surface": "#2d3133",
+                        "surface-container-highest": "#e0e3e5",
+                        "background": "#f7f9fb",
+                        "error-container": "#ffdad6",
+                        "surface-container-low": "#f2f4f6",
+                        "on-surface": "#191c1e",
+                        "on-primary": "#ffffff",
+                        "primary-fixed": "#dae2fd",
+                        "on-primary-fixed-variant": "#3f465c",
+                        "surface-container": "#eceef0",
+                        "on-secondary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "primary-fixed-dim": "#bec6e0",
+                        "on-primary-container": "#7c839b",
+                        "surface-variant": "#e0e3e5",
+                        "tertiary-fixed": "#dde3eb",
+                        "secondary": "#505f76",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-container": "#161c22",
+                        "on-primary-fixed": "#131b2e",
+                        "surface-bright": "#f7f9fb",
+                        "on-background": "#191c1e",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container-high": "#e6e8ea",
+                        "surface-dim": "#d8dadc",
+                        "secondary-fixed": "#d3e4fe",
+                        "on-secondary-fixed": "#0b1c30",
+                        "on-secondary-container": "#54647a",
+                        "outline-variant": "#c6c6cd"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "margin-desktop": "40px",
+                        "gutter": "24px",
+                        "container-max-width": "1280px",
+                        "stack-lg": "32px",
+                        "unit": "8px",
+                        "margin-mobile": "16px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Playfair Display"],
+                        "display-lg": ["Playfair Display"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Playfair Display"],
+                        "body-md": ["Inter"],
+                        "headline-lg-mobile": ["Playfair Display"],
+                        "body-lg": ["Inter"],
+                        "label-sm": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-md": ["14px", { "lineHeight": "1.4", "letterSpacing": "0.01em", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.2", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "1.2", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        }
+        
+        .level-1-shadow {
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        }
+
+        /* Hide scrollbar for clean horizontal scroll */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #000000;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #e2e8f0;
+            border-radius: 2px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+        
+        /* Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #000000;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #000000;
+        }
+        .toggle-checkbox:checked + .toggle-label:after {
+            transform: translateX(100%);
+            border-color: white;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-md antialiased h-screen overflow-hidden flex">
+<!-- JSON: SideNavBar -->
+<nav class="bg-surface dark:bg-inverse-surface h-screen w-64 fixed left-0 top-0 border-r border-tertiary dark:border-outline-variant flex flex-col h-full py-stack-lg px-gutter hidden md:flex z-40">
+<div class="mb-stack-lg">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary tracking-tight">RecruitPro</span>
+<span class="block text-label-sm font-label-sm text-secondary mt-1">Enterprise Suite</span>
+</div>
+<div class="flex-grow flex flex-col gap-unit">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-primary dark:text-inverse-primary font-bold border-r-2 border-primary hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors transition-all duration-200 ease-in-out bg-surface-container-low" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">event_note</span>
+<span class="font-label-md text-label-md">Interviews</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">group</span>
+<span class="font-label-md text-label-md">Candidates</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">diversity_3</span>
+<span class="font-label-md text-label-md">Team</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+<div class="mt-auto pt-stack-md">
+<button class="w-full bg-primary text-on-primary py-2 px-4 rounded-lg font-label-md text-label-md hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                New Interview
+            </button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="ml-0 md:ml-64 flex-1 flex flex-col h-screen overflow-hidden relative">
+<!-- JSON: TopNavBar -->
+<header class="bg-surface/80 dark:bg-inverse-surface/80 fixed top-0 right-0 left-0 md:left-64 h-16 backdrop-blur-md border-b border-tertiary dark:border-outline-variant shadow-sm flex justify-between items-center px-margin-mobile md:px-margin-desktop z-30 w-auto">
+<div class="flex items-center gap-4 md:hidden">
+<button class="text-primary hover:text-primary/80 transition-colors">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary tracking-tight">RecruitPro</span>
+</div>
+<div class="hidden md:flex items-center gap-4">
+<span class="font-label-md text-label-md text-secondary">Builder / Configuration</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-inverse-primary transition-colors scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-inverse-primary transition-colors scale-95 active:scale-90 transition-transform">
+<span class="material-symbols-outlined">help_outline</span>
+</button>
+<div class="h-8 w-8 rounded-full bg-surface-dim border border-outline-variant overflow-hidden">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="Professional corporate headshot of a recruitment manager in a well-lit modern office environment. Soft natural lighting, neutral grey background, high resolution, corporate professional aesthetic, premium enterprise context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDVGqUq9DzKybImvpjlH3a1W_5zHKTmpfZCIM9fwz01toVMF-GUEzOQaR_piOQMyQwoQ3FGSNlTp7x4c7N9Ur-_kHjWB8zeKQyvjRdeNWu5q2GES5xfMciXdTodpQSuPzlNT5PJDVkbkNsKK81ELzoWcYLyjFNJBcsXT8sOcCJ40lmwT8QUe-okED_aAF-Spdn-aEkoSBU17O_PmOG_RK8R2mhohqx4fL_ubkRQ0v3TzRIqBtEXnICo"/>
+</div>
+</div>
+</header>
+<!-- Scrollable Canvas -->
+<div class="flex-1 overflow-y-auto pt-16 pb-12 px-margin-mobile md:px-margin-desktop mt-4">
+<div class="max-w-container-max-width mx-auto">
+<!-- Progress Header -->
+<div class="mb-stack-lg">
+<h1 class="font-display-lg text-display-lg text-primary mb-2">AI Interviewer Configuration</h1>
+<p class="font-body-lg text-body-lg text-secondary">Step 3 of 4: Define the AI's behavior, voice, and interaction style for this role.</p>
+<!-- Progress Bar -->
+<div class="mt-8 flex items-center w-full max-w-2xl">
+<div class="flex flex-col items-center flex-1">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-sm text-label-sm mb-2">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary">Role Basics</span>
+</div>
+<div class="h-[2px] bg-primary flex-1 mx-2 mt-[-24px]"></div>
+<div class="flex flex-col items-center flex-1">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-label-sm text-label-sm mb-2">
+<span class="material-symbols-outlined text-[16px]">check</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary">Questions</span>
+</div>
+<div class="h-[2px] bg-primary flex-1 mx-2 mt-[-24px]"></div>
+<div class="flex flex-col items-center flex-1">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary border-2 border-primary flex items-center justify-center font-label-sm text-label-sm mb-2">
+                                3
+                            </div>
+<span class="font-label-sm text-label-sm text-primary font-bold">AI Config</span>
+</div>
+<div class="h-[2px] bg-tertiary-fixed-dim flex-1 mx-2 mt-[-24px]"></div>
+<div class="flex flex-col items-center flex-1 opacity-50">
+<div class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface-variant border border-outline-variant flex items-center justify-center font-label-sm text-label-sm mb-2">
+                                4
+                            </div>
+<span class="font-label-sm text-label-sm text-secondary">Review</span>
+</div>
+</div>
+</div>
+<!-- Main Layout Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter pb-stack-lg">
+<!-- Configuration Controls (Left Column) -->
+<div class="lg:col-span-8 flex flex-col gap-stack-lg">
+<!-- Voice Selection (Bento Style) -->
+<section class="bg-surface-container-lowest rounded-xl level-1-shadow p-6">
+<h2 class="font-headline-md text-headline-md text-primary flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-secondary">record_voice_over</span>
+                                Voice Selection
+                            </h2>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+<!-- Voice Card 1 (Active) -->
+<div class="border-2 border-primary rounded-lg p-4 bg-surface-container-low cursor-pointer relative overflow-hidden group">
+<div class="absolute top-3 right-3 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<div class="flex items-center gap-3 mb-3">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">person</span>
+</div>
+<div>
+<h3 class="font-label-md text-label-md text-primary">Marcus (US English)</h3>
+<p class="font-label-sm text-label-sm text-secondary">Professional, Calm</p>
+</div>
+</div>
+<button class="w-full flex items-center justify-center gap-2 py-2 px-3 border border-outline-variant rounded bg-surface-container-lowest text-primary font-label-sm text-label-sm hover:bg-surface transition-colors">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+                                        Play Sample
+                                    </button>
+</div>
+<!-- Voice Card 2 -->
+<div class="border border-tertiary-fixed-dim rounded-lg p-4 bg-surface-container-lowest hover:border-outline transition-colors cursor-pointer group">
+<div class="flex items-center gap-3 mb-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">person_4</span>
+</div>
+<div>
+<h3 class="font-label-md text-label-md text-on-surface">Sarah (UK English)</h3>
+<p class="font-label-sm text-label-sm text-secondary">Warm, Engaging</p>
+</div>
+</div>
+<button class="w-full flex items-center justify-center gap-2 py-2 px-3 border border-outline-variant rounded bg-surface-container-lowest text-secondary font-label-sm text-label-sm hover:bg-surface transition-colors group-hover:text-primary">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+                                        Play Sample
+                                    </button>
+</div>
+<!-- Voice Card 3 -->
+<div class="border border-tertiary-fixed-dim rounded-lg p-4 bg-surface-container-lowest hover:border-outline transition-colors cursor-pointer group">
+<div class="flex items-center gap-3 mb-3">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">person</span>
+</div>
+<div>
+<h3 class="font-label-md text-label-md text-on-surface">David (US English)</h3>
+<p class="font-label-sm text-label-sm text-secondary">Authoritative, Direct</p>
+</div>
+</div>
+<button class="w-full flex items-center justify-center gap-2 py-2 px-3 border border-outline-variant rounded bg-surface-container-lowest text-secondary font-label-sm text-label-sm hover:bg-surface transition-colors group-hover:text-primary">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+                                        Play Sample
+                                    </button>
+</div>
+<!-- Voice Card 4 -->
+<div class="border border-tertiary-fixed-dim rounded-lg p-4 bg-surface-container-lowest hover:border-outline transition-colors cursor-pointer group flex items-center justify-center border-dashed">
+<div class="text-center">
+<span class="material-symbols-outlined text-secondary text-[24px] mb-1">add_circle</span>
+<p class="font-label-md text-label-md text-secondary">Browse More Voices</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Persona Settings (Sliders & Toggles) -->
+<section class="bg-surface-container-lowest rounded-xl level-1-shadow p-6">
+<h2 class="font-headline-md text-headline-md text-primary flex items-center gap-2 mb-6">
+<span class="material-symbols-outlined text-secondary">psychology</span>
+                                Behavioral Persona
+                            </h2>
+<div class="space-y-8">
+<!-- Tone Slider -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<label class="font-label-md text-label-md text-primary">Interview Tone</label>
+<span class="font-label-sm text-label-sm text-secondary bg-surface-container-high px-2 py-1 rounded">Balanced</span>
+</div>
+<div class="relative w-full h-8 flex items-center">
+<input class="w-full z-10 relative" max="100" min="1" type="range" value="50"/>
+<div class="absolute left-0 right-0 h-1 bg-gradient-to-r from-surface-tint via-tertiary-fixed to-outline-variant rounded pointer-events-none opacity-20"></div>
+</div>
+<div class="flex justify-between mt-1 px-1">
+<span class="font-label-sm text-label-sm text-secondary">Supportive &amp; Guiding</span>
+<span class="font-label-sm text-label-sm text-secondary">Strict &amp; Challenging</span>
+</div>
+</div>
+<!-- Detail Slider -->
+<div>
+<div class="flex justify-between items-end mb-2">
+<label class="font-label-md text-label-md text-primary">Probing Depth</label>
+<span class="font-label-sm text-label-sm text-secondary bg-surface-container-high px-2 py-1 rounded">High Detail</span>
+</div>
+<div class="relative w-full h-8 flex items-center">
+<input class="w-full z-10 relative" max="100" min="1" type="range" value="75"/>
+</div>
+<div class="flex justify-between mt-1 px-1">
+<span class="font-label-sm text-label-sm text-secondary">Surface Level</span>
+<span class="font-label-sm text-label-sm text-secondary">Deep Clarification</span>
+</div>
+</div>
+<hr class="border-tertiary-fixed-dim"/>
+<!-- Interruption Policy -->
+<div>
+<h3 class="font-label-md text-label-md text-primary mb-4">Interruption Policy</h3>
+<div class="flex flex-col gap-4">
+<label class="flex items-start gap-3 cursor-pointer p-3 border border-tertiary-fixed-dim rounded-lg hover:bg-surface transition-colors">
+<input class="mt-1 text-primary focus:ring-primary h-4 w-4 border-outline-variant" name="interrupt" type="radio"/>
+<div>
+<span class="block font-label-md text-label-md text-primary">Never Interrupt</span>
+<span class="block font-body-md text-body-md text-secondary text-sm mt-1">AI will wait until the candidate completely stops speaking before responding. Best for executive roles.</span>
+</div>
+</label>
+<label class="flex items-start gap-3 cursor-pointer p-3 border-2 border-primary bg-surface-container-low rounded-lg transition-colors">
+<input checked="" class="mt-1 text-primary focus:ring-primary h-4 w-4 border-outline-variant" name="interrupt" type="radio"/>
+<div>
+<span class="block font-label-md text-label-md text-primary">Polite Redirection (Recommended)</span>
+<span class="block font-body-md text-body-md text-secondary text-sm mt-1">AI will gently interrupt if candidate goes off-topic for more than 45 seconds to keep the interview on track.</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Live Preview Panel (Right Column - Glassmorphism) -->
+<div class="lg:col-span-4 flex flex-col gap-stack-md">
+<div class="glass-panel rounded-xl p-6 sticky top-20">
+<h2 class="font-headline-md text-headline-md text-primary mb-4 flex justify-between items-center">
+                                Persona Preview
+                                <span class="material-symbols-outlined text-secondary text-sm">visibility</span>
+</h2>
+<div class="bg-surface-container-highest rounded-lg p-4 mb-6 relative overflow-hidden">
+<!-- Abstract visual indicating AI processing/personality -->
+<div class="absolute -right-4 -top-4 w-24 h-24 bg-gradient-to-br from-primary-fixed to-secondary-container rounded-full opacity-50 blur-xl"></div>
+<div class="relative z-10 flex flex-col items-center text-center">
+<div class="w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center mb-3 level-1-shadow">
+<span class="material-symbols-outlined text-[32px]">smart_toy</span>
+</div>
+<h3 class="font-headline-lg-mobile text-headline-lg-mobile text-primary mb-1">Marcus</h3>
+<div class="flex flex-wrap justify-center gap-2 mt-2">
+<span class="bg-surface text-secondary font-label-sm text-label-sm px-2 py-1 rounded">Balanced Tone</span>
+<span class="bg-surface text-secondary font-label-sm text-label-sm px-2 py-1 rounded">High Probing</span>
+<span class="bg-surface text-secondary font-label-sm text-label-sm px-2 py-1 rounded">Polite Redirect</span>
+</div>
+</div>
+</div>
+<div class="space-y-4">
+<h4 class="font-label-sm text-label-sm text-secondary uppercase tracking-wider">Example Interaction</h4>
+<div class="bg-surface-container-lowest border border-outline-variant rounded p-3 text-sm">
+<div class="flex gap-2 mb-2">
+<span class="material-symbols-outlined text-primary text-[18px]">smart_toy</span>
+<p class="font-body-md text-body-md text-primary">"That's an interesting point about the database migration. Could you elaborate on how you handled the downtime constraints you mentioned earlier?"</p>
+</div>
+</div>
+<div class="bg-secondary-container/20 border border-secondary-container rounded p-3 text-sm ml-4">
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">person</span>
+<p class="font-body-md text-body-md text-secondary italic">Candidate answers, emphasizing technical details but missing the project management aspect...</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest border border-outline-variant rounded p-3 text-sm">
+<div class="flex gap-2">
+<span class="material-symbols-outlined text-primary text-[18px]">smart_toy</span>
+<p class="font-body-md text-body-md text-primary">"I understand the technical setup now, thank you. Let's pivot slightly back to the stakeholder management—how did you communicate these risks to the executive team?"</p>
+</div>
+</div>
+</div>
+<!-- Action Area -->
+<div class="mt-8 pt-4 border-t border-tertiary-fixed-dim flex flex-col gap-3">
+<button class="w-full bg-primary text-on-primary py-3 rounded-lg font-label-md text-label-md hover:bg-primary/90 transition-colors shadow-sm">
+                                    Continue to Review
+                                </button>
+<button class="w-full bg-transparent border border-outline-variant text-primary py-3 rounded-lg font-label-md text-label-md hover:bg-surface-container-low transition-colors">
+                                    Back to Questions
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

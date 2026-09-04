@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Enterprise Support Center - RecruitPro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Playfair+Display:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-low": "#f2f4f6",
+                      "primary-container": "#131b2e",
+                      "on-surface-variant": "#45464d",
+                      "on-primary": "#ffffff",
+                      "surface-container-highest": "#e0e3e5",
+                      "on-error": "#ffffff",
+                      "tertiary": "#000000",
+                      "secondary-container": "#d0e1fb",
+                      "surface-container-high": "#e6e8ea",
+                      "surface-bright": "#f7f9fb",
+                      "surface-tint": "#565e74",
+                      "on-background": "#191c1e",
+                      "on-tertiary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "on-secondary-container": "#54647a",
+                      "on-primary-container": "#7c839b",
+                      "on-tertiary-fixed-variant": "#41474e",
+                      "secondary-fixed": "#d3e4fe",
+                      "surface-dim": "#d8dadc",
+                      "surface-container-lowest": "#ffffff",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "secondary": "#505f76",
+                      "tertiary-fixed-dim": "#c1c7cf",
+                      "primary": "#000000",
+                      "surface": "#f7f9fb",
+                      "inverse-on-surface": "#eff1f3",
+                      "on-primary-fixed": "#131b2e",
+                      "error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-fixed": "#161c22",
+                      "on-primary-fixed-variant": "#3f465c",
+                      "on-secondary": "#ffffff",
+                      "tertiary-fixed": "#dde3eb",
+                      "inverse-primary": "#bec6e0",
+                      "inverse-surface": "#2d3133",
+                      "primary-fixed-dim": "#bec6e0",
+                      "background": "#f7f9fb",
+                      "tertiary-container": "#161c22",
+                      "on-secondary-fixed": "#0b1c30",
+                      "on-surface": "#191c1e",
+                      "primary-fixed": "#dae2fd",
+                      "outline-variant": "#c6c6cd",
+                      "on-tertiary-container": "#7e848c",
+                      "surface-container": "#eceef0",
+                      "surface-variant": "#e0e3e5",
+                      "outline": "#76777d"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "margin-desktop": "40px",
+                      "stack-md": "16px",
+                      "stack-lg": "32px",
+                      "margin-mobile": "16px",
+                      "unit": "8px",
+                      "stack-sm": "8px",
+                      "container-max-width": "1280px"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Playfair Display"
+                      ],
+                      "headline-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Playfair Display"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .diffused-shadow {
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        }
+      </style>
+</head>
+<body class="bg-surface text-on-surface font-body-md min-h-screen flex">
+<!-- SideNavBar -->
+<nav class="bg-surface dark:bg-inverse-surface text-primary dark:text-inverse-primary h-screen w-64 fixed left-0 top-0 border-r border-tertiary dark:border-outline-variant flex flex-col h-full py-stack-lg px-gutter transition-all duration-200 ease-in-out z-20 hidden md:flex">
+<!-- Header -->
+<div class="mb-stack-lg">
+<div class="flex items-center gap-unit mb-unit">
+<img class="w-8 h-8 rounded-full object-cover" data-alt="A minimalist, premium enterprise logo for RecruitPro. It features a geometric, stylized abstract 'R' in deep slate grey and silver, rendered on a crisp white background. The aesthetic is clean, corporate, and highly professional, reflecting high-stakes enterprise software." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBhWNg3SFzVSBYl62eV5hjJfiFZgumPcFb69z4sgWDZamLIyZfIHneim4zEfJlYzP0_Ge6lYCSuvJY7ucGz3Yt2Eh_7LAiTLojjwh8pHOKw5FMfzwU2OSiLc4kq-cWZZpUX527gbo_0ECRzLHtIMnuWsqXPfK2-wpnW-mFZq7M7CIZRyIUJ0itwpKhXWVoLKhLPZMc9H9L9Ic1oXTc-FjQp6mSIlxg-cZrvl60BdSDr91uHLkHA3icB"/>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary tracking-tight">RecruitPro</h1>
+</div>
+<p class="font-label-sm text-label-sm text-secondary">Enterprise Suite</p>
+</div>
+<!-- CTA -->
+<button class="bg-primary text-on-primary w-full py-2 px-4 rounded-lg font-label-md text-label-md mb-stack-lg hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2 shadow-sm">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            New Interview
+        </button>
+<!-- Navigation Links -->
+<ul class="flex-col space-y-2 flex-grow">
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">event_note</span>
+<span class="font-label-md text-label-md">Interviews</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">group</span>
+<span class="font-label-md text-label-md">Candidates</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">diversity_3</span>
+<span class="font-label-md text-label-md">Team</span>
+</a>
+</li>
+<li>
+<!-- Semantic Match: Settings acts as the closest hub for Support/Configuration in this nav structure -->
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-primary dark:text-inverse-primary font-bold border-r-2 border-primary bg-surface-container-low transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-64 relative min-h-screen">
+<!-- TopNavBar -->
+<header class="bg-surface/80 dark:bg-inverse-surface/80 text-primary dark:text-inverse-primary fixed top-0 right-0 md:left-64 h-16 backdrop-blur-md border-b border-tertiary dark:border-outline-variant shadow-sm flex justify-between items-center px-margin-desktop w-full z-10 transition-transform scale-95 active:scale-90 left-0">
+<!-- Mobile Brand (Hidden on Desktop) -->
+<div class="flex items-center gap-2 md:hidden">
+<img class="w-6 h-6 rounded-full object-cover" data-alt="A minimalist, premium enterprise logo for RecruitPro. It features a geometric, stylized abstract 'R' in deep slate grey and silver, rendered on a crisp white background. The aesthetic is clean, corporate, and highly professional, reflecting high-stakes enterprise software." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDFmtkWH-FjKPbFrGSrQjLlAgK9OnHpyGSCYLDfNaitlL82rMXHDDroXZUIi9pvsTjVhfarDGcIELKw1ER1mdt8yOA4AjskA1tCFGO9tlo501_YPo_hWxAQF75Xp3siMGqpTh-r3Q202E3kpU9QRZCoO6eg9SB8ffcnHmoGRpkqzGsSNLDLNAhguu0lqkBVWnSdQKOCzXvyJjbgA1FzjfPjdsbZroVVkQAXfuxWRa4fop1fkmCxD7H6"/>
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary">RecruitPro</span>
+</div>
+<div class="hidden md:block">
+<h2 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary">Support Center</h2>
+</div>
+<div class="flex items-center gap-gutter">
+<!-- Search on Right -->
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-[20px]">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-lowest border border-tertiary rounded-lg font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-0 w-64 transition-colors placeholder:text-outline-variant" placeholder="Search knowledge base..." type="text"/>
+</div>
+<!-- Trailing Icons -->
+<div class="flex items-center gap-unit">
+<button class="p-2 rounded-full text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-inverse-primary transition-colors hover:bg-surface-container-low">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 rounded-full text-primary dark:text-inverse-primary font-bold hover:text-primary dark:hover:text-inverse-primary transition-colors hover:bg-surface-container-low">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">help_outline</span>
+</button>
+<div class="w-px h-6 bg-tertiary ml-unit mr-unit hidden sm:block"></div>
+<button class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+<img class="w-8 h-8 rounded-full border border-tertiary object-cover" data-alt="A professional headshot of a corporate user, female, mid-30s, wearing a smart grey blazer against a bright minimalist office background. Soft, diffused natural lighting highlights a confident expression. High-end editorial corporate photography style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCPHVZeUzPc36viZVC79B0SIGCBeytpD5CIkHJW8Nw2YcoaidK5_oIHt2MwRZt_fTfNUWie-upIFGJXfb1U03ey6eXW4_eSj0vXj_gbtrnN7UIL1A8ocyPm5wPNUDOjrgLHJioRL4Y58PpSaOtRXJgC4Exolgcuvm7bnioxSWjGjrSxYRuwoZOkqKcSm69US-WVpYEm8_tXTTwdejTpP3K0EzYI-7HNQGp7jbp_oTztQz-hijTqasSw"/>
+</button>
+</div>
+</div>
+</header>
+<!-- Page Canvas -->
+<div class="pt-24 pb-12 px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto">
+<!-- Hero Header Section -->
+<section class="mb-stack-lg">
+<div class="max-w-2xl">
+<h1 class="font-display-lg text-display-lg text-primary mb-stack-sm">How can we help?</h1>
+<p class="font-body-lg text-body-lg text-secondary">Search our knowledge base, review API documentation, or check the status of your ongoing support requests.</p>
+</div>
+</section>
+<!-- Grid Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Main Content Column (Left) -->
+<div class="lg:col-span-8 flex flex-col gap-stack-lg">
+<!-- Search Bar (Prominent for main area) -->
+<div class="bg-surface-container-lowest rounded-xl p-8 diffused-shadow border border-tertiary flex flex-col gap-4">
+<label class="font-label-md text-label-md text-primary">Search Support Articles</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-primary text-[24px]">search</span>
+<input class="w-full pl-12 pr-4 py-4 bg-surface rounded-lg border-b border-tertiary font-body-lg text-body-lg text-on-surface focus:outline-none focus:border-primary focus:border-b-2 transition-all placeholder:text-outline-variant" placeholder="e.g., 'Configure SSO' or 'Billing Cycle'" type="text"/>
+</div>
+<div class="flex flex-wrap gap-2 mt-2">
+<span class="font-label-sm text-label-sm text-secondary py-1">Popular:</span>
+<button class="bg-surface-container-low text-secondary px-3 py-1 rounded font-label-sm text-label-sm hover:bg-surface-container-high transition-colors">API Keys</button>
+<button class="bg-surface-container-low text-secondary px-3 py-1 rounded font-label-sm text-label-sm hover:bg-surface-container-high transition-colors">User Roles</button>
+<button class="bg-surface-container-low text-secondary px-3 py-1 rounded font-label-sm text-label-sm hover:bg-surface-container-high transition-colors">Integrations</button>
+</div>
+</div>
+<!-- Open Tickets Section -->
+<section class="bg-surface-container-lowest rounded-xl p-8 diffused-shadow border border-tertiary">
+<div class="flex justify-between items-center mb-stack-md border-b border-tertiary pb-4">
+<h3 class="font-headline-md text-headline-md text-primary">Open Support Tickets</h3>
+<button class="text-secondary hover:text-primary font-label-md text-label-md transition-colors flex items-center gap-1">
+                                View All <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+<div class="flex flex-col gap-4">
+<!-- Ticket Item -->
+<div class="group flex items-start justify-between p-4 rounded-lg hover:bg-surface-container-low transition-colors border border-transparent hover:border-tertiary cursor-pointer">
+<div class="flex gap-4">
+<div class="mt-1">
+<span class="material-symbols-outlined text-error">error</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="font-label-sm text-label-sm text-secondary">#REQ-8942</span>
+<span class="bg-error-container text-on-error-container px-2 py-0.5 rounded font-label-sm text-label-sm">High Priority</span>
+</div>
+<h4 class="font-label-md text-label-md text-primary font-semibold mb-1 group-hover:underline">ATS Sync Failure on Custom Fields</h4>
+<p class="font-body-md text-body-md text-secondary text-sm">Last updated: 2 hours ago by Technical Support</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</div>
+<!-- Ticket Item -->
+<div class="group flex items-start justify-between p-4 rounded-lg hover:bg-surface-container-low transition-colors border border-transparent hover:border-tertiary cursor-pointer">
+<div class="flex gap-4">
+<div class="mt-1">
+<span class="material-symbols-outlined text-secondary">pending</span>
+</div>
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="font-label-sm text-label-sm text-secondary">#REQ-8910</span>
+<span class="bg-surface-container-highest text-secondary px-2 py-0.5 rounded font-label-sm text-label-sm">In Progress</span>
+</div>
+<h4 class="font-label-md text-label-md text-primary font-semibold mb-1 group-hover:underline">Billing Administrator Role Access</h4>
+<p class="font-body-md text-body-md text-secondary text-sm">Last updated: Yesterday</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</div>
+</div>
+</section>
+</div>
+<!-- Sidebar Column (Right) -->
+<div class="lg:col-span-4 flex flex-col gap-stack-lg">
+<!-- Direct Contact Card -->
+<div class="bg-primary text-on-primary rounded-xl p-8 diffused-shadow relative overflow-hidden">
+<!-- Decorative background element -->
+<div class="absolute -right-10 -top-10 w-40 h-40 bg-white opacity-5 rounded-full blur-2xl"></div>
+<h3 class="font-headline-md text-headline-md mb-2 relative z-10">Need Immediate Help?</h3>
+<p class="font-body-md text-body-md opacity-80 mb-stack-md relative z-10">Enterprise SLA guarantees response within 1 hour for critical issues.</p>
+<div class="flex flex-col gap-3 relative z-10">
+<button class="bg-white text-primary w-full py-3 px-4 rounded-lg font-label-md text-label-md hover:bg-opacity-90 transition-colors flex items-center justify-center gap-2 font-semibold">
+<span class="material-symbols-outlined">support_agent</span>
+                                Open New Ticket
+                            </button>
+<button class="border border-white border-opacity-20 text-white w-full py-3 px-4 rounded-lg font-label-md text-label-md hover:bg-white hover:bg-opacity-10 transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">call</span>
+                                +1 (800) 555-0199
+                            </button>
+</div>
+</div>
+<!-- Resources Glass Panel -->
+<div class="glass-panel rounded-xl p-8 diffused-shadow">
+<h3 class="font-headline-md text-headline-md text-primary mb-stack-md border-b border-tertiary pb-4">Resources</h3>
+<ul class="flex flex-col gap-4">
+<li>
+<a class="flex items-start gap-3 group" href="#">
+<div class="bg-surface-container-low p-2 rounded text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined">api</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-primary font-semibold group-hover:underline">API Documentation</h4>
+<p class="font-body-md text-body-md text-secondary text-sm">Endpoints, webhooks, and rate limits.</p>
+</div>
+</a>
+</li>
+<li>
+<a class="flex items-start gap-3 group" href="#">
+<div class="bg-surface-container-low p-2 rounded text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined">menu_book</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-primary font-semibold group-hover:underline">User Guides</h4>
+<p class="font-body-md text-body-md text-secondary text-sm">Step-by-step tutorials for admins.</p>
+</div>
+</a>
+</li>
+<li>
+<a class="flex items-start gap-3 group" href="#">
+<div class="bg-surface-container-low p-2 rounded text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined">system_update_alt</span>
+</div>
+<div>
+<h4 class="font-label-md text-label-md text-primary font-semibold group-hover:underline">Release Notes</h4>
+<p class="font-body-md text-body-md text-secondary text-sm">Latest updates and features.</p>
+</div>
+</a>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Candidate Evaluation - Alex Johnson</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Playfair+Display:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .diffused-shadow {
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+        }
+        .glass-panel {
+            backdrop-filter: blur(12px);
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        /* Hide scrollbar for cleaner look in nav */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #e0e3e5;
+            border-radius: 4px;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-highest": "#e0e3e5",
+                      "on-secondary": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "on-tertiary": "#ffffff",
+                      "surface": "#f7f9fb",
+                      "surface-tint": "#565e74",
+                      "background": "#f7f9fb",
+                      "tertiary-fixed-dim": "#c1c7cf",
+                      "on-background": "#191c1e",
+                      "surface-container-high": "#e6e8ea",
+                      "on-error": "#ffffff",
+                      "tertiary-container": "#161c22",
+                      "tertiary": "#000000",
+                      "error-container": "#ffdad6",
+                      "on-surface-variant": "#45464d",
+                      "surface-container": "#eceef0",
+                      "on-tertiary-fixed-variant": "#41474e",
+                      "primary-container": "#131b2e",
+                      "outline-variant": "#c6c6cd",
+                      "surface-dim": "#d8dadc",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "inverse-on-surface": "#eff1f3",
+                      "on-error-container": "#93000a",
+                      "primary-fixed-dim": "#bec6e0",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "on-secondary-container": "#54647a",
+                      "tertiary-fixed": "#dde3eb",
+                      "on-tertiary-fixed": "#161c22",
+                      "inverse-surface": "#2d3133",
+                      "surface-variant": "#e0e3e5",
+                      "surface-container-low": "#f2f4f6",
+                      "error": "#ba1a1a",
+                      "primary-fixed": "#dae2fd",
+                      "on-primary-container": "#7c839b",
+                      "on-tertiary-container": "#7e848c",
+                      "secondary-container": "#d0e1fb",
+                      "on-secondary-fixed": "#0b1c30",
+                      "on-primary-fixed": "#131b2e",
+                      "on-surface": "#191c1e",
+                      "surface-bright": "#f7f9fb",
+                      "secondary": "#505f76",
+                      "outline": "#76777d",
+                      "on-primary-fixed-variant": "#3f465c",
+                      "inverse-primary": "#bec6e0",
+                      "surface-container-lowest": "#ffffff",
+                      "secondary-fixed": "#d3e4fe",
+                      "primary": "#000000"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "stack-lg": "32px",
+                      "gutter": "24px",
+                      "margin-mobile": "16px",
+                      "stack-md": "16px",
+                      "margin-desktop": "40px",
+                      "stack-sm": "8px",
+                      "container-max-width": "1280px",
+                      "unit": "8px"
+              },
+              "fontFamily": {
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "headline-lg": [
+                              "Playfair Display"
+                      ],
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "headline-md": [
+                              "Playfair Display"
+                      ]
+              },
+              "fontSize": {
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen">
+<!-- SideNavBar Component -->
+<nav class="h-screen w-64 fixed left-0 top-0 overflow-y-auto bg-surface dark:bg-surface-dim bg-surface-container-low dark:bg-surface-container-lowest backdrop-blur-md shadow-sm z-50 hidden md:block border-r border-surface-variant">
+<div class="flex flex-col h-full py-stack-lg">
+<div class="px-gutter mb-stack-lg flex items-center gap-stack-sm">
+<div class="w-10 h-10 rounded-lg bg-primary flex items-center justify-center overflow-hidden flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="A minimalist, abstract geometric logo representing a recruitment firm. It features interlocking sleek shapes in pure white on a deep black background, conveying a high-end, professional enterprise aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYOyJv7CYMrm-Jo7eZVgBe-cQyXJ9nIGQeGmykJW_wfUKuZ2SvEYANJPz9uz83fNyFqsiBpJq_e5WzCFZC9Jb3PVfZLoBqV3yinlWYlwKWHvL0Zf_VGLTG7C64dACI_DmCHH93PsLqMrcDfqKDACV2d7v7X47VoykpMvb-oU_dK1XPYDh_gFYLl1QNYpU8xYfpuKLwxiSeoLDZrT5qU_K4s87qMFl3ofMZ2Lg9-C7rl3L9s3h8-6HF"/>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed tracking-tight">TalentStream</h1>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mt-1">Enterprise Suite</p>
+</div>
+</div>
+<div class="px-gutter mb-stack-md">
+<button class="w-full bg-primary text-on-primary py-3 rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-[18px]">add</span>
+                    Create Interview
+                </button>
+</div>
+<ul class="flex-1 flex flex-col gap-1 px-4 mt-stack-md">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-on-tertiary-fixed-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">dashboard</span>
+                        Dashboard
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-on-tertiary-fixed-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">event_upcoming</span>
+                        Interviews
+                    </a>
+</li>
+<li>
+<!-- Active State -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-primary dark:text-primary-fixed font-bold border-r-4 border-primary dark:border-primary-fixed bg-surface-container transition-all duration-200 ease-in-out font-label-md text-label-md" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">group</span>
+                        Candidates
+                    </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-on-surface-variant dark:text-on-tertiary-fixed-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-[20px] group-hover:text-primary transition-colors">groups</span>
+                        Team
+                    </a>
+</li>
+</ul>
+<div class="mt-auto px-4 pt-stack-lg border-t border-surface-variant">
+<ul class="flex flex-col gap-1">
+<li>
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant dark:text-on-tertiary-fixed-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors">settings</span>
+                            Settings
+                        </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-2 rounded-lg text-on-surface-variant dark:text-on-tertiary-fixed-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors font-label-md text-label-md group" href="#">
+<span class="material-symbols-outlined text-[18px] group-hover:text-primary transition-colors">help</span>
+                            Support
+                        </a>
+</li>
+</ul>
+</div>
+</div>
+</nav>
+<!-- TopNavBar Component -->
+<header class="fixed top-0 right-0 left-64 h-16 z-40 bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-xl transition-all duration-300 border-b border-outline-variant dark:border-outline hidden md:block">
+<div class="flex justify-between items-center px-gutter h-full w-full">
+<div class="flex items-center">
+<h2 class="font-headline-md text-headline-md font-semibold text-on-surface dark:text-on-surface-variant">Recruiter Console</h2>
+</div>
+<div class="flex flex-1 max-w-md mx-gutter">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full bg-surface-container rounded-full py-2 pl-10 pr-4 text-body-md text-on-surface focus:outline-none focus:ring-1 focus:ring-primary border-none transition-all placeholder:text-on-surface-variant/60" placeholder="Search candidates, interviews..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="text-on-surface-variant dark:text-on-tertiary-fixed-variant hover:bg-surface-container dark:hover:bg-surface-container-high rounded-full p-2 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant dark:text-on-tertiary-fixed-variant hover:bg-surface-container dark:hover:bg-surface-container-high rounded-full p-2 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined">history</span>
+</button>
+<button class="text-on-surface-variant dark:text-on-tertiary-fixed-variant hover:bg-surface-container dark:hover:bg-surface-container-high rounded-full p-2 transition-colors flex items-center justify-center">
+<span class="material-symbols-outlined">help</span>
+</button>
+<div class="ml-stack-sm h-8 w-px bg-surface-variant"></div>
+<button class="ml-stack-sm w-9 h-9 rounded-full overflow-hidden border border-surface-variant hover:border-primary transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background">
+<img class="w-full h-full object-cover" data-alt="A highly professional headshot of a corporate recruiter. The individual is well-lit with soft studio lighting, wearing a sharp dark blazer against a clean, light grey backdrop. The aesthetic is modern, trustworthy, and premium." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDJM4AaSkD_ISAseW0Vuz5Y6ckfEH3m1Omm501rdejrr4mytD4-RTEV_LR_dIl0jrlv5DuzGxFRX3h-Hw1a9XQUnpgb8wdXrPAnSBZGUKqEqpyG_fMoHjmZcq2SYSCq_9HuW1WVVAAsCcgYFdldBjKZhcn0Cg-6f29azlxe2oj57haTXsPL35U_h6ox08cHAeYt9ANV-tefgy4RMPO6E7hNEIz8m2lHifZUIjd3vYm-rUKIgGUXsD16"/>
+</button>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="md:ml-64 md:mt-16 p-margin-mobile md:p-margin-desktop max-w-container-max-width mx-auto">
+<!-- Breadcrumb & Top Actions -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-stack-lg gap-4">
+<div>
+<div class="flex items-center gap-2 text-on-surface-variant mb-2">
+<a class="font-label-sm text-label-sm hover:text-primary transition-colors uppercase tracking-wider" href="#">Candidates</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface">Evaluation Report</span>
+</div>
+</div>
+<div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
+<button class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-outline-variant bg-transparent text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px]">download</span>
+                    Export PDF
+                </button>
+<button class="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-outline-variant bg-transparent text-primary hover:bg-surface-container-low transition-colors font-label-md text-label-md">
+<span class="material-symbols-outlined text-[18px]">compare_arrows</span>
+                    Compare
+                </button>
+<button class="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-2 rounded-lg bg-primary text-on-primary hover:opacity-90 transition-opacity font-label-md text-label-md shadow-sm">
+                    Move to Final Round
+                    <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Candidate Identity & Score Header -->
+<div class="bg-surface-container-lowest rounded-xl p-8 diffused-shadow mb-stack-lg border border-surface-variant flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
+<div class="flex items-center gap-6">
+<div class="w-24 h-24 rounded-full overflow-hidden border-2 border-surface-variant flex-shrink-0 relative">
+<img class="w-full h-full object-cover" data-alt="A professional headshot of a software engineering candidate named Alex Johnson. The individual looks confident and approachable, wearing a neat button-down shirt. The background is a soft, blurred modern office environment. High-key lighting, premium aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBm8y4pyjrsO6eAtMJy7FQAjpTaztk-mbGkUXl5gUNb6hDJLGJSpCGDKWTd4WqD_xdtLLLx5_F00548edonmBktvoTx9Oc9ap0zVG8MQ9ZOm5xGvDwAhixtKSQj4Jq_xoZf-au7TosCtN_PMsjx6YZjyE_k66tSMPXsu0hKHjz1K5bWYdBUFJ4hUqFwULLDUJ0yne5sQn3qkPOPWLhQcmq72ZeVMQzqWYRYekOz4WI8FrPuXAUvcjp"/>
+<!-- Status Indicator -->
+<div class="absolute bottom-1 right-1 w-4 h-4 rounded-full border-2 border-white bg-[#10b981]"></div>
+</div>
+<div>
+<h1 class="font-headline-lg text-headline-lg text-primary mb-1">Alex Johnson</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-3">Senior Frontend Engineer Candidate</p>
+<div class="flex items-center gap-3">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-secondary-container text-on-secondary-container font-label-sm text-label-sm uppercase tracking-wide">
+<span class="material-symbols-outlined text-[14px]">verified</span>
+                            Strong Match
+                        </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-surface-container-high text-on-surface font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">work</span>
+                            8 Yrs Experience
+                        </span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-6 bg-surface-container px-8 py-6 rounded-xl border border-surface-variant w-full md:w-auto">
+<div class="text-center">
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest mb-1">Overall Score</p>
+<div class="flex items-baseline justify-center gap-1">
+<span class="font-display-lg text-display-lg text-primary tracking-tighter">92</span>
+<span class="font-body-md text-body-md text-on-surface-variant">/100</span>
+</div>
+</div>
+<div class="h-16 w-px bg-outline-variant"></div>
+<div class="flex flex-col gap-2">
+<div class="flex items-center justify-between gap-4 text-sm">
+<span class="font-label-md text-label-md text-on-surface-variant w-16">Tech</span>
+<div class="w-24 h-1.5 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[90%]"></div>
+</div>
+<span class="font-label-sm text-label-sm text-primary">90</span>
+</div>
+<div class="flex items-center justify-between gap-4 text-sm">
+<span class="font-label-md text-label-md text-on-surface-variant w-16">Behav</span>
+<div class="w-24 h-1.5 bg-surface-variant rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[95%]"></div>
+</div>
+<span class="font-label-sm text-label-sm text-primary">95</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Left Column: Summary & Insights -->
+<div class="md:col-span-8 flex flex-col gap-gutter">
+<!-- Executive Summary -->
+<div class="bg-surface-container-lowest rounded-xl p-8 diffused-shadow border border-surface-variant">
+<h3 class="font-headline-md text-headline-md text-primary mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-outline">notes</span>
+                        Executive Summary
+                    </h3>
+<div class="prose prose-slate max-w-none">
+<p class="font-body-lg text-body-lg text-on-surface leading-relaxed mb-4">
+                            Alex demonstrated exceptional proficiency in modern frontend architecture, particularly excelling in state management and component lifecycle optimization. During the technical round, they articulated complex concepts with clarity and proposed highly scalable solutions for our proposed scenario.
+                        </p>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                            Beyond technical acumen, Alex showcased strong leadership qualities. They highlighted several instances of mentoring junior developers and driving cross-functional collaboration. Their approach to problem-solving is methodical and data-driven, aligning perfectly with our engineering culture. A definitive "Strong Hire" recommendation from the panel.
+                        </p>
+</div>
+</div>
+<!-- Detailed Feedback (Asymmetric layout within column) -->
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-gutter">
+<!-- Strengths -->
+<div class="bg-surface-container-lowest rounded-xl p-6 diffused-shadow border border-surface-variant border-t-4 border-t-primary">
+<h4 class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">thumb_up</span>
+                            Key Strengths
+                        </h4>
+<ul class="flex flex-col gap-3">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[18px] text-primary mt-0.5">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Deep understanding of React concurrent mode and suspense.</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[18px] text-primary mt-0.5">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Excellent system design intuition for high-traffic web applications.</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[18px] text-primary mt-0.5">check_circle</span>
+<span class="font-body-md text-body-md text-on-surface">Clear, concise communication style, especially when explaining trade-offs.</span>
+</li>
+</ul>
+</div>
+<!-- Growth Areas -->
+<div class="bg-surface-container-lowest rounded-xl p-6 diffused-shadow border border-surface-variant">
+<h4 class="font-label-md text-label-md uppercase tracking-widest text-on-surface-variant mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">trending_up</span>
+                            Growth Areas
+                        </h4>
+<ul class="flex flex-col gap-3">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[18px] text-outline mt-0.5">arrow_forward</span>
+<span class="font-body-md text-body-md text-on-surface">Could benefit from more exposure to container orchestration (Kubernetes).</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-[18px] text-outline mt-0.5">arrow_forward</span>
+<span class="font-body-md text-body-md text-on-surface">Tendency to over-engineer solutions before clarifying MVP requirements.</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<!-- Right Column: Radar Chart & Metadata -->
+<div class="md:col-span-4 flex flex-col gap-gutter">
+<!-- Skill Radar Chart -->
+<div class="bg-surface-container-lowest rounded-xl p-6 diffused-shadow border border-surface-variant flex flex-col h-full">
+<h3 class="font-headline-md text-headline-md text-primary mb-6 text-center">Skill Matrix</h3>
+<div class="flex-1 flex items-center justify-center relative min-h-[250px]">
+<!-- Stylized SVG Radar Chart representing Technical, Behavioral, Communication -->
+<svg class="w-full h-full max-w-[250px]" viewbox="0 0 200 200">
+<!-- Background Web -->
+<!-- Hexagon grid lines -->
+<polygon fill="none" points="100,20 169.2,60 169.2,140 100,180 30.8,140 30.8,60" stroke="#e0e3e5" stroke-width="1"></polygon>
+<polygon fill="none" points="100,46.6 146.1,73.3 146.1,126.6 100,153.3 53.8,126.6 53.8,73.3" stroke="#e0e3e5" stroke-width="1"></polygon>
+<polygon fill="none" points="100,73.3 123,86.6 123,113.3 100,126.6 77,113.3 77,86.6" stroke="#e0e3e5" stroke-width="1"></polygon>
+<!-- 3 Axes (Triangular shape conceptually mapped to 3 main points) -->
+<!-- Tech (Top), Comms (Bottom Right), Behav (Bottom Left) -->
+<line stroke="#c6c6cd" stroke-dasharray="2 2" stroke-width="1" x1="100" x2="100" y1="100" y2="20"></line>
+<line stroke="#c6c6cd" stroke-dasharray="2 2" stroke-width="1" x1="100" x2="169.2" y1="100" y2="140"></line>
+<line stroke="#c6c6cd" stroke-dasharray="2 2" stroke-width="1" x1="100" x2="30.8" y1="100" y2="140"></line>
+<!-- Data Polygon (Tech 90%, Comms 85%, Behav 95%) -->
+<!-- Top (Tech): 100 - (80 * 0.9) = 28 -->
+<!-- BR (Comms): x = 100 + (69.2 * 0.85) = 158.8, y = 100 + (40 * 0.85) = 134 -->
+<!-- BL (Behav): x = 100 - (69.2 * 0.95) = 34.2, y = 100 + (40 * 0.95) = 138 -->
+<polygon class="transition-all duration-500 ease-out hover:fill-[rgba(0,0,0,0.1)]" fill="rgba(0,0,0,0.05)" points="100,28 158.8,134 34.2,138" stroke="#000000" stroke-width="2"></polygon>
+<!-- Data Points -->
+<circle cx="100" cy="28" fill="#000000" r="4"></circle>
+<circle cx="158.8" cy="134" fill="#000000" r="4"></circle>
+<circle cx="34.2" cy="138" fill="#000000" r="4"></circle>
+<!-- Labels -->
+<text class="font-label-sm text-label-sm fill-on-surface-variant font-medium" text-anchor="middle" x="100" y="12">Technical</text>
+<text class="font-label-sm text-label-sm fill-on-surface-variant font-medium" text-anchor="middle" x="175" y="152">Communication</text>
+<text class="font-label-sm text-label-sm fill-on-surface-variant font-medium" text-anchor="middle" x="25" y="152">Behavioral</text>
+</svg>
+</div>
+<div class="mt-6 flex flex-wrap gap-2 justify-center">
+<span class="px-3 py-1 bg-surface rounded text-on-surface font-label-sm text-label-sm border border-surface-variant">System Design</span>
+<span class="px-3 py-1 bg-surface rounded text-on-surface font-label-sm text-label-sm border border-surface-variant">React</span>
+<span class="px-3 py-1 bg-surface rounded text-on-surface font-label-sm text-label-sm border border-surface-variant">Leadership</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

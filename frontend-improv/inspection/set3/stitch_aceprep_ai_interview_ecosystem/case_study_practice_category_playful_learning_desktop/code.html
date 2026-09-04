@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Case Study Interviews | InterviewPro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed-dim": "#c0c1ff",
+                        "tertiary-container": "#a36700",
+                        "outline": "#767586",
+                        "on-secondary-fixed": "#002113",
+                        "on-error": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "outline-variant": "#c7c4d7",
+                        "secondary-fixed": "#6ffbbe",
+                        "secondary-fixed-dim": "#4edea3",
+                        "surface-container-low": "#eff4ff",
+                        "on-primary-container": "#fffbff",
+                        "on-secondary-fixed-variant": "#005236",
+                        "secondary": "#006c49",
+                        "on-primary-fixed-variant": "#2f2ebe",
+                        "surface-container-highest": "#d3e4fe",
+                        "on-error-container": "#93000a",
+                        "primary": "#4648d4",
+                        "on-secondary-container": "#00714d",
+                        "surface-variant": "#d3e4fe",
+                        "background": "#f8f9ff",
+                        "surface-bright": "#f8f9ff",
+                        "on-surface-variant": "#464554",
+                        "inverse-on-surface": "#eaf1ff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#e5eeff",
+                        "inverse-surface": "#213145",
+                        "on-surface": "#0b1c30",
+                        "tertiary": "#825100",
+                        "tertiary-fixed-dim": "#ffb95f",
+                        "on-background": "#0b1c30",
+                        "on-primary-fixed": "#07006c",
+                        "primary-container": "#6063ee",
+                        "surface-container-high": "#dce9ff",
+                        "surface-tint": "#494bd6",
+                        "primary-fixed": "#e1e0ff",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#6cf8bb",
+                        "on-tertiary-container": "#fffbff",
+                        "surface": "#f8f9ff",
+                        "surface-dim": "#cbdbf5",
+                        "on-tertiary-fixed": "#2a1700",
+                        "error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffddb8",
+                        "on-tertiary-fixed-variant": "#653e00",
+                        "inverse-primary": "#c0c1ff",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-mobile": "16px",
+                        "max-width": "1280px",
+                        "base": "8px",
+                        "margin-desktop": "64px",
+                        "gutter": "24px"
+                    },
+                    "fontFamily": {
+                        "display-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "display-lg-mobile": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "800" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1;
+        }
+        /* Custom scrollbar for horizontal lists */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-surface font-body-md text-body-md text-on-surface min-h-screen flex selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar (Shared Component) -->
+<nav class="hidden md:flex flex-col h-full w-64 fixed left-0 top-0 bg-surface-container-lowest dark:bg-surface-container-low shadow-md p-6 space-y-4 z-50">
+<div class="mb-8">
+<span class="font-display-lg text-display-lg text-primary tracking-tight">Level 12</span>
+<p class="font-label-md text-label-md text-on-surface-variant mt-1">2,450 XP to Next Rank</p>
+</div>
+<ul class="flex flex-col space-y-2 flex-grow">
+<!-- Dashboard -->
+<li>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 hover:translate-x-1 transition-all duration-300" href="#">
+<span class="material-symbols-outlined mr-3">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+</li>
+<!-- Practice (Active State based on Semantic Mapping) -->
+<li>
+<a class="flex items-center px-4 py-3 bg-primary-container text-on-primary-container rounded-lg font-bold hover:translate-x-1 transition-all duration-300" href="#">
+<span class="material-symbols-outlined mr-3 icon-fill">fitness_center</span>
+<span class="font-label-md text-label-md">Practice</span>
+</a>
+</li>
+<!-- Skills -->
+<li>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 hover:translate-x-1 transition-all duration-300" href="#">
+<span class="material-symbols-outlined mr-3">psychology</span>
+<span class="font-label-md text-label-md">Skills</span>
+</a>
+</li>
+<!-- Leaderboard -->
+<li>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 hover:translate-x-1 transition-all duration-300" href="#">
+<span class="material-symbols-outlined mr-3">leaderboard</span>
+<span class="font-label-md text-label-md">Leaderboard</span>
+</a>
+</li>
+<!-- Profile -->
+<li>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 hover:translate-x-1 transition-all duration-300" href="#">
+<span class="material-symbols-outlined mr-3">person</span>
+<span class="font-label-md text-label-md">Profile</span>
+</a>
+</li>
+<!-- Settings -->
+<li>
+<a class="flex items-center px-4 py-3 rounded-lg text-on-surface-variant hover:text-primary dark:text-outline-variant hover:bg-primary-fixed-dim/20 hover:translate-x-1 transition-all duration-300" href="#">
+<span class="material-symbols-outlined mr-3">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</li>
+</ul>
+<div class="mt-auto pt-6">
+<button class="w-full py-3 px-4 bg-surface-container-high text-primary rounded-xl font-label-md text-label-md font-bold hover:bg-primary-fixed-dim/30 transition-colors">
+                Upgrade to Pro
+            </button>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 w-full max-w-max-width mx-auto p-margin-mobile md:p-margin-desktop overflow-x-hidden">
+<!-- Header Section -->
+<header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-16">
+<div class="max-w-2xl">
+<div class="flex items-center gap-3 mb-4">
+<span class="px-3 py-1 bg-tertiary-container text-on-tertiary-container rounded-full font-label-sm text-label-sm uppercase tracking-wider">Advanced Module</span>
+<span class="flex items-center text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-sm mr-1">timer</span> Est. 45m+
+                    </span>
+</div>
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-4">Case Study Interviews</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant">Master complex problem-solving scenarios. Apply structured frameworks like CIRCLES and Root Cause Analysis to stand out.</p>
+</div>
+<button class="shrink-0 flex items-center justify-center gap-2 bg-primary text-on-primary font-label-md text-label-md px-8 py-4 rounded-full border-b-[3px] border-primary-fixed-dim hover:scale-[1.02] active:scale-[0.98] transition-transform shadow-sm">
+<span class="material-symbols-outlined icon-fill">play_arrow</span>
+                Start Case Study Interview
+            </button>
+</header>
+<!-- Configuration Panel (Glassmorphism inspired soft container) -->
+<section class="bg-surface-container-lowest rounded-xl p-6 md:p-8 shadow-sm border border-surface-container-high mb-16 relative overflow-hidden">
+<!-- Decorative background element -->
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary-container opacity-20 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none"></div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 relative z-10">
+<!-- Modes Selection -->
+<div class="space-y-4">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">tune</span>
+                        Practice Mode
+                    </h3>
+<div class="flex flex-wrap gap-3">
+<button class="px-4 py-2 rounded-full border-2 border-primary bg-primary/5 text-primary font-label-md text-label-md transition-colors hover:bg-primary/10">
+                            Timed
+                        </button>
+<button class="px-4 py-2 rounded-full border border-outline-variant text-on-surface-variant font-label-md text-label-md transition-colors hover:border-primary hover:text-primary">
+                            Untimed
+                        </button>
+<button class="px-4 py-2 rounded-full border border-outline-variant text-on-surface-variant font-label-md text-label-md transition-colors hover:border-primary hover:text-primary">
+                            Guided
+                        </button>
+</div>
+</div>
+<!-- Frameworks Selection -->
+<div class="space-y-4 lg:col-span-2">
+<h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary">architecture</span>
+                        Preferred Frameworks
+                    </h3>
+<div class="flex flex-wrap gap-3">
+<label class="cursor-pointer group">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="px-4 py-2 rounded-full border-2 border-outline-variant text-on-surface-variant font-label-md text-label-md peer-checked:border-secondary peer-checked:bg-secondary/10 peer-checked:text-secondary-fixed-variant transition-all hover:bg-surface-container-high">
+                                The CIRCLES Method
+                            </div>
+</label>
+<label class="cursor-pointer group">
+<input class="sr-only peer" type="checkbox"/>
+<div class="px-4 py-2 rounded-full border-2 border-outline-variant text-on-surface-variant font-label-md text-label-md peer-checked:border-secondary peer-checked:bg-secondary/10 peer-checked:text-secondary-fixed-variant transition-all hover:bg-surface-container-high">
+                                Root Cause Analysis
+                            </div>
+</label>
+<label class="cursor-pointer group">
+<input class="sr-only peer" type="checkbox"/>
+<div class="px-4 py-2 rounded-full border-2 border-outline-variant text-on-surface-variant font-label-md text-label-md peer-checked:border-secondary peer-checked:bg-secondary/10 peer-checked:text-secondary-fixed-variant transition-all hover:bg-surface-container-high">
+                                STAR Method
+                            </div>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- Main Content: Bento Grid for Case Cards -->
+<section>
+<div class="flex justify-between items-end mb-8">
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Curated Cases</h2>
+<!-- Category Filter (Horizontal Scroll on Mobile) -->
+<div class="hidden md:flex gap-2">
+<span class="px-4 py-2 bg-inverse-surface text-inverse-on-surface rounded-full font-label-sm text-label-sm cursor-pointer">All Categories</span>
+<span class="px-4 py-2 text-on-surface-variant hover:bg-surface-container rounded-full font-label-sm text-label-sm cursor-pointer transition-colors">Product Design</span>
+<span class="px-4 py-2 text-on-surface-variant hover:bg-surface-container rounded-full font-label-sm text-label-sm cursor-pointer transition-colors">Business Strategy</span>
+<span class="px-4 py-2 text-on-surface-variant hover:bg-surface-container rounded-full font-label-sm text-label-sm cursor-pointer transition-colors">Incident Analysis</span>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Featured Hero Case (Spans 2 columns on large screens) -->
+<article class="col-span-1 lg:col-span-2 flex flex-col md:flex-row bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm border border-surface-container-high hover:shadow-md transition-all duration-300 group">
+<div class="w-full md:w-2/5 relative h-48 md:h-auto bg-primary-container/20">
+<!-- Abstract illustration placeholder via CSS pattern -->
+<div class="absolute inset-0 opacity-30 bg-[radial-gradient(#4648d4_1px,transparent_1px)] [background-size:16px_16px]"></div>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-6xl text-primary drop-shadow-md">devices_other</span>
+</div>
+</div>
+<div class="p-6 md:p-8 flex flex-col justify-between flex-1">
+<div>
+<div class="flex items-center gap-2 mb-3">
+<span class="bg-primary/10 text-primary font-label-sm text-label-sm px-2 py-1 rounded">Product Design</span>
+<span class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-2 py-1 rounded font-bold">Medium</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2 group-hover:text-primary transition-colors">Design a Better Alarm Clock</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4 line-clamp-2">Walk through the end-to-end design process for a physical or digital product aimed at solving sleep disruption.</p>
+</div>
+<div class="flex items-center justify-between mt-4">
+<div class="flex items-center text-on-surface-variant font-label-sm text-label-sm gap-4">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">schedule</span> 30m</span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-sm">architecture</span> CIRCLES</span>
+</div>
+<button class="w-10 h-10 rounded-full bg-surface-container-highest flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-on-primary transition-colors">
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Standard Case Card 1 -->
+<article class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-surface-container-high flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+<div>
+<div class="flex items-center gap-2 mb-4">
+<span class="bg-tertiary-container/20 text-tertiary font-label-sm text-label-sm px-2 py-1 rounded">Business Strategy</span>
+<span class="bg-error-container text-on-error-container font-label-sm text-label-sm px-2 py-1 rounded font-bold">Hard</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2 leading-tight">Market Entry for EV Startup</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6 line-clamp-3">Analyze the competitive landscape and propose a go-to-market strategy for a new electric vehicle manufacturer entering Europe.</p>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-outline-variant/30">
+<span class="flex items-center text-on-surface-variant font-label-sm text-label-sm gap-1">
+<span class="material-symbols-outlined text-sm">schedule</span> 45m
+                        </span>
+<span class="text-primary font-label-md text-label-md cursor-pointer hover:underline">View Case</span>
+</div>
+</article>
+<!-- Standard Case Card 2 -->
+<article class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-surface-container-high flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+<div>
+<div class="flex items-center gap-2 mb-4">
+<span class="bg-surface-variant text-on-surface-variant font-label-sm text-label-sm px-2 py-1 rounded">Incident Analysis</span>
+<span class="bg-error-container text-on-error-container font-label-sm text-label-sm px-2 py-1 rounded font-bold">Hard</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2 leading-tight">Downtime During Peak Hours</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6 line-clamp-3">Investigate a simulated catastrophic failure of a payment gateway during Black Friday sales.</p>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-outline-variant/30">
+<div class="flex flex-col gap-1">
+<span class="flex items-center text-on-surface-variant font-label-sm text-label-sm gap-1">
+<span class="material-symbols-outlined text-sm">schedule</span> 60m
+                            </span>
+<span class="flex items-center text-on-surface-variant font-label-sm text-label-sm gap-1">
+<span class="material-symbols-outlined text-sm">architecture</span> Root Cause
+                            </span>
+</div>
+<span class="text-primary font-label-md text-label-md cursor-pointer hover:underline">View Case</span>
+</div>
+</article>
+<!-- Standard Case Card 3 -->
+<article class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-surface-container-high flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+<div>
+<div class="flex items-center gap-2 mb-4">
+<span class="bg-surface-variant text-on-surface-variant font-label-sm text-label-sm px-2 py-1 rounded">Guesstimates</span>
+<span class="bg-secondary text-on-secondary font-label-sm text-label-sm px-2 py-1 rounded font-bold">Easy</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2 leading-tight">Ping Pong Balls in a 747</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6 line-clamp-3">A classic estimation challenge. Break down the volume assumptions to arrive at a logical numerical range.</p>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-outline-variant/30">
+<span class="flex items-center text-on-surface-variant font-label-sm text-label-sm gap-1">
+<span class="material-symbols-outlined text-sm">schedule</span> 15m
+                        </span>
+<span class="text-primary font-label-md text-label-md cursor-pointer hover:underline">View Case</span>
+</div>
+</article>
+<!-- Standard Case Card 4 -->
+<article class="bg-surface-container-lowest rounded-xl p-6 shadow-sm border border-surface-container-high flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+<div>
+<div class="flex items-center gap-2 mb-4">
+<span class="bg-primary/10 text-primary font-label-sm text-label-sm px-2 py-1 rounded">Data Interpretation</span>
+<span class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-2 py-1 rounded font-bold">Medium</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-2 leading-tight">Drop in User Engagement</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-6 line-clamp-3">Analyze a provided dataset showing a sudden 15% drop in daily active users for a social media app.</p>
+</div>
+<div class="flex items-center justify-between pt-4 border-t border-outline-variant/30">
+<div class="flex flex-col gap-1">
+<span class="flex items-center text-on-surface-variant font-label-sm text-label-sm gap-1">
+<span class="material-symbols-outlined text-sm">schedule</span> 35m
+                            </span>
+</div>
+<span class="text-primary font-label-md text-label-md cursor-pointer hover:underline">View Case</span>
+</div>
+</article>
+</div>
+</section>
+<div class="h-24"></div> <!-- Bottom spacing -->
+</main>
+</body></html>

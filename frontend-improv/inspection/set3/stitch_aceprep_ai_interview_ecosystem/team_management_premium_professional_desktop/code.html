@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+
+<html class="h-full bg-background dark:bg-background" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>RecruitPro - Team Management</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container-low": "#f2f4f6",
+                      "primary-container": "#131b2e",
+                      "on-surface-variant": "#45464d",
+                      "on-primary": "#ffffff",
+                      "surface-container-highest": "#e0e3e5",
+                      "on-error": "#ffffff",
+                      "tertiary": "#000000",
+                      "secondary-container": "#d0e1fb",
+                      "surface-container-high": "#e6e8ea",
+                      "surface-bright": "#f7f9fb",
+                      "surface-tint": "#565e74",
+                      "on-background": "#191c1e",
+                      "on-tertiary": "#ffffff",
+                      "error": "#ba1a1a",
+                      "on-secondary-container": "#54647a",
+                      "on-primary-container": "#7c839b",
+                      "on-tertiary-fixed-variant": "#41474e",
+                      "secondary-fixed": "#d3e4fe",
+                      "surface-dim": "#d8dadc",
+                      "surface-container-lowest": "#ffffff",
+                      "on-secondary-fixed-variant": "#38485d",
+                      "secondary": "#505f76",
+                      "tertiary-fixed-dim": "#c1c7cf",
+                      "primary": "#000000",
+                      "surface": "#f7f9fb",
+                      "inverse-on-surface": "#eff1f3",
+                      "on-primary-fixed": "#131b2e",
+                      "error-container": "#ffdad6",
+                      "secondary-fixed-dim": "#b7c8e1",
+                      "on-error-container": "#93000a",
+                      "on-tertiary-fixed": "#161c22",
+                      "on-primary-fixed-variant": "#3f465c",
+                      "on-secondary": "#ffffff",
+                      "tertiary-fixed": "#dde3eb",
+                      "inverse-primary": "#bec6e0",
+                      "inverse-surface": "#2d3133",
+                      "primary-fixed-dim": "#bec6e0",
+                      "background": "#f7f9fb",
+                      "tertiary-container": "#161c22",
+                      "on-secondary-fixed": "#0b1c30",
+                      "on-surface": "#191c1e",
+                      "primary-fixed": "#dae2fd",
+                      "outline-variant": "#c6c6cd",
+                      "on-tertiary-container": "#7e848c",
+                      "surface-container": "#eceef0",
+                      "surface-variant": "#e0e3e5",
+                      "outline": "#76777d"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter": "24px",
+                      "margin-desktop": "40px",
+                      "stack-md": "16px",
+                      "stack-lg": "32px",
+                      "margin-mobile": "16px",
+                      "unit": "8px",
+                      "stack-sm": "8px",
+                      "container-max-width": "1280px"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Playfair Display"
+                      ],
+                      "headline-lg-mobile": [
+                              "Playfair Display"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Playfair Display"
+                      ],
+                      "label-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Playfair Display"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "1.1",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-md": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.4",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "label-sm": [
+                              "12px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "500"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+</head>
+<body class="flex h-screen bg-background font-body-md text-body-md text-on-surface antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col h-full py-stack-lg px-gutter bg-surface dark:bg-inverse-surface border-r border-tertiary dark:border-outline-variant h-screen w-64 fixed left-0 top-0">
+<div class="mb-stack-lg flex flex-col gap-unit">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary tracking-tight">RecruitPro</span>
+<span class="font-label-sm text-label-sm text-secondary dark:text-secondary-fixed-dim uppercase tracking-widest">Enterprise Suite</span>
+</div>
+<div class="flex-1 overflow-y-auto">
+<ul class="flex flex-col gap-unit">
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">event_note</span>
+<span class="font-label-md text-label-md">Interviews</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">group</span>
+<span class="font-label-md text-label-md">Candidates</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-primary dark:text-inverse-primary font-bold border-r-2 border-primary hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors transition-all duration-200 ease-in-out bg-surface-container-low" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">diversity_3</span>
+<span class="font-label-md text-label-md">Team</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-secondary dark:text-secondary-fixed-dim font-medium hover:bg-surface-container-high dark:hover:bg-on-surface-variant transition-colors transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</li>
+</ul>
+</div>
+<div class="mt-auto pt-stack-md">
+<button class="w-full flex items-center justify-center gap-2 bg-primary text-on-primary py-3 px-4 rounded-lg font-label-md text-label-md hover:bg-on-surface-variant transition-colors shadow-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">add</span>
+                New Interview
+            </button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 md:ml-64 flex flex-col h-screen overflow-hidden bg-background">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center px-margin-desktop w-full fixed top-0 right-0 md:left-64 h-16 bg-surface/80 dark:bg-inverse-surface/80 backdrop-blur-md border-b border-tertiary dark:border-outline-variant shadow-sm z-10">
+<div class="flex items-center gap-4">
+<h1 class="font-headline-md text-headline-md font-bold text-primary dark:text-inverse-primary md:hidden">RecruitPro</h1>
+</div>
+<div class="flex items-center gap-6">
+<!-- Search -->
+<div class="hidden lg:flex items-center bg-surface-container-low rounded-full px-4 py-1.5 border border-tertiary focus-within:border-primary transition-colors">
+<span class="material-symbols-outlined text-secondary text-[20px] mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 font-body-md text-body-md text-on-surface w-48 placeholder-on-surface-variant" placeholder="Search..." type="text"/>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-4 text-on-surface-variant dark:text-surface-variant">
+<button class="hover:text-primary dark:hover:text-inverse-primary transition-colors scale-95 active:scale-90 transition-transform relative">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-error rounded-full"></span>
+</button>
+<button class="hover:text-primary dark:hover:text-inverse-primary transition-colors scale-95 active:scale-90 transition-transform hidden sm:block">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">help_outline</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-tertiary cursor-pointer hover:border-primary transition-colors ml-2">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A professional headshot of a corporate user in a modern office setting, soft natural lighting, high resolution, minimalist aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAdD-tr3EmYZkP7_-NT1sCfbLsDbjuDa2yfpc_bWhqhjiRVLWfTTKNusSHzJXBtjAStfbhJLwH9TG4q_edWR_Azh1BkCgWc-tCLIfuuzzJbh9bASHLF_JZAfw1eQOS1mGQfqxgRAUztR1mN2RFeZN8HQHO2Lif_CUQdNAb2n-SNRdWS6x0hCo21lIUnlxNdipL5SufUbfYJk1WnQ51jx5WBgogpiInUPDstA32GcExEgvjkEM67-mzc"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Page Canvas -->
+<main class="flex-1 overflow-y-auto pt-24 px-margin-mobile md:px-margin-desktop pb-stack-lg">
+<div class="max-w-[1280px] mx-auto flex flex-col gap-stack-lg">
+<!-- Page Header -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+<div>
+<h2 class="font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">Team Management</h2>
+<p class="font-body-md text-body-md text-secondary mt-1">Manage recruiters, hiring managers, and interviewers.</p>
+</div>
+<button class="flex items-center gap-2 bg-primary text-on-primary px-5 py-2.5 rounded-lg font-label-md text-label-md hover:bg-on-surface-variant transition-colors shadow-[0_4px_20px_rgba(15,23,42,0.04)]">
+<span class="material-symbols-outlined text-[18px]">person_add</span>
+                        Invite Member
+                    </button>
+</div>
+<!-- Table Controls -->
+<div class="flex flex-col sm:flex-row justify-between gap-4 bg-surface-container-lowest p-4 rounded-xl shadow-[0_4px_20px_rgba(15,23,42,0.04)] border border-tertiary/10">
+<div class="flex items-center bg-surface-container-low rounded-lg px-3 py-2 border border-tertiary focus-within:border-primary transition-colors flex-1 max-w-md">
+<span class="material-symbols-outlined text-secondary text-[20px] mr-2">search</span>
+<input class="bg-transparent border-none focus:ring-0 font-body-md text-body-md text-on-surface w-full placeholder-on-surface-variant outline-none" placeholder="Search team members..." type="text"/>
+</div>
+<div class="flex items-center gap-3">
+<button class="flex items-center gap-2 px-4 py-2 border border-tertiary rounded-lg font-label-md text-label-md text-on-surface hover:bg-surface-container-low transition-colors bg-surface-container-lowest">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                            Filter
+                        </button>
+<select class="px-4 py-2 border border-tertiary rounded-lg font-label-md text-label-md text-on-surface hover:bg-surface-container-low transition-colors bg-surface-container-lowest outline-none focus:border-primary appearance-none pr-8 relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23191c1e%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_8px_center] bg-[length:16px]">
+<option>All Roles</option>
+<option>Admin</option>
+<option>Recruiter</option>
+<option>Interviewer</option>
+</select>
+</div>
+</div>
+<!-- Data Table (Bento Style Card) -->
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_4px_20px_rgba(15,23,42,0.04)] border border-tertiary/10 overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-tertiary/10 bg-surface-bright/50">
+<th class="py-4 px-6 font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Member</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold">Role</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold hidden md:table-cell">Department</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold hidden lg:table-cell">Last Active</th>
+<th class="py-4 px-6 font-label-sm text-label-sm text-secondary uppercase tracking-wider font-semibold text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-tertiary/5">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-tertiary/20 bg-surface-container-low flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Professional headshot of a smiling woman in a bright modern office setting, soft professional lighting, premium corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDlXx1dyBsy0ECxUVEOVotkBKrWWvYEnz34fyPoEbO9bsu6skQpjCmEZIJnmdLiPSIT5kPT6hEgmr88sOYJw25_8PbprJpX0Rc01rc3eQBDo26GGMj1112W2pf-iWkdeuyfboQKFv3YnzKBQCbwARGRLWsBNxu38Trd2OnFmSxyybcdZm4tiAEuVhOgiy73I75zS7WMoALZiEc1SaXUuYMpfzRP8ZrjxkmzNlv6SaXf1eECnwP3ddr5"/>
+</div>
+<div>
+<div class="font-label-md text-label-md text-on-surface font-semibold">Sarah Jenkins</div>
+<div class="font-body-md text-body-md text-secondary text-[13px]">s.jenkins@recruitpro.com</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md bg-secondary-container/50 text-on-secondary-container font-label-sm text-label-sm">Admin</span>
+</td>
+<td class="py-4 px-6 hidden md:table-cell">
+<span class="font-body-md text-body-md text-on-surface">Human Resources</span>
+</td>
+<td class="py-4 px-6 hidden lg:table-cell">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-green-500"></span>
+<span class="font-body-md text-body-md text-secondary">Just now</span>
+</div>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-secondary hover:text-primary rounded hover:bg-surface-container-high transition-colors" title="Edit Permissions">
+<span class="material-symbols-outlined text-[20px]">manage_accounts</span>
+</button>
+<button class="p-1.5 text-secondary hover:text-error rounded hover:bg-error-container/50 transition-colors" title="Remove Member">
+<span class="material-symbols-outlined text-[20px]">person_remove</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-tertiary/20 bg-surface-container-low flex-shrink-0">
+<img class="w-full h-full object-cover" data-alt="Professional headshot of a man with glasses in a tech office environment, cool lighting, high resolution corporate aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDTyPIbwIk8mdd7XpSJaMfK0QrV3tNlMiwQ1ze1PSjdi35rs4ImpHqM7gcW2qvByD5yil0huZYW91HWBRr8XYedoRB-WAuXyrK-HS9CY42B3jjwHg0QnARujCdaOYdTKgQE5Nwn92AGhcMYrRpoSEwuoRSlOH2mbWGSi--8PgNr0lkqrCblU8p3t7FwsVce1kAs79JQpC87SIIuHQX59sfqceBVgCPs-ez133ZqiDVlhaFQbX9RHpyl"/>
+</div>
+<div>
+<div class="font-label-md text-label-md text-on-surface font-semibold">David Chen</div>
+<div class="font-body-md text-body-md text-secondary text-[13px]">d.chen@recruitpro.com</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md bg-surface-container-high text-on-surface font-label-sm text-label-sm">Recruiter</span>
+</td>
+<td class="py-4 px-6 hidden md:table-cell">
+<span class="font-body-md text-body-md text-on-surface">Engineering</span>
+</td>
+<td class="py-4 px-6 hidden lg:table-cell">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-surface-variant"></span>
+<span class="font-body-md text-body-md text-secondary">2 hours ago</span>
+</div>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-secondary hover:text-primary rounded hover:bg-surface-container-high transition-colors" title="Edit Permissions">
+<span class="material-symbols-outlined text-[20px]">manage_accounts</span>
+</button>
+<button class="p-1.5 text-secondary hover:text-error rounded hover:bg-error-container/50 transition-colors" title="Remove Member">
+<span class="material-symbols-outlined text-[20px]">person_remove</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low/50 transition-colors group">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden border border-tertiary/20 bg-primary/10 flex-shrink-0 flex items-center justify-center text-primary font-label-md font-bold">
+                                                EL
+                                            </div>
+<div>
+<div class="font-label-md text-label-md text-on-surface font-semibold">Elena Rodriguez</div>
+<div class="font-body-md text-body-md text-secondary text-[13px]">e.rodriguez@recruitpro.com</div>
+</div>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-md bg-surface-container-high text-on-surface font-label-sm text-label-sm">Interviewer</span>
+</td>
+<td class="py-4 px-6 hidden md:table-cell">
+<span class="font-body-md text-body-md text-on-surface">Design</span>
+</td>
+<td class="py-4 px-6 hidden lg:table-cell">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-surface-variant"></span>
+<span class="font-body-md text-body-md text-secondary">Yesterday</span>
+</div>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-secondary hover:text-primary rounded hover:bg-surface-container-high transition-colors" title="Edit Permissions">
+<span class="material-symbols-outlined text-[20px]">manage_accounts</span>
+</button>
+<button class="p-1.5 text-secondary hover:text-error rounded hover:bg-error-container/50 transition-colors" title="Remove Member">
+<span class="material-symbols-outlined text-[20px]">person_remove</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination Footer -->
+<div class="border-t border-tertiary/10 p-4 flex items-center justify-between bg-surface-bright/30">
+<span class="font-body-md text-body-md text-secondary text-sm">Showing 1 to 3 of 12 members</span>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1.5 rounded border border-tertiary text-secondary hover:bg-surface-container-low disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium">Previous</button>
+<button class="px-3 py-1.5 rounded border border-tertiary text-secondary hover:bg-surface-container-low transition-colors text-sm font-medium">Next</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
