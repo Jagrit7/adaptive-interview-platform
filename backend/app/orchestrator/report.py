@@ -129,7 +129,7 @@ def build_report(state: SessionState, panel: Panel) -> InterviewReport:
             role=agent.identity.role,
             visits=agent_state.visit_count,
             questions_answered=asked,
-            satisfaction=round(agent_state.satisfaction(), 3),
+            satisfaction=round(agent_state.assessment_satisfaction, 3),
             score=round(agent_score, 3),
             weight=round(agent_weight, 3),
             force_closed=agent_state.force_closed,
@@ -170,6 +170,7 @@ def build_report(state: SessionState, panel: Panel) -> InterviewReport:
             coverage=t.coverage,
             knowledge_item_id=t.knowledge_item_id,
             question_score=t.question_score,
+            assessment_satisfaction=t.assessment_satisfaction,
         )
         for t in state.transcript
     ]

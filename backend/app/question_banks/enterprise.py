@@ -118,7 +118,17 @@ def _system_design_items() -> list[KnowledgeItem]:
 
 
 _RECENT_QUESTIONS: dict[str, deque[str]] = {}
-_RECENT_WINDOW = 12
+_RECENT_WINDOW = 30
+
+# Panels created before per-interviewer bank selection existed stored the four
+# RecruitPro template prompts as a custom bank. Recognise that exact legacy
+# technical subset so reopening an old test panel receives the current DSA
+# runtime contracts instead of the same three non-executable writing prompts.
+_LEGACY_FRONTEND_TECHNICAL_IDS = {
+    "react-reconciliation",
+    "frontend-state",
+    "lru-cache",
+}
 
 
 def _recent_key(panel_name: str, agent_id: str) -> str:
@@ -136,7 +146,11 @@ def remember_question(panel_name: str, agent_id: str, question_id: str) -> None:
 
 def _stable_shuffle(items: list[KnowledgeItem], session_id: str, agent_id: str,
                     panel_name: str) -> list[KnowledgeItem]:
-    seed = int(hashlib.sha256(f"{session_id}|{agent_id}".encode()).hexdigest(), 16)
+    # Mix session_id with current time so even rapid restarts produce different
+    # orderings, preventing the "same questions every test" problem.
+    import time
+    entropy = f"{session_id}|{agent_id}|{time.time_ns()}"
+    seed = int(hashlib.sha256(entropy.encode()).hexdigest(), 16)
     shuffled = list(items)
     random.Random(seed).shuffle(shuffled)
     recent = set(_RECENT_QUESTIONS.get(_recent_key(panel_name, agent_id), ()))
@@ -153,7 +167,13 @@ def hydrate_panel_banks(panel: Panel, session_id: str) -> tuple[Panel, dict[str,
     coding_contracts: dict[str, dict[str, Any]] = {}
     for agent in hydrated.agents:
         bank_id = agent.knowledge.bankId
-        if bank_id == "dsa":
+        item_ids = {item.id for item in agent.knowledge.items}
+        legacy_frontend_technical = (
+            agent.identity.role == "Technical"
+            and _LEGACY_FRONTEND_TECHNICAL_IDS.issubset(item_ids)
+        )
+        if bank_id == "dsa" or legacy_frontend_technical:
+            agent.knowledge.bankId = "dsa"
             coding_items: list[KnowledgeItem] = []
             for question in QUESTION_BANK.questions[:30]:
                 item_id = str(question["question_id"])

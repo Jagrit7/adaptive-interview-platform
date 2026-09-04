@@ -2,10 +2,10 @@
 
 import React, { useMemo } from 'react';
 import { useBuilderStore } from '@/store/builderStore';
-import { Field, Slider, Switch, Input } from '@/components/ui/FormElements';
+import { Field, Slider, Input, Textarea } from '@/components/ui/FormElements';
 
 export function ScorerConfigForm() {
-  const { agents, scorer, updateScorer } = useBuilderStore();
+  const { agents, host, updateHost } = useBuilderStore();
 
   // Auto-populate competencies from all agents
   const allCompetencies = useMemo(() => {
@@ -23,7 +23,19 @@ export function ScorerConfigForm() {
   return (
     <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '64px' }}>
       <div className="flex justify-between items-center" style={{ marginBottom: '32px' }}>
-        <h1 className="text-display" style={{ color: 'var(--accent-slate)' }}>Scorer Configuration</h1>
+        <h1 className="text-display" style={{ color: 'var(--accent-slate)' }}>Host & Scoring</h1>
+      </div>
+
+      <div style={{ marginBottom: '16px', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px', backgroundColor: 'var(--surface)' }}>
+        <h2 className="text-heading" style={{ marginBottom: '8px' }}>LLM Orchestrator Host</h2>
+        <p className="text-secondary text-body" style={{ marginBottom: '24px' }}>This is the +1 meeting participant that greets, plans validated handoffs, and closes the interview.</p>
+        <div className="flex flex-col gap-5">
+          <Field label="Host name"><Input value={host.name} onChange={(event) => updateHost({ name: event.target.value })}/></Field>
+          <Field label="Host system prompt"><Textarea value={host.systemPrompt} onChange={(event) => updateHost({ systemPrompt: event.target.value })}/></Field>
+          <Field label="Introduction fields" description="Comma-separated details the host should gather."><Input value={host.introFields.join(', ')} onChange={(event) => updateHost({ introFields: event.target.value.split(',').map(value => value.trim()).filter(Boolean) })}/></Field>
+          <Field label="Opening instruction"><Textarea value={host.openingInstruction} onChange={(event) => updateHost({ openingInstruction: event.target.value })}/></Field>
+          <Field label="Closing instruction"><Textarea value={host.closingInstruction} onChange={(event) => updateHost({ closingInstruction: event.target.value })}/></Field>
+        </div>
       </div>
 
       <div style={{ marginBottom: '16px', border: '1px solid var(--border)', borderRadius: '12px', padding: '24px', backgroundColor: 'var(--surface)' }}>
@@ -43,7 +55,7 @@ export function ScorerConfigForm() {
         
         {allCompetencies.length === 0 ? (
           <p className="text-secondary text-body">
-            No competencies defined yet. Add competencies under the "Scoring Input" section of your agents.
+            No competencies defined yet. Add competencies under the &quot;Scoring Input&quot; section of your agents.
           </p>
         ) : (
           <div className="flex flex-col gap-6">

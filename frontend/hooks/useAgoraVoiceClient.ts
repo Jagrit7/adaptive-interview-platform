@@ -91,6 +91,8 @@ export function useAgoraVoiceClient() {
   const [remoteUserLeftAt, setRemoteUserLeftAt] = useState<number>(0);
   const [agentTurnFinishedSequence, setAgentTurnFinishedSequence] = useState(0);
   const [agentSpeakingStartedSequence, setAgentSpeakingStartedSequence] = useState(0);
+  const [lastStartedAgentUid, setLastStartedAgentUid] = useState<string | null>(null);
+  const [lastFinishedAgentUid, setLastFinishedAgentUid] = useState<string | null>(null);
   const [agentUid, setAgentUid] = useState<string | undefined>(undefined);
   const [agentRtmUid, setAgentRtmUid] = useState<string | undefined>(undefined);
   const [remoteAudioTrack, setRemoteAudioTrack] =
@@ -106,6 +108,14 @@ export function useAgoraVoiceClient() {
   // than whichever one existed when the callback was created.
   const localAudioTrackRef = useRef<IMicrophoneAudioTrack | null>(null);
   const remoteAudioUidRef = useRef<string | null>(null);
+  // Every concurrent interviewer publishes an RTC audio track. Subscribing is
+  // required so the toolkit can receive its events, but PLAYBACK must obey the
+  // orchestrator's single-speaker floor. Previously every published track was
+  // played immediately, allowing an autonomous Agora response from the host to
+  // talk over the specialist selected by the backend.
+  const remoteAudioTracksRef = useRef<Map<string, IRemoteAudioTrack>>(new Map());
+  const audibleAgentUidRef = useRef<string | null>(null);
+  const speakingAgentUidsRef = useRef<Set<string>>(new Set());
   // Tracks RTC track-event handlers so they can be unregistered on leave.
   const rtcTrackHandlersRef = useRef<{
     onPublished?: (user: IAgoraRTCRemoteUser, mediaType: "audio" | "video") => void;
@@ -226,6 +236,17 @@ export function useAgoraVoiceClient() {
       rtcClientRef.current = null;
     }
 
+    for (const track of remoteAudioTracksRef.current.values()) {
+      try {
+        track.stop();
+      } catch {
+        // The remote participant may already have unpublished the track.
+      }
+    }
+    remoteAudioTracksRef.current.clear();
+    audibleAgentUidRef.current = null;
+    speakingAgentUidsRef.current.clear();
+
     setLocalAudioTrack(null);
 
     localAudioTrackRef.current = null;
@@ -238,6 +259,8 @@ export function useAgoraVoiceClient() {
     setCurrentInProgressMessage(null);
     setAgentTurnFinishedSequence(0);
     setAgentSpeakingStartedSequence(0);
+    setLastStartedAgentUid(null);
+    setLastFinishedAgentUid(null);
     remoteAudioUidRef.current = null;
   }, []);
 
@@ -275,27 +298,40 @@ export function useAgoraVoiceClient() {
         ) => {
           if (mediaType === "audio") {
             await rtcClient.subscribe(user, mediaType);
-            user.audioTrack?.play();
-            remoteAudioUidRef.current = String(user.uid);
-            setRemoteAudioTrack(user.audioTrack ?? null);
-            setIsAgentSpeaking(true);
+            const uid = String(user.uid);
+            const track = user.audioTrack;
+            if (!track) return;
+            remoteAudioTracksRef.current.set(uid, track);
+            if (audibleAgentUidRef.current === uid) {
+              track.play();
+              remoteAudioUidRef.current = uid;
+              setRemoteAudioTrack(track);
+            } else {
+              track.stop();
+            }
           }
         };
         const onUnpublished = (
           user: IAgoraRTCRemoteUser,
           mediaType: "audio" | "video",
         ) => {
-          if (mediaType === "audio" && remoteAudioUidRef.current === String(user.uid)) {
-            setIsAgentSpeaking(false);
-            setRemoteAudioTrack(null);
-            remoteAudioUidRef.current = null;
+          if (mediaType === "audio") {
+            const uid = String(user.uid);
+            remoteAudioTracksRef.current.delete(uid);
+            if (remoteAudioUidRef.current === uid) {
+              setIsAgentSpeaking(false);
+              setRemoteAudioTrack(null);
+              remoteAudioUidRef.current = null;
+            }
           }
         };
         const onLeft = (user: IAgoraRTCRemoteUser) => {
           // During a controlled handoff the old specialist can leave after the
           // new one has already published. Never let that late leave event
           // detach the new specialist's audio track.
-          if (remoteAudioUidRef.current !== String(user.uid)) return;
+          const uid = String(user.uid);
+          remoteAudioTracksRef.current.delete(uid);
+          if (remoteAudioUidRef.current !== uid) return;
           setIsAgentSpeaking(false);
           setRemoteAudioTrack(null);
           remoteAudioUidRef.current = null;
@@ -360,20 +396,30 @@ export function useAgoraVoiceClient() {
         voiceAI.on(AgoraVoiceAIEvents.AGENT_LISTENING_CHANGED, (_uid, active) => {
           setIsAgentListening(active);
         });
-        voiceAI.on(AgoraVoiceAIEvents.AGENT_SPEAKING_CHANGED, (_uid, active) => {
+        voiceAI.on(AgoraVoiceAIEvents.AGENT_SPEAKING_CHANGED, (eventUid, active) => {
+          const speakingUid = String(eventUid);
+          if (active) speakingAgentUidsRef.current.add(speakingUid);
+          else speakingAgentUidsRef.current.delete(speakingUid);
+          if (speakingUid !== audibleAgentUidRef.current) return;
           setIsAgentSpeaking(active);
           if (active) {
+            setLastStartedAgentUid(speakingUid);
             setAgentSpeakingStartedSequence((value) => value + 1);
           } else {
+            setLastFinishedAgentUid(speakingUid);
             // Some provider paths emit speaking=false before the richer
             // turn-finished metric event. Either signal may yield the floor;
             // the interview room de-duplicates the sequence.
             setAgentTurnFinishedSequence((value) => value + 1);
           }
         });
-        voiceAI.on(AgoraVoiceAIEvents.AGENT_TURN_FINISHED, () => {
+        voiceAI.on(AgoraVoiceAIEvents.AGENT_TURN_FINISHED, (eventUid) => {
+          const finishedUid = String(eventUid);
+          speakingAgentUidsRef.current.delete(finishedUid);
+          if (finishedUid !== audibleAgentUidRef.current) return;
           // A monotonic event counter is safer than a boolean: two consecutive
           // agent turns cannot collapse into one React state value.
+          setLastFinishedAgentUid(finishedUid);
           setAgentTurnFinishedSequence((value) => value + 1);
           setIsAgentSpeaking(false);
         });
@@ -501,6 +547,43 @@ export function useAgoraVoiceClient() {
     }
   }, []);
 
+  /**
+   * Grants the browser's acoustic floor to exactly one Agora agent.
+   *
+   * A null UID deliberately silences every remote participant while the
+   * candidate is answering, coding, or waiting for backend evaluation. This
+   * is a hard playback invariant and does not depend on an LLM following a
+   * prompt or an asynchronous interrupt arriving in time.
+   */
+  const setAudibleAgentUid = useCallback((targetUid: string | null) => {
+    const previousUid = audibleAgentUidRef.current;
+    audibleAgentUidRef.current = targetUid;
+    const alreadySpeaking = Boolean(
+      targetUid && speakingAgentUidsRef.current.has(targetUid),
+    );
+    setIsAgentSpeaking(alreadySpeaking);
+    setRemoteAudioTrack(null);
+    remoteAudioUidRef.current = null;
+
+    for (const [uid, track] of remoteAudioTracksRef.current.entries()) {
+      if (targetUid && uid === targetUid) {
+        track.play();
+        remoteAudioUidRef.current = uid;
+        setRemoteAudioTrack(track);
+      } else {
+        track.stop();
+      }
+    }
+
+    // The Agora speaking-start event can arrive just before /sessions/start or
+    // /next returns the authoritative UID. Preserve provider state internally
+    // and synthesize the UI lease when that already-speaking UID gains floor.
+    if (alreadySpeaking && targetUid !== previousUid) {
+      setLastStartedAgentUid(targetUid);
+      setAgentSpeakingStartedSequence((value) => value + 1);
+    }
+  }, []);
+
   return {
     isConnected,
     isMuted,
@@ -518,8 +601,11 @@ export function useAgoraVoiceClient() {
     setMicrophoneEnabled,
     sendMessage,
     interruptAgent,
+    setAudibleAgentUid,
     agentTurnFinishedSequence,
     agentSpeakingStartedSequence,
+    lastStartedAgentUid,
+    lastFinishedAgentUid,
     agentUid,
     rtmClientRef,
     remoteUserLeftAt,

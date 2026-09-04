@@ -9,6 +9,7 @@ ConversationFloor = Literal[
     "evaluating",
     "finished",
 ]
+HostPhase = Literal["intake", "interview", "closing", "finished"]
 
 
 class CompetencyScore(BaseModel):
@@ -31,6 +32,10 @@ class AgentSessionState(BaseModel):
     asked_item_ids: list[str] = Field(default_factory=list)
     pending_item_id: str | None = None
     bank_exhausted: bool = False
+    retries_by_item: dict[str, int] = Field(default_factory=dict)
+    # LLM-estimated confidence that this role has enough evidence to assess
+    # ability. Unlike competency scores, a clear weak answer may increase this.
+    assessment_satisfaction: float = 0.0
 
     def satisfaction(self) -> float:
         """Fraction of this agent's competencies currently covered, 0-1.
@@ -70,6 +75,7 @@ class TranscriptTurn(BaseModel):
     knowledge_item_id: str | None = None             # which bank question this answered
     coverage: float | None = None                    # 0-1 vs the reference answer
     question_score: float | None = None              # 0-1 score for this exact answer
+    assessment_satisfaction: float | None = None     # evidence sufficiency, not performance
 
 
 class SessionState(BaseModel):
@@ -95,6 +101,16 @@ class SessionState(BaseModel):
     floor: ConversationFloor = "agent_speaking"
     question_revision: int = 0
     accepted_answer_ids: list[str] = Field(default_factory=list)
+    flow_step_index: int = 0
+    flow_step_questions: int = 0
+    active_speaker_uid: str | None = None
+    host_transcript: list[str] = Field(default_factory=list)
+    host_phase: HostPhase = "intake"
+    host_intake_index: int = 0
+    host_details: dict[str, str] = Field(default_factory=dict)
+    # Per-specialist target used to choose the next bank item. It begins at the
+    # configured band midpoint and moves one level after strong/weak answers.
+    adaptive_difficulty: dict[str, int] = Field(default_factory=dict)
 
     def get_agent_state(self, agent_id: str) -> AgentSessionState:
         if agent_id not in self.agent_states:

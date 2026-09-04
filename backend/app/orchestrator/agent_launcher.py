@@ -25,6 +25,10 @@ client = Agora(
 )
 
 AGENT_UID = "1"   # fixed, and reported back to the client
+HOST_AGENT_ID = "__host__"
+# Agora numeric RTC UIDs are signed 32-bit values. Inactive specialists target
+# this reserved, absent UID so they stay joined without hearing the candidate.
+INACTIVE_REMOTE_UID = str((2 ** 31) - 1)
 
 RECIPE_PATH = Path(__file__).resolve().parent.parent.parent / "recipes" / "sde_panel"
 
@@ -143,14 +147,26 @@ def build_system_prompt_from_agent(
         # let the voice model read ahead and drift away from the UI.
         parts.append(
             "COORDINATOR-CONTROLLED INTERVIEW. Never choose, invent, repeat, skip, or advance a question "
-            "yourself. A coordinator message identifies exactly one active question. For a VERBAL "
-            "question, use at most one short natural transition, ask the supplied question exactly once, "
-            "then stop and listen. For a WRITTEN or CODING question, never read or paraphrase its prompt; "
-            "briefly say that it is visible on screen, then stop and wait for submission. After a candidate "
-            "answer, do not respond autonomously: never grade it, provide the answer, ask an unscripted "
-            "follow-up, or announce a next question. Wait for the coordinator, whose next instruction will "
-            "include the natural acknowledgement and transition. A newer "
-            "coordinator message always replaces an older pending instruction."
+            "yourself. A coordinator message identifies exactly one active question.\n\n"
+            "YOUR PERSONALITY: You are a warm, experienced interviewer who genuinely enjoys meeting "
+            "candidates. React naturally — smile through your voice, use filler phrases like 'That's a "
+            "great point', 'Interesting approach', 'I see where you're going with that'. Mirror the "
+            "candidate's energy. If they seem nervous, be extra encouraging. If they're confident, match "
+            "that energy. You are NOT a question-reading robot.\n\n"
+            "FOR VERBAL QUESTIONS: When the coordinator gives you a question, weave it into the "
+            "conversation naturally. Use a brief, genuine transition — acknowledge something specific "
+            "the candidate said, share a very brief personal observation or relate it to industry "
+            "experience, then ask the question in your own words (keeping the core intent). Let your "
+            "delivery feel spontaneous, not rehearsed. After asking, pause and give them space to think. "
+            "If they hesitate, offer a gentle nudge like 'Take your time' or 'There's no single right answer'.\n\n"
+            "FOR WRITTEN or CODING QUESTIONS: Never read or paraphrase the prompt. Briefly mention "
+            "it's visible on screen with a natural phrase like 'I've put something up on your screen — "
+            "take a look when you're ready' and then remain quiet while they work.\n\n"
+            "AFTER A CANDIDATE ANSWERS: Do not grade, provide the answer, or announce the next question. "
+            "Wait for the coordinator's next instruction, which will tell you what to acknowledge, "
+            "challenge, or follow up on. Express that instruction naturally and conversationally. "
+            "Never say words like coordinator, score, coverage, rubric, or missing points. "
+            "A newer coordinator message always replaces an older pending instruction."
         )
     elif agent.logic.seedQuestions:
         question_list = "\n".join(f"- {q}" for q in agent.logic.seedQuestions)
@@ -201,6 +217,45 @@ def resolve_panel_voices(panel: Panel) -> dict[str, str]:
         panel.language,
         {a.id: a.voice.voiceId for a in panel.agents},
     )
+
+
+def resolve_meeting_voices(panel: Panel) -> dict[str, str]:
+    """Resolve a distinct host voice plus each specialist voice where possible."""
+    flow = panel.resolved_flow()
+    ids = [HOST_AGENT_ID, *[agent.id for agent in panel.agents]]
+    preferred = {HOST_AGENT_ID: flow.host.voiceId, **{a.id: a.voice.voiceId for a in panel.agents}}
+    return assign_voices(ids, panel.language, preferred)
+
+
+def build_host_agent(panel: Panel) -> PanelAgent:
+    """Create the +1 host from the versioned flow without duplicating Agent schema."""
+    if not panel.agents:
+        raise ValueError("A meeting needs at least one specialist agent")
+    host = panel.resolved_flow().host
+    base = panel.agents[0].model_copy(deep=True)
+    base.id = HOST_AGENT_ID
+    base.identity.name = host.name
+    base.identity.role = "Custom"
+    base.behavior.systemPrompt = (
+        host.systemPrompt + " You are the orchestration host, not a specialist. Never answer "
+        "technical or behavioural interview questions. Speak only when a coordinator instruction "
+        "tells you to greet, transition, hand off, or close.\n\n"
+        "YOUR PERSONALITY: You are the warm, friendly face of this interview — think of yourself "
+        "as a great host at a dinner party. You make candidates feel welcome, ease transitions, "
+        "and keep the energy positive. Use the candidate's name naturally (not every sentence). "
+        "When transitioning between interviewers, briefly relate what was discussed to what's "
+        "coming next. Your tone is conversational and human — never stiff or formulaic. "
+        "At the opening, clearly disclose that every interviewer in the meeting is AI, but do it "
+        "warmly: 'I should mention that myself and the rest of the panel today are AI interviewers — "
+        "but we're here to have a genuine conversation about your experience.' "
+        "IMPORTANT: Always finish your complete thought before stopping. Never cut yourself off mid-sentence."
+    )
+    base.behavior.greetingMessage = ""
+    base.knowledge.mode = "llm"
+    base.knowledge.items = []
+    base.logic.seedQuestions = []
+    base.scoring.competencies = []
+    return base
 
 
 def start_session_agent(
@@ -267,10 +322,12 @@ def start_session_agent(
                     # thought but keeps listening through phrases such as
                     # "hold on" and ordinary reasoning pauses. This avoids the
                     # old fixed 1.8s VAD + browser debounce latency stack.
+                    # Increased durations prevent cutting off candidates who
+                    # pause to think or speak slowly.
                     "mode": "semantic",
                     "semantic_config": {
-                        "silence_duration_ms": 650,
-                        "max_wait_ms": 2400,
+                        "silence_duration_ms": 1200,
+                        "max_wait_ms": 4000,
                         "pause_state_enabled": True,
                     },
                 },
@@ -410,5 +467,8 @@ def inject_followup(session, instruction_text: str, replace_pending: bool = Fals
         instruction_text,
         on_listening_action="inject",   # never talk over the candidate
         on_thinking_action="interrupt" if replace_pending else "append",
-        on_speaking_action="interrupt" if replace_pending else "append",
+        # NEVER interrupt active speech — let the agent finish its current
+        # sentence before starting the new instruction.  "interrupt" caused
+        # mid-word cutoffs that made the host sound broken.
+        on_speaking_action="append",
     )

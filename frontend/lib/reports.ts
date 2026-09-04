@@ -1,15 +1,21 @@
 import { supabase } from './supabaseClient';
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000';
+
 export interface CompetencyResult { name:string; score:number; threshold:number; weight:number; covered:boolean; checked_by:string[]; used_default_rule:boolean }
 export interface AgentReport { agent_id:string; name:string; role:string; visits:number; questions_answered:number; satisfaction:number; score?:number; weight?:number; force_closed:boolean; competencies:string[]; knowledge_questions_asked:number; knowledge_questions_total:number }
-export interface TranscriptEntry { turn:number; speaker:string; agent_id:string; agent_name:string; text:string; flags:string[]; coverage:number|null; knowledge_item_id:string|null; question_score?:number|null }
+export interface TranscriptEntry { turn:number; speaker:string; agent_id:string; agent_name:string; text:string; flags:string[]; coverage:number|null; knowledge_item_id:string|null; question_score?:number|null; assessment_satisfaction?:number|null }
 export interface ReportTotals { overall_score:number; band:string; competencies_total:number; competencies_covered:number; coverage_rate:number; knowledge_coverage:number|null; questions_answered:number; flags:Record<string,number> }
 export interface InterviewReport { session_id:string; candidate_name:string; candidate_ref:string; panel_name:string; language:string; started_at:string; finished_at:string; completed:boolean; totals:ReportTotals; competencies:CompetencyResult[]; agents:AgentReport[]; transcript:TranscriptEntry[] }
+
+/** Where a stored report came from. A test run produces no row at all, so it
+ *  deliberately has no value here - see `toReportRecord` below. */
+export type ReportSource = 'published' | 'self';
 
 export interface ReportSummary {
   id:string; candidate_name:string; candidate_ref:string; panel_name:string; role_name:string;
   overall_score:number|null; band:string|null; recommendation:string; completed:boolean;
-  created_at:string; finished_at:string|null;
+  created_at:string; finished_at:string|null; source:ReportSource;
 }
 
 export interface ReportRecord extends ReportSummary {
@@ -23,7 +29,15 @@ const recommendationFor = (band:string|null) => band === 'Strong' ? 'Strong Hire
 const scoreText = (score:number) => `${Math.round(score*100)}/100`;
 const normalizedKey = (value:string) => value.trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
 
-function presentation(report:InterviewReport, roleName?:string) {
+/**
+ * The denormalised projection stored beside the JSON document.
+ *
+ * Mirrored in `backend/app/reports/store.py` for the published path, where the
+ * candidate has no Supabase session and the write happens server-side. Both
+ * must produce the same sentences: the reports table and the report page cannot
+ * tell you which side wrote a row, and should not need to.
+ */
+export function presentation(report:InterviewReport, roleName?:string) {
   const sorted=[...report.competencies].sort((a,b)=>b.score-a.score);
   const strengths=sorted.filter(item=>item.covered).slice(0,3).map(item=>`${item.name} was a demonstrated strength (${scoreText(item.score)}).`);
   const growth=[...sorted].reverse().filter(item=>!item.covered).slice(0,3).map(item=>`${item.name} needs further evidence or improvement (${scoreText(item.score)}).`);
@@ -43,6 +57,29 @@ export function generateCandidateRef():string {
   return `AIP-${Array.from(bytes,b=>alphabet[b%alphabet.length]).join('')}`;
 }
 
+/**
+ * Turn a raw report into the row shape the report view renders.
+ *
+ * Used for display in the interview room before (or instead of) any database
+ * round-trip. For a test run this is the *only* form the report ever takes: it
+ * is not saved, not cached, and never written to localStorage or
+ * sessionStorage, so closing the window is all it takes to lose it. Sharing the
+ * `ReportRecord` shape is what lets `InterviewReportView` render a stored report
+ * and a throwaway one through one code path, which is the only reason they
+ * still look the same after the next design change.
+ */
+export function toReportRecord(report:InterviewReport,roleName?:string,source:ReportSource='self'):ReportRecord {
+  const view=presentation(report,roleName);
+  return {
+    id:'', source, candidate_name:report.candidate_name, candidate_ref:report.candidate_ref,
+    panel_name:report.panel_name, role_name:view.role, overall_score:report.totals.overall_score,
+    band:report.totals.band, recommendation:view.recommendation, completed:report.completed,
+    created_at:report.finished_at||new Date().toISOString(), finished_at:report.finished_at||null,
+    executive_summary:view.summary, strengths:view.strengths, growth_areas:view.growth, report,
+  };
+}
+
+/** Store a report the signed-in owner produced by running their own panel. */
 export async function saveReport(report:InterviewReport,panelId:string|null,roleName?:string):Promise<string> {
   const {data:userData,error:userErr}=await supabase.auth.getUser();
   if(userErr||!userData.user) throw new Error('You are signed out, so the report could not be saved.');
@@ -52,16 +89,41 @@ export async function saveReport(report:InterviewReport,panelId:string|null,role
     session_id:report.session_id,panel_name:report.panel_name,role_name:view.role,language:report.language,
     overall_score:report.totals.overall_score,band:report.totals.band,recommendation:view.recommendation,
     executive_summary:view.summary,strengths:view.strengths,growth_areas:view.growth,completed:report.completed,
-    started_at:report.started_at||null,finished_at:report.finished_at||null,report_version:1,report,
+    started_at:report.started_at||null,finished_at:report.finished_at||null,report_version:2,source:'self',report,
   },{onConflict:'user_id,session_id'}).select('id').single();
   if(error) throw new Error(`Could not save the report: ${error.message}`);
   return (data as {id:string}).id;
 }
 
-const SUMMARY_COLUMNS='id,candidate_name,candidate_ref,panel_name,role_name,overall_score,band,recommendation,completed,created_at,finished_at';
+export interface FinalizedPublishedReport { report_id:string|null; stored:boolean; store_error:string|null; report:InterviewReport }
 
-export async function listReports():Promise<ReportSummary[]> {
-  const {data,error}=await supabase.from('interview_reports').select(SUMMARY_COLUMNS).order('created_at',{ascending:false});
+/**
+ * Finish a published interview: the backend builds the report and stores it.
+ *
+ * The candidate is anonymous, so the browser cannot write this row - it has no
+ * Supabase session, and `interview_reports` is gated on `auth.uid() = user_id`.
+ * The invite goes back with the request because the backend re-checks it before
+ * writing anything under the panel owner's name.
+ *
+ * A storage failure comes back as `stored: false` with the report still
+ * attached, rather than as a thrown error. The candidate has finished a real
+ * interview either way and should see the result.
+ */
+export async function finalizePublishedReport(panelId:string,invite:string,sessionId:string):Promise<FinalizedPublishedReport> {
+  const response=await fetch(`${BACKEND_URL}/published-panels/${encodeURIComponent(panelId)}/sessions/${encodeURIComponent(sessionId)}/report`,{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({invite}),
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok) throw new Error(typeof data.detail==='string'?data.detail:'The interview report could not be completed.');
+  return data as FinalizedPublishedReport;
+}
+
+const SUMMARY_COLUMNS='id,candidate_name,candidate_ref,panel_name,role_name,overall_score,band,recommendation,completed,created_at,finished_at,source';
+
+export async function listReports(source?:ReportSource):Promise<ReportSummary[]> {
+  let request=supabase.from('interview_reports').select(SUMMARY_COLUMNS).order('created_at',{ascending:false});
+  if(source) request=request.eq('source',source);
+  const {data,error}=await request;
   if(error) throw new Error(`Could not load reports: ${error.message}`);
   return (data??[]) as ReportSummary[];
 }

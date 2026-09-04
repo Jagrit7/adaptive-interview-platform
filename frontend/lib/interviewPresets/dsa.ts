@@ -24,6 +24,7 @@ export const DSA_INTERVIEW_PRESET: PanelConfig = {
     logic: {
       difficultyBand: [1, 2], seedQuestions: [], followUpAggressiveness: 2,
       maxTurns: 2, maxVisits: 1,
+      questionKinds: ['coding', 'verbal'], maxRetriesPerQuestion: 1, vagueProbing: true, satisfactionThreshold: 0.8,
     },
     knowledge: {
       mode: 'knowledge_base', strict: true, sourceName: 'DSA foundations v1',

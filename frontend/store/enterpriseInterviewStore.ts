@@ -195,7 +195,7 @@ export function enterpriseDraftToPanelConfig(draft: DraftSnapshot, publish: bool
     identity:{name:interviewer.name,role:interviewer.role,color:roleColors[interviewer.role],avatar:''},
     voice:{provider:'minimax',voiceId:VOICE_IDS[interviewer.voice],language:draft.language,speakingStyle:'professional'},
     behavior:{systemPrompt:interviewer.prompt,greetingMessage:interviewer.opening,fallbackMessage:"I didn't catch that. Could you rephrase?",scenarioBrief:draft.description},
-    logic:{difficultyBand:[3,7],seedQuestions:assignedQuestions.map(q=>q.text),followUpAggressiveness:5,maxTurns:interviewer.maxTurns,maxVisits:1},
+    logic:{difficultyBand:[3,7],seedQuestions:assignedQuestions.map(q=>q.text),followUpAggressiveness:5,maxTurns:interviewer.maxTurns,maxVisits:1,questionKinds:interviewer.questionBank==='dsa'?['coding','verbal']:interviewer.questionBank==='system-design'?['written','verbal']:['verbal','written','coding'],maxRetriesPerQuestion:1,vagueProbing:true,satisfactionThreshold:0.8},
     knowledge:{...emptyKnowledge(),bankId:interviewer.questionBank,items:interviewer.questionBank==='custom'?assignedQuestions.map(q=>({id:q.id,question:q.text,idealAnswer:"Evaluate against the current interviewer's configured criteria.",tags:[q.category,q.difficulty],kind:/coding/i.test(q.category)?'coding' as const:/system design/i.test(q.category)?'written' as const:'verbal' as const,domain:inferQuestionDomain(q.category,q.text)})):[]},
     skills:{rolePlayMode:false,loopUntilSatisfied:false,contradictionProbing:true},tools:[],
     turnTaking:{canOpen:index===0,handoffTriggers:'When the current stage is complete.',priority:index===0?'high':'medium'},

@@ -11,11 +11,13 @@ create table if not exists public.interview_reports (
   recommendation text not null default '', executive_summary text not null default '',
   strengths jsonb not null default '[]'::jsonb, growth_areas jsonb not null default '[]'::jsonb,
   completed boolean not null default false, started_at timestamptz, finished_at timestamptz,
+  source text not null default 'published',
   report_version integer not null default 1, report jsonb not null,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
   constraint interview_reports_score_range check (overall_score is null or overall_score between 0 and 1),
   constraint interview_reports_strengths_array check (jsonb_typeof(strengths) = 'array'),
-  constraint interview_reports_growth_array check (jsonb_typeof(growth_areas) = 'array')
+  constraint interview_reports_growth_array check (jsonb_typeof(growth_areas) = 'array'),
+  constraint interview_reports_source_check check (source in ('published', 'self'))
 );
 
 -- Upgrade installations using the original minimal report table.
@@ -30,6 +32,17 @@ alter table public.interview_reports add column if not exists started_at timesta
 alter table public.interview_reports add column if not exists finished_at timestamptz;
 alter table public.interview_reports add column if not exists report_version integer not null default 1;
 alter table public.interview_reports add column if not exists updated_at timestamptz not null default now();
+alter table public.interview_reports add column if not exists source text not null default 'published';
+
+-- Where a report came from. Rows written by the browser under a signed-in
+-- owner are 'self'; rows written by FastAPI for an anonymous candidate on an
+-- invite link are 'published'. There is deliberately no 'test' value: a test
+-- run of a panel is never stored, so a value for it would only ever be wrong.
+-- Existing rows predate the split and are all real candidate interviews, so the
+-- 'published' default backfills them correctly.
+alter table public.interview_reports drop constraint if exists interview_reports_source_check;
+alter table public.interview_reports
+  add constraint interview_reports_source_check check (source in ('published', 'self'));
 
 update public.interview_reports
 set panel_name = coalesce(nullif(panel_name, ''), report->>'panel_name', ''),
@@ -44,6 +57,7 @@ create index if not exists interview_reports_user_score_idx on public.interview_
 create index if not exists interview_reports_user_role_idx on public.interview_reports (user_id, lower(role_name), created_at desc);
 create index if not exists interview_reports_candidate_ref_idx on public.interview_reports (user_id, candidate_ref);
 create index if not exists interview_reports_panel_idx on public.interview_reports (user_id, panel_id, created_at desc);
+create index if not exists interview_reports_user_source_idx on public.interview_reports (user_id, source, created_at desc);
 
 create table if not exists public.interview_report_scores (
   report_id uuid not null references public.interview_reports(id) on delete cascade,

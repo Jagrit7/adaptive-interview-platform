@@ -64,6 +64,10 @@ def apply_score_result(
     """Writes this turn's scores into session state. Call this before decide_next_step().
     scorer_thresholds: competency name -> threshold, from panel.scorer.competencies."""
     agent_state = state.get_agent_state(current_agent.id)
+    agent_state.assessment_satisfaction = max(
+        agent_state.assessment_satisfaction,
+        result.assessment_satisfaction,
+    )
     for competency, score in result.competency_scores.items():
         existing = agent_state.competency_scores.get(competency)
         best_score = max(score, existing.score if existing else 0.0)

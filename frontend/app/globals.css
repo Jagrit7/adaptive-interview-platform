@@ -108,6 +108,11 @@
 @keyframes arena-pulse { 0%,100% { opacity: 1 } 50% { opacity: .45 } }
 .arena-live-dot { animation: arena-pulse 1.8s ease-in-out infinite; }
 
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 :focus-visible {
   outline: 2px solid var(--color-arena-cyan);
   outline-offset: 2px;

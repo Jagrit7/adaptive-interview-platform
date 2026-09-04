@@ -188,6 +188,32 @@ def private_transcript(agent_id: str, transcript: list) -> str:
     )
 
 
+def shared_candidate_context(all_agents: list[Agent], transcript: list, limit: int = 10) -> str:
+    """Compact, evidence-linked context shared across interviewer roles.
+
+    Voice sessions retain isolated model histories. This projection is the
+    deliberate shared memory: it carries only questions actually selected by
+    the backend and candidate answers actually accepted by the state machine.
+    """
+    agent_names = {agent.id: agent.identity.name for agent in all_agents}
+    questions = {
+        item.id: item.question
+        for agent in all_agents
+        for item in agent.knowledge.items
+    }
+    evidence: list[str] = []
+    for turn in transcript[-limit:]:
+        if turn.speaker != "candidate":
+            continue
+        interviewer = agent_names.get(turn.agent_id, turn.agent_id)
+        question = questions.get(turn.knowledge_item_id or "", "Prior interview question")
+        flags = f" Flags: {', '.join(turn.flags)}." if turn.flags else ""
+        evidence.append(
+            f"{interviewer} asked: {question}\nCandidate answered: {turn.text}{flags}"
+        )
+    return "\n\n".join(evidence) or "No accepted candidate answers yet."
+
+
 def question_command(
     *,
     profile: SpecialistProfile,
@@ -201,27 +227,34 @@ def question_command(
 ) -> str:
     """Create one atomic, role-bounded speaking instruction."""
     opening_line = (
-        f"Greet {candidate_name or 'the candidate'} briefly, introduce yourself as "
-        f"{profile.name}, then "
+        f"Warmly greet {candidate_name or 'the candidate'}, introduce yourself as "
+        f"{profile.name} with a brief personal touch (e.g. mention you're excited to chat about "
+        f"their area), then "
         if opening
         else (
-            f"Introduce yourself as {profile.name} in one short sentence, then "
+            f"Introduce yourself naturally as {profile.name} — a quick friendly line about your "
+            f"role and what you'll be exploring together, then "
             if introducing
-            else (f"{acknowledgement.strip()} Then " if acknowledgement else "")
+            else (f"{acknowledgement.strip()} " if acknowledgement else "")
         )
     )
     boundary = f"ROLE BOUNDARY: {profile.boundary_instruction}"
     if kind == "verbal":
         delivery = (
-            f"{opening_line}ask exactly the following question once, naturally. After asking, stop "
-            "speaking and wait for the complete candidate answer. Do not answer your own question, "
-            "grade aloud, or introduce another question."
-            f"{language_suffix}\n\nQuestion:\n{item.question}"
+            f"{opening_line}ask the following question in your own natural words (keep the core "
+            "meaning but make it sound like something a real person would say in conversation). "
+            "After asking, give them a moment — if they pause to think, that's fine. Do not answer "
+            "your own question, grade aloud, or introduce another question. "
+            "IMPORTANT: Complete your full sentence before stopping — never cut off mid-word or mid-thought."
+            f"{language_suffix}\n\nQuestion to ask (rephrase naturally):\n{item.question}"
         )
     else:
         delivery = (
-            f"{opening_line}say only that the {kind} question is now visible and invite the candidate "
-            "to begin. Do not read, quote, paraphrase or describe it. Then remain silent until the "
-            f"candidate submits or gives up.{language_suffix}"
+            f"{opening_line}let the candidate know naturally that a {kind} question has appeared "
+            "on their screen — something like 'I've got something for you to look at on your screen' "
+            "or 'Take a look at what's on screen'. Do not read, quote, or describe the prompt. "
+            "Then remain quiet and let them work. "
+            "IMPORTANT: Complete your full sentence before stopping — never cut off mid-word."
+            f"{language_suffix}"
         )
     return f"ORCHESTRATOR TURN {item.id}. {boundary}\n\n{delivery}"

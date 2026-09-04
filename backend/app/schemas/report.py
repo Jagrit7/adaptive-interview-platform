@@ -44,6 +44,7 @@ class TranscriptEntry(BaseModel):
     coverage: float | None = None
     knowledge_item_id: str | None = None
     question_score: float | None = None
+    assessment_satisfaction: float | None = None
 
 
 class ReportTotals(BaseModel):

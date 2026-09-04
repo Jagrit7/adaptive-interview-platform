@@ -44,6 +44,13 @@ class Logic(BaseModel):
     followUpAggressiveness: int
     maxTurns: int          # questions per visit
     maxVisits: int = 3     # max revisits before force-close
+    # Ordered-flow controls. Defaults preserve panels saved before ADR 011.
+    questionKinds: list[QuestionKind] = Field(default_factory=lambda: ["verbal", "written", "coding"])
+    maxRetriesPerQuestion: int = Field(default=1, ge=0, le=5)
+    vagueProbing: bool = True
+    # Confidence that this interviewer has enough evidence to assess the
+    # candidate. This is deliberately independent of whether the answer is good.
+    satisfactionThreshold: float = Field(default=0.8, ge=0, le=1)
 
 
 class KnowledgeItem(BaseModel):
@@ -124,6 +131,36 @@ class Scorer(BaseModel):
     competencies: list[CompetencyRule] = Field(default_factory=list)
 
 
+class HostConfig(BaseModel):
+    """The +1 conversational LLM that opens, orchestrates and closes."""
+    name: str = "Interview Host"
+    systemPrompt: str = (
+        "You are a warm, concise interview host. Make transitions feel natural, "
+        "never answer interview questions, and never announce scores."
+    )
+    introFields: list[str] = Field(default_factory=lambda: ["preferred_name", "current_role"])
+    openingInstruction: str = "Greet the candidate and ask one short introductory question."
+    closingInstruction: str = "Thank the candidate warmly and explain that the interview is complete."
+    voiceId: str | None = None
+
+
+class FlowStep(BaseModel):
+    id: str
+    agentId: str
+    questionKinds: list[QuestionKind] = Field(default_factory=lambda: ["verbal"])
+    questionCount: int = Field(default=1, ge=1, le=50)
+    maxRetriesPerQuestion: int = Field(default=1, ge=0, le=5)
+    vagueProbe: bool = True
+    satisfactionThreshold: float = Field(default=0.8, ge=0, le=1)
+    handoffCondition: str = ""
+
+
+class InterviewFlow(BaseModel):
+    version: Literal[1] = 1
+    host: HostConfig = Field(default_factory=HostConfig)
+    steps: list[FlowStep] = Field(default_factory=list)
+
+
 class Panel(BaseModel):
     projectName: str
 
@@ -137,3 +174,22 @@ class Panel(BaseModel):
 
     agents: list[Agent]
     scorer: Scorer = Field(default_factory=Scorer)
+    flow: InterviewFlow | None = None
+
+    def resolved_flow(self) -> InterviewFlow:
+        """Upgrade legacy panels in memory without a Supabase migration."""
+        if self.flow and self.flow.steps:
+            return self.flow
+        return InterviewFlow(steps=[
+            FlowStep(
+                id=f"step-{index + 1}", agentId=agent.id,
+                questionKinds=agent.logic.questionKinds,
+                questionCount=(min(agent.logic.maxTurns, len(agent.knowledge.items))
+                               if agent.knowledge.is_active() else agent.logic.maxTurns),
+                maxRetriesPerQuestion=agent.logic.maxRetriesPerQuestion,
+                vagueProbe=agent.logic.vagueProbing,
+                satisfactionThreshold=agent.logic.satisfactionThreshold,
+                handoffCondition=agent.turnTaking.handoffTriggers,
+            )
+            for index, agent in enumerate(self.agents)
+        ])

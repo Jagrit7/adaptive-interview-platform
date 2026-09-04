@@ -44,7 +44,7 @@ class AgentWeightedReportTests(unittest.TestCase):
             finished_at="2026-09-03T00:10:00+00:00",
             is_finished=True,
             agent_states={
-                "technical": AgentSessionState(agent_id="technical", competency_scores={
+                "technical": AgentSessionState(agent_id="technical", assessment_satisfaction=0.95, competency_scores={
                     "Correctness": CompetencyScore(score=0.9, covered=True),
                     "Reasoning": CompetencyScore(score=0.7, covered=True),
                 }),
@@ -59,6 +59,7 @@ class AgentWeightedReportTests(unittest.TestCase):
         self.assertEqual(report.totals.overall_score, 0.7)
         by_id = {item.agent_id: item for item in report.agents}
         self.assertEqual(by_id["technical"].score, 0.8)
+        self.assertEqual(by_id["technical"].satisfaction, 0.95)
         self.assertEqual(by_id["technical"].weight, 0.75)
         self.assertEqual(by_id["communication"].score, 0.4)
         self.assertEqual(by_id["communication"].weight, 0.25)

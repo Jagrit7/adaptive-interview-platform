@@ -6,11 +6,18 @@ import { useAgoraVoiceClient } from '@/hooks/useAgoraVoiceClient';
 import { useBuilderStore, type Agent } from '@/store/builderStore';
 import { ArenaRoom, type Panelist } from '@/components/arena/ArenaRoom';
 import { CandidateForm } from './CandidateForm';
-import { saveReport, type InterviewReport } from '@/lib/reports';
+import {
+  finalizePublishedReport,
+  saveReport,
+  toReportRecord,
+  type InterviewReport,
+  type ReportRecord,
+} from '@/lib/reports';
+import { InterviewReportView } from '@/components/reports/InterviewReportView';
 import type { PanelConfig } from '@/lib/panels';
 
 const APP_ID = '02bcecea17334c6dad96219c276fbd38';
-const BACKEND_URL = 'http://localhost:8000';
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000';
 
 type WrittenQuestion = {
   id: string;
@@ -38,10 +45,13 @@ type TurnResponse = {
   question_status: 'pending' | 'retry' | 'correct' | 'answered' | 'skipped' | 'none';
   answer_correct: boolean;
   question_score?: number | null;
+  assessment_satisfaction?: number | null;
   awaiting: Awaiting;
   question_revision: number;
   agent_uid?: string | null;
   voice_id?: string | null;
+  agent_uids?: Record<string, string>;
+  host_agent_id?: string;
 };
 
 export type PublishedPanelView = {
@@ -78,8 +88,13 @@ export default function InterviewRoomLive({
   // The interview does not begin until the form is submitted, so the report
   // always has a candidate attached. Nothing is started before this is set.
   const [candidate, setCandidate] = useState<{ name: string; ref: string } | null>(null);
-  const [, setReportState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [, setReportError] = useState<string | null>(null);
+  const [reportState, setReportState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [reportError, setReportError] = useState<string | null>(null);
+  // The finished report, rendered in place of the room. In a test run this
+  // state is the only copy that exists anywhere - nothing is written to
+  // Supabase, localStorage or sessionStorage, so closing the window discards it.
+  const [reportRecord, setReportRecord] = useState<ReportRecord | null>(null);
+  const reportRecordRef = useRef<ReportRecord | null>(null);
   const reportSavedRef = useRef(false);
 
   const [channel] = useState(() => `panel-${Date.now()}`);
@@ -97,6 +112,7 @@ export default function InterviewRoomLive({
   // The uid the agent speaks under, straight from /sessions/start. Everything
   // that is not the agent is the candidate - see the note in the turn effect.
   const [agentUid, setAgentUid] = useState<string | null>(null);
+  const [hostAgentId, setHostAgentId] = useState('__host__');
   const seenUidsRef = useRef<Set<string>>(new Set());
   const [status, setStatus] = useState('starting...');
 
@@ -129,16 +145,32 @@ export default function InterviewRoomLive({
   // Agora semantic endpointing already decides when a thought is complete.
   // This small window only coalesces adjacent final transcript packets; it is
   // not a second end-of-speech detector.
-  const ANSWER_SETTLE_MS = 350;
+  // Agora can finalize a transcript segment during an ordinary thinking pause.
+  // Do not equate that packet boundary with "answer complete": require a
+  // sustained period of locally measured silence before submitting the joined
+  // answer to the orchestrator.
+  const ANSWER_SILENCE_MS = 2800;
+  const SPEAKING_VOLUME_THRESHOLD = 0.025;
   const pendingAnswerRef = useRef<string[]>([]);
   const pendingAnswerIdsRef = useRef<string[]>([]);
   const answerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const answerQuietSinceRef = useRef(0);
+  const inputVolumeRef = useRef(0);
   const turnInFlightRef = useRef(false);
   const echoGuardUntilRef = useRef(0);
   const acceptingVoiceRef = useRef(false);
   const questionRevisionRef = useRef(0);
   const agentUidRef = useRef<string | null>(null);
+  const hostUidRef = useRef<string | null>(null);
   const handledAgentTurnRef = useRef(0);
+  // A finish event is valid only after the CURRENT revision emitted a matching
+  // speaking-start. Interrupting an older turn can emit a late finish event;
+  // without this lease that stale event yields the floor and cuts off the new
+  // host question halfway through.
+  const activeSpeechRevisionRef = useRef(0);
+  const activeSpeechStartedAtRef = useRef(0);
+  const latestAgentSpeechStartRef = useRef<{ uid: string; at: number }>({ uid: '', at: 0 });
+  const turnRequestStartedAtRef = useRef(0);
   const pendingVisualQuestionRef = useRef<WrittenQuestion | null>(null);
   const activeQuestionIdRef = useRef<string | null>(null);
 
@@ -148,17 +180,29 @@ export default function InterviewRoomLive({
     joinChannel,
     leaveChannel,
     isAgentSpeaking,
+    isAgentListening,
+    inputVolume,
     setMicrophoneEnabled,
     interruptAgent,
+    setAudibleAgentUid,
     agentSpeakingStartedSequence,
     agentTurnFinishedSequence,
+    lastStartedAgentUid,
+    lastFinishedAgentUid,
   } = useAgoraVoiceClient();
+
+  useEffect(() => {
+    inputVolumeRef.current = inputVolume;
+    if (inputVolume > SPEAKING_VOLUME_THRESHOLD) {
+      answerQuietSinceRef.current = 0;
+    }
+  }, [inputVolume]);
 
   useEffect(() => {
     // Half-duplex transcript guard: while remote agent audio is playing, and
     // for a short acoustic tail afterwards, USER_TRANSCRIPTION can only be a
     // loudspeaker echo. A real answer is expected after the question ends.
-    echoGuardUntilRef.current = isAgentSpeaking ? Number.POSITIVE_INFINITY : Date.now() + 900;
+    echoGuardUntilRef.current = isAgentSpeaking ? Number.POSITIVE_INFINITY : Date.now() + 400;
   }, [isAgentSpeaking]);
 
   const applyTurn = (data: TurnResponse) => {
@@ -167,19 +211,52 @@ export default function InterviewRoomLive({
       setAgentUid(data.agent_uid);
       agentUidRef.current = data.agent_uid;
     }
+    // Logical floor and acoustic floor change together. Candidate/workspace/
+    // evaluation phases hear no autonomous agent output; only an explicit
+    // backend-granted agent turn can be played by the browser.
+    setAudibleAgentUid(
+      data.awaiting === 'agent' && data.agent_uid ? String(data.agent_uid) : null,
+    );
     setIsFinished(data.is_finished);
     setQuestionsAsked(data.questions_asked ?? 0);
     setQuestionsTotal(data.questions_total ?? 0);
     setAwaiting(data.awaiting);
     setQuestionRevision(data.question_revision);
     questionRevisionRef.current = data.question_revision;
+    const speechAlreadyStarted = Boolean(
+      data.awaiting === 'agent' &&
+      data.agent_uid &&
+      latestAgentSpeechStartRef.current.uid === String(data.agent_uid) &&
+      latestAgentSpeechStartRef.current.at >= turnRequestStartedAtRef.current
+    );
+    if (data.awaiting === 'agent' && speechAlreadyStarted) {
+      activeSpeechRevisionRef.current = data.question_revision;
+      activeSpeechStartedAtRef.current = latestAgentSpeechStartRef.current.at;
+    } else if (data.awaiting === 'agent') {
+      activeSpeechRevisionRef.current = 0;
+      activeSpeechStartedAtRef.current = 0;
+    }
     acceptingVoiceRef.current = data.awaiting === 'candidate';
     const next = data.current_question ?? null;
     const isNewQuestion = next?.id !== activeQuestionIdRef.current;
     activeQuestionIdRef.current = next?.id ?? null;
     setWrittenQuestion(next);
-    if (data.awaiting === 'agent') {
-      pendingVisualQuestionRef.current = next;
+    if (data.current_agent_id === hostAgentId && !next) {
+      pendingVisualQuestionRef.current = null;
+      setVisibleQuestion(null);
+      setCurrentQuestion(data.is_finished ? 'Interview complete.' : 'Conversation with your host');
+    } else if (data.awaiting === 'agent') {
+      pendingVisualQuestionRef.current = speechAlreadyStarted ? null : next;
+      if (speechAlreadyStarted && next) {
+        setVisibleQuestion(next);
+        setCurrentQuestion(next.prompt);
+      }
+      if (isNewQuestion) {
+        if (!speechAlreadyStarted) {
+          setVisibleQuestion(null);
+          setCurrentQuestion('');
+        }
+      }
     } else {
       pendingVisualQuestionRef.current = null;
       setVisibleQuestion(next);
@@ -198,12 +275,19 @@ export default function InterviewRoomLive({
 
   useEffect(() => {
     if (!agentSpeakingStartedSequence) return;
+    latestAgentSpeechStartRef.current = {
+      uid: String(lastStartedAgentUid ?? ''),
+      at: Date.now(),
+    };
+    if (lastStartedAgentUid !== agentUidRef.current) return;
+    activeSpeechRevisionRef.current = questionRevisionRef.current;
+    activeSpeechStartedAtRef.current = Date.now();
     const next = pendingVisualQuestionRef.current;
     if (!next) return;
     pendingVisualQuestionRef.current = null;
     setVisibleQuestion(next);
     setCurrentQuestion(next.prompt);
-  }, [agentSpeakingStartedSequence, sessionId]);
+  }, [agentSpeakingStartedSequence, lastStartedAgentUid, sessionId]);
 
   /**
    * Submits one candidate answer and applies whatever the orchestrator decides.
@@ -221,11 +305,16 @@ export default function InterviewRoomLive({
     turnInFlightRef.current = true;
     acceptingVoiceRef.current = false;
     setAwaiting('evaluation');
+    setAudibleAgentUid(null);
     await setMicrophoneEnabled(false);
     setMicOn(false);
     if (agentUidRef.current) await interruptAgent(agentUidRef.current);
+    if (hostUidRef.current && hostUidRef.current !== agentUidRef.current) {
+      await interruptAgent(hostUidRef.current);
+    }
     setActiveSpeakerId('user');
     try {
+      turnRequestStartedAtRef.current = Date.now();
       const res = await fetch(`${BACKEND_URL}/sessions/${sessionId}/next`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -259,11 +348,17 @@ export default function InterviewRoomLive({
     }
     setWorkspaceBusy(true);
     try {
+      if (submit) {
+        turnRequestStartedAtRef.current = Date.now();
+        setAudibleAgentUid(null);
+      }
       const res = await fetch(`${BACKEND_URL}/sessions/${sessionId}/${submit ? 'submit-code' : 'run-code'}`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:scratch,language:'python',question_id:writtenQuestion?.id,question_revision:questionRevisionRef.current,answer_id:submit?`${writtenQuestion?.id}:${questionRevisionRef.current}:code`:undefined})});
       const data = await res.json();
       if (!res.ok) throw new Error(typeof data.detail === 'string' ? data.detail : 'Code execution failed');
       const result = submit ? data.test_run : data;
-      setRunSummary(`${result.passed}/${result.total} tests passed${result.runtime_error ? ` · ${result.runtime_error}` : ''}`);
+      const hiddenSummary = submit && Number(result.hidden_total) > 0 ? ` · ${result.hidden_total} hidden tests evaluated` : '';
+      const scoreSummary = submit ? ` · Score ${Math.round(Number(result.score ?? 0) * 100)}%` : '';
+      setRunSummary(`${result.passed}/${result.total} tests passed${scoreSummary}${hiddenSummary}${result.runtime_error ? ` · ${result.runtime_error}` : ''}`);
       setRunResults(result.results ?? []);
       if (submit) applyTurn(data.turn);
     } catch (error) { setRunSummary(error instanceof Error ? error.message : String(error)); }
@@ -314,6 +409,12 @@ export default function InterviewRoomLive({
       // finalises a segment. Cancel that response immediately; the orchestrator
       // will provide the only acknowledgement after the complete answer settles.
       if (agentUidRef.current) void interruptAgent(agentUidRef.current);
+      // The +1 host is the meeting's sole ASR listener. Specialists receive
+      // routed text, so cancel the host's automatic post-ASR response as well;
+      // only the validated orchestration decision may speak next.
+      if (hostUidRef.current && hostUidRef.current !== agentUidRef.current) {
+        void interruptAgent(hostUidRef.current);
+      }
 
       if (Date.now() < echoGuardUntilRef.current) {
         console.info(`[interview] ignored probable playback echo for turn ${m.turn_id}`);
@@ -337,25 +438,48 @@ export default function InterviewRoomLive({
 
     if (pendingAnswerRef.current.length === 0) return;
 
-    // Speech-to-text splits one spoken answer into several final segments -
-    // a pause for breath is enough. Each segment used to fire its own turn, so
-    // one answer burned three questions and three visits in a couple of
-    // seconds. Wait for the candidate to actually stop, then submit the
-    // segments as a single answer.
+    // Speech-to-text splits one spoken answer into several final segments. Poll
+    // the local microphone meter so a breath or thinking pause cannot submit
+    // the answer and mute the candidate. New speech resets the silence clock;
+    // every final segment remains buffered into the same answer.
     if (answerTimerRef.current) clearTimeout(answerTimerRef.current);
-    answerTimerRef.current = setTimeout(() => {
-      const combined = pendingAnswerRef.current.join(' ').trim();
-      const answerId = `${questionRevisionRef.current}:${pendingAnswerIdsRef.current.join(',')}`;
-      pendingAnswerRef.current = [];
-      pendingAnswerIdsRef.current = [];
-      if (combined) void handleNextTurn(combined, answerId);
-    }, ANSWER_SETTLE_MS);
+    answerQuietSinceRef.current = 0;
+    const waitForCompleteAnswer = () => {
+      if (!acceptingVoiceRef.current || awaiting !== 'candidate') return;
+      const now = Date.now();
+      if (inputVolumeRef.current > SPEAKING_VOLUME_THRESHOLD) {
+        answerQuietSinceRef.current = 0;
+      } else if (answerQuietSinceRef.current === 0) {
+        answerQuietSinceRef.current = now;
+      } else if (now - answerQuietSinceRef.current >= ANSWER_SILENCE_MS) {
+        const combined = pendingAnswerRef.current.join(' ').trim();
+        const answerId = `${questionRevisionRef.current}:${pendingAnswerIdsRef.current.join(',')}`;
+        pendingAnswerRef.current = [];
+        pendingAnswerIdsRef.current = [];
+        answerQuietSinceRef.current = 0;
+        answerTimerRef.current = null;
+        if (combined) void handleNextTurn(combined, answerId);
+        return;
+      }
+      answerTimerRef.current = setTimeout(waitForCompleteAnswer, 100);
+    };
+    answerTimerRef.current = setTimeout(waitForCompleteAnswer, 100);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messageList, isConnected, isFinished, sessionId, uid, agentUid, writtenQuestion, awaiting]);
 
   useEffect(() => {
     if (!agentTurnFinishedSequence || !sessionId || isFinished || questionRevisionRef.current === 0) return;
+    if (lastFinishedAgentUid !== agentUidRef.current) return;
     if (agentTurnFinishedSequence === handledAgentTurnRef.current) return;
+    if (
+      activeSpeechRevisionRef.current !== questionRevisionRef.current ||
+      Date.now() - activeSpeechStartedAtRef.current < 450
+    ) {
+      // This belongs to the turn interrupted immediately before the current
+      // instruction. Consume it, but never transfer the current floor.
+      handledAgentTurnRef.current = agentTurnFinishedSequence;
+      return;
+    }
     if (awaiting !== 'agent') {
       // Consume an interrupted autonomous-response event while evaluation is
       // running. It must not be reused to open the next question's floor.
@@ -363,6 +487,7 @@ export default function InterviewRoomLive({
       return;
     }
     handledAgentTurnRef.current = agentTurnFinishedSequence;
+    activeSpeechRevisionRef.current = 0;
     const yieldFloor = async () => {
       const response = await fetch(`${BACKEND_URL}/sessions/${sessionId}/candidate-ready`, {
         method: 'POST',
@@ -388,7 +513,7 @@ export default function InterviewRoomLive({
     };
     void yieldFloor();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [agentTurnFinishedSequence, sessionId, isFinished, awaiting]);
+  }, [agentTurnFinishedSequence, lastFinishedAgentUid, sessionId, isFinished, awaiting]);
 
   // Start the session once, on mount. Guarded against React Strict Mode's
   // deliberate double-invocation in dev - without hasStartedRef, this whole
@@ -438,6 +563,11 @@ export default function InterviewRoomLive({
 
 
         setStatus('Starting panel session...');
+        // The host RTC UID is a protocol constant for a newly created panel.
+        // Grant it the initial acoustic floor before the start response so a
+        // very fast opening cannot be clipped while HTTP returns session data.
+        setAudibleAgentUid('1');
+        turnRequestStartedAtRef.current = Date.now();
         const startRes = await fetch(publishedAccess
           ? `${BACKEND_URL}/published-panels/${encodeURIComponent(publishedAccess.panelId)}/sessions/start`
           : `${BACKEND_URL}/sessions/start`, {
@@ -467,8 +597,15 @@ export default function InterviewRoomLive({
         }
 
         setSessionId(startData.session_id);
+        setHostAgentId(startData.host_agent_id ?? '__host__');
+        hostUidRef.current = String(startData.agent_uids?.[startData.host_agent_id ?? '__host__'] ?? '1');
         setAgentUid(String(startData.agent_uid ?? '1'));
         agentUidRef.current = String(startData.agent_uid ?? '1');
+        setAudibleAgentUid(
+          (startData.awaiting ?? 'agent') === 'agent'
+            ? String(startData.agent_uid ?? '1')
+            : null,
+        );
         setActiveSpeakerId(startData.agent_id);
         const firstQuestion = startData.current_question ?? null;
         setWrittenQuestion(firstQuestion);
@@ -530,31 +667,67 @@ export default function InterviewRoomLive({
   }, []);
 
   /**
-   * Pulls the report from the backend and stores it in Supabase.
+   * Ends the interview by producing the report, and stores it where it belongs.
+   *
+   * Three destinations, because there are three different actors:
+   *
+   *   published  - an anonymous candidate on an invite link. The browser has no
+   *                Supabase session and `interview_reports` is gated on
+   *                `auth.uid() = user_id`, so the write cannot happen here at
+   *                all. The backend builds and stores it under the panel's
+   *                owner, who is the only person allowed to read it back. This
+   *                is the path that used to fail silently and lose every real
+   *                candidate report.
+   *   owner run  - a signed-in owner running their own panel, stored from the
+   *                browser under their own session so RLS still governs it.
+   *   test run   - stored nowhere. See the note below.
    *
    * Called both when the interview finishes naturally and when the candidate
-   * exits early - an abandoned interview still produced measurements, and the
+   * exits early: an abandoned interview still produced measurements, and the
    * report records `completed: false` rather than pretending otherwise.
    *
-   * reportSavedRef stops the two paths racing; the upsert on session_id is the
-   * second line of defence if they do.
+   * reportSavedRef stops those two paths racing; the upsert on session_id is
+   * the second line of defence if they do.
    */
-  const persistReport = async () => {
+  const finalizeReport = async () => {
     if (!sessionId || reportSavedRef.current) return;
     reportSavedRef.current = true;
     setReportState('saving');
     setReportError(null);
     try {
-      const res = await fetch(`${BACKEND_URL}/sessions/${sessionId}/report`);
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(
-          typeof body.detail === 'string' ? body.detail : 'Could not build the report.',
+      let report: InterviewReport;
+      let storeError: string | null = null;
+
+      if (publishedAccess) {
+        const result = await finalizePublishedReport(
+          publishedAccess.panelId, publishedAccess.invite, sessionId,
         );
+        report = result.report;
+        // Storage failing is not the candidate's problem and does not cost them
+        // their result - they still see it, with the reason shown above it.
+        storeError = result.stored ? null : result.store_error;
+      } else {
+        const res = await fetch(`${BACKEND_URL}/sessions/${sessionId}/report`);
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(
+            typeof body.detail === 'string' ? body.detail : 'Could not build the report.',
+          );
+        }
+        report = await res.json() as InterviewReport;
+        // The one path that persists nothing. A test run exists so the author
+        // can hear their own interview back; its scores describe no real
+        // candidate, and writing them would put invented people in the same
+        // table the hiring decisions are read from.
+        if (!testMode) await saveReport(report, panelId, panelOverride?.enterprise?.role);
       }
-      const report: InterviewReport = await res.json();
-      if (!testMode) await saveReport(report, panelId, publishedPanel?.role ?? panelOverride?.enterprise?.role);
-      setReportState('saved');
+
+      const role = publishedPanel?.role ?? panelOverride?.enterprise?.role;
+      const record = toReportRecord(report, role, publishedAccess ? 'published' : 'self');
+      reportRecordRef.current = record;
+      setReportRecord(record);
+      setReportError(storeError);
+      setReportState(storeError ? 'error' : 'saved');
     } catch (err) {
       // Let it be retried - a failed save should not be permanent.
       reportSavedRef.current = false;
@@ -568,14 +741,29 @@ export default function InterviewRoomLive({
   // lost on restart, so the window to capture it is now.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (isFinished) void persistReport();
+    if (isFinished) void finalizeReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFinished]);
 
+  // Ending the interview no longer means leaving immediately. The candidate has
+  // just finished; the report is the thing they came for. Agora and the backend
+  // session are torn down here, and the room is only left once they close the
+  // report - or straight away if there was no report to show.
   const handleClose = async () => {
-    await persistReport();
+    await finalizeReport();
+    if (sessionId) {
+      await fetch(`${BACKEND_URL}/sessions/${sessionId}/end`, { method: 'POST' }).catch(() => undefined);
+    }
     await leaveChannel();
     setActiveSpeakerId(null);
+    if (!reportRecordRef.current) router.push(exitHref);
+  };
+
+  const exitRoom = () => {
+    // A test run opens in its own popup (see openInterviewTest), and closing
+    // that window is exactly what discards the unsaved report. window.close()
+    // only works on a script-opened window, so fall back to navigating.
+    if (testMode && window.opener) { window.close(); return; }
     router.push(exitHref);
   };
 
@@ -640,15 +828,66 @@ export default function InterviewRoomLive({
     speaking: activeSpeakerId === a.id,
   }));
 
+  panelists.unshift({
+    id: hostAgentId,
+    name: 'Interview Host',
+    role: 'Orchestrator',
+    speaking: activeSpeakerId === hostAgentId,
+  });
+
   const currentAgent = agents.find((a) => a.id === activeSpeakerId);
+
+  const handleMicToggle = async () => {
+    if (micOn) {
+      setMicOn(false);
+      await setMicrophoneEnabled(false);
+      return;
+    }
+    if (awaiting === 'agent' && sessionId) {
+      setAudibleAgentUid(null);
+      if (agentUidRef.current) await interruptAgent(agentUidRef.current);
+      const response = await fetch(`${BACKEND_URL}/sessions/${sessionId}/candidate-ready`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question_revision: questionRevisionRef.current }),
+      });
+      const data = await response.json() as TurnResponse & { detail?: string };
+      if (!response.ok) {
+        if (response.status !== 409) setStatus(`Error: ${data.detail ?? 'Could not interrupt the interviewer'}`);
+        return;
+      }
+      handledAgentTurnRef.current = agentTurnFinishedSequence;
+      applyTurn(data);
+      if (data.awaiting !== 'candidate') return;
+    } else if (awaiting !== 'candidate') {
+      return;
+    }
+    await setMicrophoneEnabled(true);
+    setMicOn(true);
+    acceptingVoiceRef.current = true;
+    setActiveSpeakerId('user');
+  };
+
+  // Once the interview is over the report replaces the room, rather than the
+  // candidate being bounced back to a dashboard with no idea how it went.
+  if (reportRecord) {
+    return (
+      <InterviewResultScreen
+        record={reportRecord}
+        ephemeral={testMode}
+        storeError={reportState === 'error' ? reportError : null}
+        onExit={exitRoom}
+      />
+    );
+  }
 
   return (
     <ArenaRoom
-      roundName={currentAgent ? `${currentAgent.identity.role} round` : projectName || 'Interview'}
+      roundName={activeSpeakerId === hostAgentId ? 'Host' : currentAgent ? `${currentAgent.identity.role} round` : projectName || 'Interview'}
       elapsed={status}
       questionNumber={questionsAsked || 1}
       questionTotal={questionsTotal || agents.length}
-      question={currentQuestion || 'Listen for the first question.'}
+      question={currentQuestion || ''}
       questionDetails={visibleQuestion ?? undefined}
       panelists={panelists}
       agentState={awaiting === 'agent' ? 'speaking' : awaiting === 'evaluation' ? 'thinking' : 'listening'}
@@ -657,12 +896,11 @@ export default function InterviewRoomLive({
       language={codeLanguage}
       onLanguageChange={setCodeLanguage}
       micOn={micOn}
-      onToggleMic={() => {
-        const next = !micOn;
-        if (awaiting !== 'candidate' && next) return;
-        setMicOn(next);
-        void setMicrophoneEnabled(next);
-      }}
+      micListening={micOn && awaiting === 'candidate' && (isAgentListening || isConnected)}
+      micLevel={inputVolume}
+      candidateSpeaking={micOn && awaiting === 'candidate' && inputVolume > 0.025}
+      canInterrupt={awaiting === 'agent'}
+      onToggleMic={() => void handleMicToggle()}
       cameraOn={cameraOn}
       onToggleCamera={() => setCameraOn((v) => !v)}
       onEnd={handleClose}
@@ -676,5 +914,57 @@ export default function InterviewRoomLive({
       runResults={runResults}
       isRunning={workspaceBusy}
     />
+  );
+}
+
+/**
+ * The end-of-interview screen.
+ *
+ * Renders the same `InterviewReportView` the enterprise console renders, on
+ * purpose: the report a candidate is shown and the report the hiring team opens
+ * later are the same evaluation, and should not be two documents that quietly
+ * diverge.
+ *
+ * `ephemeral` changes the banner and the exit wording and nothing else. A test
+ * run is worth doing precisely because it shows you what the candidate will
+ * actually see.
+ */
+function InterviewResultScreen({
+  record,
+  ephemeral,
+  storeError,
+  onExit,
+}: {
+  record: ReportRecord;
+  ephemeral: boolean;
+  storeError: string | null;
+  onExit: () => void;
+}) {
+  return (
+    <div className="min-h-screen bg-[#f7f8fa] px-6 py-10">
+      <div className="mx-auto max-w-[1180px]">
+        {ephemeral && (
+          <div className="mb-5 rounded-xl border border-[#e2d6a8] bg-[#fdf7e3] px-5 py-4 text-sm text-[#6b5713]">
+            <b>Test run - this report is not saved.</b> It exists only in this window and is
+            gone when you close it. Nothing was written to the candidate reports table.
+          </div>
+        )}
+        {storeError && (
+          <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
+            The interview is complete and the result below is final, but it could not be
+            stored: {storeError}
+          </div>
+        )}
+        <InterviewReportView record={record} />
+        <div className="mt-6 flex justify-end">
+          <button
+            onClick={onExit}
+            className="rounded-lg bg-black px-5 py-3 text-sm font-semibold text-white"
+          >
+            {ephemeral ? 'Close test window' : 'Done'}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

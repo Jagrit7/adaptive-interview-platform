@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useBuilderStore, RoleType } from '@/store/builderStore';
+import { useBuilderStore } from '@/store/builderStore';
 import { Button } from '@/components/ui/Button';
 import { PanelVisualizer } from './PanelVisualizer';
 import { InterviewRoomScene } from './InterviewRoomScene';
 
 export function LeftRail() {
-  const { agents, selectedAgentId, selectAgent, addAgent } = useBuilderStore();
+  const { agents, selectedAgentId, selectAgent, addAgent, moveAgent } = useBuilderStore();
   const [isVisualizerOpen, setIsVisualizerOpen] = useState(false);
 
   return (
@@ -26,7 +26,7 @@ export function LeftRail() {
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 0' }}>
-          {agents.map((agent) => (
+          {agents.map((agent, index) => (
             <div
               key={agent.id}
               onClick={() => selectAgent(agent.id)}
@@ -54,6 +54,10 @@ export function LeftRail() {
                   {agent.identity.name}
                 </span>
                 <span className="text-caption">{agent.identity.role}</span>
+              </div>
+              <div className="ml-auto flex gap-1">
+                <button aria-label={`Move ${agent.identity.name} earlier`} disabled={index === 0} onClick={(event) => { event.stopPropagation(); moveAgent(agent.id, -1); }} className="rounded px-1.5 py-1 text-xs disabled:opacity-25">↑</button>
+                <button aria-label={`Move ${agent.identity.name} later`} disabled={index === agents.length - 1} onClick={(event) => { event.stopPropagation(); moveAgent(agent.id, 1); }} className="rounded px-1.5 py-1 text-xs disabled:opacity-25">↓</button>
               </div>
             </div>
           ))}
@@ -84,7 +88,7 @@ export function LeftRail() {
               }} 
             />
             <span className="text-body" style={{ color: 'var(--text-primary)', fontWeight: selectedAgentId === 'scorer' ? 500 : 400 }}>
-              Scorer Settings
+              Host & Scoring
             </span>
           </div>
         </div>

@@ -49,6 +49,10 @@ export interface ArenaRoomProps {
   language: string;
   onLanguageChange: (v: string) => void;
   micOn: boolean;
+  micListening?: boolean;
+  micLevel?: number;
+  candidateSpeaking?: boolean;
+  canInterrupt?: boolean;
   onToggleMic: () => void;
   cameraOn: boolean;
   onToggleCamera: () => void;
@@ -72,6 +76,7 @@ export function ArenaRoom(props: ArenaRoomProps) {
     roundName, elapsed, questionNumber, questionTotal, question, questionDetails,
     panelists, agentState, code, onCodeChange,
     language, onLanguageChange, micOn, onToggleMic,
+    micListening = false, micLevel = 0, candidateSpeaking = false, canInterrupt = false,
     cameraOn, onToggleCamera, onEnd, coding = true,
     onRunCode, onSubmitCode, onSubmitWritten, onGiveUp, runSummary, runResults = [], isRunning = false,
     workspaceVisible = true,
@@ -83,11 +88,18 @@ export function ArenaRoom(props: ArenaRoomProps) {
       <StatusBar roundName={roundName} elapsed={elapsed} />
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-4">
-        <QuestionCard n={questionNumber} total={questionTotal} question={question} details={questionDetails} />
-        <div className={`mx-auto grid min-h-0 w-full flex-1 gap-3 transition-[grid-template-columns,max-width] duration-700 ease-in-out ${hasWorkspace ? 'max-w-none lg:grid-cols-[minmax(180px,220px)_minmax(360px,1fr)_minmax(220px,260px)]' : 'max-w-[1000px] lg:grid-cols-[minmax(320px,560px)_0px_minmax(280px,400px)]'}`}>
-          <PanelRail panelists={panelists} agentState={agentState} />
+        <div
+          aria-hidden={!questionDetails}
+          className={`grid shrink-0 transition-[grid-template-rows,opacity,transform] duration-500 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none ${questionDetails ? 'grid-rows-[1fr] translate-y-0 opacity-100' : 'pointer-events-none grid-rows-[0fr] -translate-y-2 opacity-0'}`}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <QuestionCard n={questionNumber} total={questionTotal} question={question} details={questionDetails} />
+          </div>
+        </div>
+        <div className={`mx-auto grid min-h-0 w-full flex-1 gap-3 transition-[grid-template-columns,max-width] duration-500 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none ${hasWorkspace ? 'max-w-none lg:grid-cols-[minmax(180px,220px)_minmax(360px,1fr)_minmax(220px,260px)]' : 'max-w-[1180px] lg:grid-cols-[minmax(0,2fr)_0px_minmax(260px,1fr)]'}`}>
+          <PanelRail panelists={panelists} agentState={agentState} compact={hasWorkspace} />
 
-          <main aria-hidden={!hasWorkspace} className={`min-h-0 min-w-0 overflow-hidden transition-all duration-500 ${hasWorkspace ? 'opacity-100 translate-y-0' : 'pointer-events-none h-0 lg:h-auto opacity-0 translate-y-3'}`}>
+          <main aria-hidden={!hasWorkspace} className={`min-h-0 min-w-0 overflow-hidden transition-all duration-500 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none ${hasWorkspace ? 'opacity-100 translate-y-0 scale-100' : 'pointer-events-none h-0 lg:h-auto opacity-0 translate-y-3 scale-[.98]'}`}>
             {coding ? (
               <CodePane
                 code={code}
@@ -105,15 +117,24 @@ export function ArenaRoom(props: ArenaRoomProps) {
             ) : <WritingPad value={code} onChange={onCodeChange} language={language} onLanguageChange={onLanguageChange} onSubmit={onSubmitWritten} onGiveUp={onGiveUp} busy={isRunning} />}
           </main>
 
-          <aside className="min-w-0 self-center transition-all duration-700">
+          <aside className="min-w-0 self-center transition-all duration-500 ease-[cubic-bezier(.22,1,.36,1)] motion-reduce:transition-none">
             <SectionLabel>You</SectionLabel>
-            <SelfView on={cameraOn} />
+            <SelfView
+              on={cameraOn}
+              listening={micListening}
+              speaking={candidateSpeaking}
+              level={micLevel}
+            />
           </aside>
         </div>
       </div>
 
+      {/* Prominent floating mic status indicator */}
+      <MicStatusBanner listening={micListening} speaking={candidateSpeaking} level={micLevel} agentState={agentState} />
+
       <ControlBar
         micOn={micOn} onToggleMic={onToggleMic}
+        micListening={micListening} micLevel={micLevel} candidateSpeaking={candidateSpeaking} canInterrupt={canInterrupt}
         cameraOn={cameraOn} onToggleCamera={onToggleCamera}
         onEnd={onEnd}
       />
@@ -143,14 +164,28 @@ function StatusBar({ roundName, elapsed }: { roundName: string; elapsed: string 
 }
 
 function ControlBar({
-  micOn, onToggleMic, cameraOn, onToggleCamera, onEnd,
-}: Pick<ArenaRoomProps, 'micOn' | 'onToggleMic' | 'cameraOn' | 'onToggleCamera' | 'onEnd'>) {
+  micOn, onToggleMic, micListening, micLevel, candidateSpeaking, canInterrupt,
+  cameraOn, onToggleCamera, onEnd,
+}: Pick<ArenaRoomProps, 'micOn' | 'onToggleMic' | 'micListening' | 'micLevel' | 'candidateSpeaking' | 'canInterrupt' | 'cameraOn' | 'onToggleCamera' | 'onEnd'>) {
   return (
     <footer className="shrink-0 flex items-center justify-center gap-3 px-5 py-4 border-t
                        border-[var(--color-arena-line)] bg-[var(--color-arena-panel)]">
-      <RoundToggle on={micOn} onClick={onToggleMic} label="microphone">
-        {micOn ? <MicIcon /> : <MicOffIcon />}
-      </RoundToggle>
+      <div className="relative">
+        {micListening && (
+          <span
+            className={`pointer-events-none absolute -inset-1 rounded-full border transition-all duration-150 ${candidateSpeaking ? 'border-emerald-300 shadow-[0_0_0_5px_rgba(110,231,183,.12)]' : 'border-[var(--color-arena-cyan)]/40'}`}
+            style={{ transform: `scale(${1 + Math.min(0.12, (micLevel ?? 0) * 0.3)})` }}
+          />
+        )}
+        <RoundToggle on={micOn} onClick={onToggleMic} label="microphone">
+          {micOn ? <MicIcon /> : <MicOffIcon />}
+        </RoundToggle>
+        {!micOn && canInterrupt && (
+          <span className="pointer-events-none absolute left-1/2 top-full mt-1.5 -translate-x-1/2 whitespace-nowrap font-mono text-[9px] text-[var(--color-arena-cyan)]">
+            Unmute to interrupt
+          </span>
+        )}
+      </div>
       <RoundToggle on={cameraOn} onClick={onToggleCamera} label="camera">
         {cameraOn ? <CamIcon /> : <CamOffIcon />}
       </RoundToggle>
@@ -188,13 +223,13 @@ function RoundToggle({
 /* ----------------------------------------------------------------- rail -- */
 
 function PanelRail({
-  panelists, agentState,
-}: { panelists: Panelist[]; agentState: ArenaRoomProps['agentState'] }) {
+  panelists, agentState, compact,
+}: { panelists: Panelist[]; agentState: ArenaRoomProps['agentState']; compact: boolean }) {
   return (
-    <aside className="w-full lg:w-[264px] shrink-0 flex flex-col gap-3">
+    <aside className="min-w-0 w-full shrink-0 flex flex-col gap-3 transition-all duration-500 motion-reduce:transition-none">
       <SectionLabel>Panel</SectionLabel>
 
-      <div className="flex lg:flex-col gap-3 overflow-x-auto lg:overflow-visible">
+      <div className={`${compact ? 'flex lg:flex-col' : 'grid grid-cols-1 sm:grid-cols-2'} min-h-0 gap-3 overflow-hidden`}>
         {panelists.map((p) => (
           <PanelistCard key={p.id} p={p} agentState={agentState} />
         ))}
@@ -207,8 +242,8 @@ function PanelistCard({ p, agentState }: { p: Panelist; agentState: ArenaRoomPro
   const active = !!p.speaking;
   return (
     <div
-      className={`shrink-0 min-w-[200px] lg:min-w-0 rounded-[var(--radius-card)] p-3
-                  border transition
+      className={`shrink-0 min-w-[180px] lg:min-w-0 rounded-[var(--radius-card)] p-3
+                  border transition-all duration-300 motion-reduce:transition-none
         ${active
           ? 'bg-[var(--color-arena-raised)] border-[var(--color-arena-cyan)] arena-edge'
           : 'bg-[var(--color-arena-panel)] border-[var(--color-arena-line)] opacity-55'}`}
@@ -249,7 +284,7 @@ function PanelistCard({ p, agentState }: { p: Panelist; agentState: ArenaRoomPro
  * call shows you your own face: people practise presence, and a black rectangle
  * where your face should be is worse practice than no camera at all.
  */
-function SelfView({ on }: { on: boolean }) {
+function SelfView({ on, listening, speaking, level }: { on: boolean; listening: boolean; speaking: boolean; level: number }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -278,8 +313,7 @@ function SelfView({ on }: { on: boolean }) {
   }, [on]);
 
   return (
-    <div className="relative aspect-video rounded-[var(--radius-card)] overflow-hidden
-                    border border-[var(--color-arena-line)] bg-[var(--color-arena-panel)]">
+    <div className={`relative aspect-video rounded-[var(--radius-card)] overflow-hidden border bg-[var(--color-arena-panel)] transition-all duration-200 ${speaking ? 'border-emerald-300 shadow-[0_0_0_3px_rgba(110,231,183,.16)]' : listening ? 'border-[var(--color-arena-cyan)]/60' : 'border-[var(--color-arena-line)]'}`}>
       {on && !error ? (
         <video
           ref={videoRef}
@@ -298,6 +332,17 @@ function SelfView({ on }: { on: boolean }) {
                        bg-black/60 text-[var(--color-arena-ink-soft)]">
         self view only
       </span>
+      {listening && (
+        <div className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-full bg-black/70 px-2 py-1" role="status" aria-label={speaking ? 'Your voice is being heard' : 'Microphone is listening'}>
+          <span className={`size-1.5 rounded-full ${speaking ? 'bg-emerald-300 animate-pulse' : 'bg-[var(--color-arena-cyan)]'}`} />
+          <div className="flex h-3 items-end gap-px" aria-hidden="true">
+            {[0.35, 0.65, 1, 0.55].map((weight, index) => (
+              <span key={index} className={`w-0.5 rounded-full transition-all duration-100 ${speaking ? 'bg-emerald-300' : 'bg-[var(--color-arena-cyan)]'}`} style={{ height: `${Math.max(3, Math.min(12, 3 + level * 30 * weight))}px` }} />
+            ))}
+          </div>
+          <span className={`font-mono text-[9px] ${speaking ? 'text-emerald-200' : 'text-[var(--color-arena-cyan)]'}`}>{speaking ? 'Hearing you' : 'Listening'}</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -310,9 +355,13 @@ function QuestionCard({ n, total, question, details }:
   const labelledDifficulty = details?.tags.find((tag) => /^(easy|medium|hard)$/i.test(tag));
   const difficulty = labelledDifficulty ?? (details?.difficulty ? `Level ${details.difficulty}` : undefined);
 
+  // Show nothing when no question has been presented yet
+  if (!details && !question) return null;
+
   return (
     <section className="shrink-0 rounded-[var(--radius-card)] p-3 md:px-5 md:py-3 arena-edge
-                        bg-[var(--color-arena-panel)] border border-[var(--color-arena-line)]">
+                        bg-[var(--color-arena-panel)] border border-[var(--color-arena-line)]
+                        animate-[fadeSlideIn_0.5s_cubic-bezier(.22,1,.36,1)_both]">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="font-mono text-[10px] tracking-[0.18em] text-[var(--color-arena-cyan)]">QUESTION {String(n).padStart(2, '0')}</span>
@@ -341,17 +390,29 @@ function CodePane({
   code, onChange, language, onLanguageChange, onRun, onSubmit, onGiveUp, runSummary, results, examples, busy,
 }: { code: string; onChange: (v: string) => void; language: string; onLanguageChange: (v: string) => void; onRun?:()=>void; onSubmit?:()=>void; onGiveUp?:()=>void; runSummary?:string|null; results:Array<{id:string;label:string;input?:string;expected?:string;actual?:string|null;passed:boolean;error?:string|null}>; examples:Array<{id:string;label:string;input_display:string;expected_display:string}>; busy?:boolean }) {
   const lines = Math.max(code.split('\n').length, 16);
+  const passedCount = results.filter(r => r.passed).length;
+  const totalCount = results.length;
+  const hasResults = totalCount > 0;
+  const allPassed = hasResults && passedCount === totalCount;
 
   return (
     <section className="h-full min-h-0 flex flex-col rounded-[var(--radius-card)]
                         overflow-hidden border border-[var(--color-arena-line)]
                         bg-[var(--color-arena-panel)]">
+      {/* Header — like LeetCode's editor header */}
       <div className="flex items-center justify-between px-4 py-2.5
                       border-b border-[var(--color-arena-line)]
                       bg-[var(--color-arena-raised)]">
-        <span className="font-mono text-xs tracking-wide text-[var(--color-arena-ink-soft)]">
-          Terminal
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-xs tracking-wide text-[var(--color-arena-ink-soft)]">
+            Code Editor
+          </span>
+          {hasResults && (
+            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${allPassed ? 'bg-emerald-400/15 text-emerald-300' : 'bg-amber-400/15 text-amber-300'}`}>
+              {allPassed ? 'Accepted' : `${passedCount}/${totalCount} Passed`}
+            </span>
+          )}
+        </div>
         <label className="flex items-center gap-2">
           <span className="sr-only">Language</span>
           <select
@@ -365,17 +426,9 @@ function CodePane({
           </select>
         </label>
       </div>
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--color-arena-line)] px-3 py-2">
-        <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-[var(--color-arena-ink-mute)]" title={runSummary ?? undefined}>{runSummary ?? 'Visible tests on Run · hidden tests on Submit'}</span>
-        <div className="flex shrink-0 gap-1.5">
-          <button disabled={busy} onClick={onGiveUp} className="rounded border border-[var(--color-arena-line)] px-2 py-1.5 text-[11px] disabled:opacity-40">I don&apos;t know</button>
-          <button disabled={busy} onClick={onRun} className="rounded border border-[var(--color-arena-line)] px-2 py-1.5 text-[11px] disabled:opacity-40">Run</button>
-          <button disabled={busy} onClick={onSubmit} className="rounded bg-[var(--color-arena-cyan)] px-2 py-1.5 text-[11px] font-bold text-black disabled:opacity-40">Submit</button>
-        </div>
-      </div>
 
+      {/* Editor area */}
       <div className="flex-1 flex min-h-0">
-        {/* Gutter scrolls with the textarea because both use the same line-height. */}
         <div
           aria-hidden="true"
           className="select-none py-3 px-3 text-right font-mono text-xs leading-6
@@ -396,13 +449,97 @@ function CodePane({
                      placeholder:text-[var(--color-arena-ink-mute)] outline-none"
         />
       </div>
-      {(!!results.length || !!examples.length) && <div className="max-h-32 overflow-y-auto border-t border-[var(--color-arena-line)] p-3"><div className="grid gap-2 md:grid-cols-2">{(results.length ? results : examples.map(item=>({id:item.id,label:item.label,input:item.input_display,expected:item.expected_display,passed:false}))).map(result=><div key={result.id} className={`rounded border p-2 font-mono text-[10px] ${results.length?(result.passed?'border-emerald-500/40 bg-emerald-500/5':'border-red-500/40 bg-red-500/5'):'border-[var(--color-arena-line)] bg-black/20'}`}><b className={results.length?(result.passed?'text-emerald-300':'text-red-300'):''}>{results.length?(result.passed?'PASS · ':'FAIL · '):''}{result.label}</b>{result.input&&<div className="mt-1 text-[var(--color-arena-ink-mute)]">Input: {result.input}</div>}{result.expected&&<div className="text-[var(--color-arena-ink-mute)]">Expected: {result.expected}</div>}{'error' in result&&result.error&&<div className="mt-1 text-red-300">{result.error}</div>}{'actual' in result&&result.actual!=null&&<div className="text-[var(--color-arena-ink-mute)]">Actual: {result.actual}</div>}</div>)}</div></div>}
+
+      {/* Test cases panel — LeetCode style */}
+      <div className="border-t border-[var(--color-arena-line)]">
+        <div className="flex items-center justify-between px-3 py-2 bg-[var(--color-arena-raised)]">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[10px] tracking-wide text-[var(--color-arena-ink-mute)]">
+              {hasResults ? 'Test Results' : 'Test Cases'}
+            </span>
+            {examples.length > 0 && !hasResults && (
+              <span className="font-mono text-[10px] text-[var(--color-arena-ink-mute)]">
+                {examples.length} visible · hidden tests on Submit
+              </span>
+            )}
+          </div>
+          <div className="flex shrink-0 gap-1.5">
+            <button disabled={busy} onClick={onGiveUp} className="rounded border border-[var(--color-arena-line)] px-2.5 py-1.5 text-[11px] text-[var(--color-arena-ink-mute)] hover:text-[var(--color-arena-ink)] disabled:opacity-40 transition">Skip</button>
+            <button disabled={busy} onClick={onRun} className="rounded border border-[var(--color-arena-line)] px-3 py-1.5 text-[11px] font-medium text-[var(--color-arena-ink)] hover:bg-[var(--color-arena-raised)] disabled:opacity-40 transition">
+              {busy ? 'Running...' : 'Run'}
+            </button>
+            <button disabled={busy} onClick={onSubmit} className="rounded bg-emerald-500 px-3 py-1.5 text-[11px] font-bold text-black hover:bg-emerald-400 disabled:opacity-40 transition">
+              Submit
+            </button>
+          </div>
+        </div>
+        {runSummary && (
+          <div className={`px-3 py-1.5 font-mono text-[10px] border-t border-[var(--color-arena-line)] ${allPassed ? 'text-emerald-300 bg-emerald-500/5' : 'text-amber-300 bg-amber-500/5'}`}>
+            {runSummary}
+          </div>
+        )}
+        {(!!results.length || !!examples.length) && (
+          <div className="max-h-40 overflow-y-auto p-3">
+            <div className="grid gap-2 md:grid-cols-2">
+              {(results.length ? results : examples.map(item=>({id:item.id,label:item.label,input:item.input_display,expected:item.expected_display,passed:false}))).map((result, idx) => (
+                <div key={result.id} className={`rounded-lg border p-2.5 font-mono text-[10px] transition-all duration-200 ${results.length?(result.passed?'border-emerald-500/40 bg-emerald-500/5':'border-red-500/40 bg-red-500/5'):'border-[var(--color-arena-line)] bg-black/20'}`}>
+                  <div className="flex items-center gap-2 mb-1">
+                    {results.length > 0 && (
+                      <span className={`size-4 rounded-full grid place-items-center text-[8px] font-bold ${result.passed ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+                        {result.passed ? '✓' : '✗'}
+                      </span>
+                    )}
+                    <b className={results.length?(result.passed?'text-emerald-300':'text-red-300'):''}>
+                      Case {idx + 1}{results.length > 0 ? (result.passed ? ' — Passed' : ' — Failed') : ''}
+                    </b>
+                    {result.label === 'Hidden test' && <span className="rounded bg-[var(--color-arena-line)] px-1.5 py-0.5 text-[8px] text-[var(--color-arena-ink-mute)]">Hidden</span>}
+                  </div>
+                  {result.input && result.label !== 'Hidden test' && <div className="mt-1 text-[var(--color-arena-ink-mute)]">Input: <span className="text-[var(--color-arena-ink-soft)]">{result.input}</span></div>}
+                  {result.expected && result.label !== 'Hidden test' && <div className="text-[var(--color-arena-ink-mute)]">Expected: <span className="text-[var(--color-arena-ink-soft)]">{result.expected}</span></div>}
+                  {'error' in result && result.error && <div className="mt-1 text-red-300">{result.error}</div>}
+                  {'actual' in result && result.actual != null && <div className="text-[var(--color-arena-ink-mute)]">Output: <span className={result.passed ? 'text-emerald-300' : 'text-red-300'}>{result.actual}</span></div>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </section>
   );
 }
 
 function WritingPad({value,onChange,language,onLanguageChange,onSubmit,onGiveUp,busy}:{value:string;onChange:(value:string)=>void;language:string;onLanguageChange:(value:string)=>void;onSubmit?:()=>void;onGiveUp?:()=>void;busy?:boolean}) {
   return <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-arena-line)] bg-[var(--color-arena-panel)]"><div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[var(--color-arena-line)] bg-[var(--color-arena-raised)] px-3 py-2"><div className="flex items-center gap-2"><span className="font-mono text-xs text-[var(--color-arena-ink-soft)]">Terminal</span><select aria-label="Language" value={language} onChange={event=>onLanguageChange(event.target.value)} className="rounded border border-[var(--color-arena-line)] bg-[var(--color-arena-bg)] px-2 py-1 font-mono text-xs text-[var(--color-arena-ink)]">{LANGUAGES.map(item=><option key={item} value={item}>{item}</option>)}</select></div><div className="flex shrink-0 gap-1.5"><button disabled={busy} onClick={onGiveUp} className="rounded border border-[var(--color-arena-line)] px-2 py-1.5 text-[11px] disabled:opacity-40">I don&apos;t know</button><button disabled={busy||!value.trim()} onClick={onSubmit} className="rounded bg-[var(--color-arena-cyan)] px-2 py-1.5 text-[11px] font-bold text-black disabled:opacity-40">Submit</button></div></div><textarea value={value} onChange={event=>onChange(event.target.value)} placeholder="Structure your answer here…" className="min-h-0 flex-1 resize-none overflow-y-auto bg-[var(--color-arena-bg)] p-5 text-sm leading-6 text-[var(--color-arena-ink)] outline-none placeholder:text-[var(--color-arena-ink-mute)]"/></section>;
+}
+
+/* ---------------------------------------------------------- mic banner -- */
+
+function MicStatusBanner({ listening, speaking, level, agentState }: { listening: boolean; speaking: boolean; level: number; agentState: string }) {
+  if (agentState === 'speaking') {
+    return (
+      <div className="mx-4 mb-0 flex items-center justify-center gap-3 rounded-full bg-[var(--color-arena-panel)] border border-[var(--color-arena-line)] px-4 py-2 transition-all duration-300">
+        <span className="size-2 rounded-full bg-[var(--color-arena-cyan)] animate-pulse" />
+        <span className="font-mono text-xs text-[var(--color-arena-cyan)]">Interviewer speaking — listen carefully</span>
+      </div>
+    );
+  }
+  if (!listening) return null;
+  return (
+    <div className={`mx-4 mb-0 flex items-center justify-center gap-3 rounded-full border px-4 py-2 transition-all duration-300 ${speaking ? 'bg-emerald-500/10 border-emerald-400/40' : 'bg-[var(--color-arena-panel)] border-[var(--color-arena-cyan)]/30'}`}>
+      <span className={`size-2.5 rounded-full transition-all duration-150 ${speaking ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,.5)]' : 'bg-[var(--color-arena-cyan)]'}`}
+        style={{ transform: `scale(${1 + Math.min(0.4, level * 0.8)})` }} />
+      <div className="flex h-4 items-end gap-[2px]" aria-hidden="true">
+        {[0.3, 0.55, 0.85, 1, 0.7, 0.45, 0.25].map((weight, index) => (
+          <span key={index}
+            className={`w-[3px] rounded-full transition-all duration-100 ${speaking ? 'bg-emerald-400' : 'bg-[var(--color-arena-cyan)]'}`}
+            style={{ height: `${Math.max(3, Math.min(16, 3 + level * 40 * weight))}px` }} />
+        ))}
+      </div>
+      <span className={`font-mono text-xs font-medium ${speaking ? 'text-emerald-300' : 'text-[var(--color-arena-cyan)]'}`}>
+        {speaking ? '🎤 Your voice is being heard' : '🎤 Microphone active — speak now'}
+      </span>
+    </div>
+  );
 }
 
 /* ------------------------------------------------------------- pieces -- */

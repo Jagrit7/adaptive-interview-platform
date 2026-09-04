@@ -1,16 +1,15 @@
 import hmac
-import json
-import os
 from typing import Any
-from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
-from urllib.request import Request, urlopen
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from app.routes.sessions import StartSessionRequest, start_session
+from app import supabase_rest
+from app.orchestrator.report import build_report
+from app.reports.store import persist_published_report
+from app.routes.sessions import SESSIONS, StartSessionRequest, start_session
 from app.schemas.panel import Panel
+from app.schemas.report import InterviewReport
 
 
 router = APIRouter(prefix="/published-panels", tags=["published-interviews"])
@@ -24,29 +23,23 @@ class StartPublishedPanelRequest(BaseModel):
     candidate_ref: str = Field(default="", max_length=120)
 
 
-def _service_credentials() -> tuple[str, str]:
-    url = os.getenv("SUPABASE_URL", "").rstrip("/")
-    key = os.getenv("SUPABASE_SECRET_KEY") or os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
-    if not url or not key:
-        raise HTTPException(
-            status_code=503,
-            detail="Published interviews require SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY on the backend.",
-        )
-    return url, key
+class FinalizePublishedReportRequest(BaseModel):
+    invite: str = Field(min_length=4, max_length=128)
+
+
+class FinalizePublishedReportResponse(BaseModel):
+    report_id: str | None            # null when the report was built but not stored
+    stored: bool
+    store_error: str | None = None
+    report: InterviewReport
 
 
 def _load_published_panel(panel_id: str, invite: str) -> Panel:
-    url, key = _service_credentials()
-    query = urlencode({"select": "config", "id": f"eq.{panel_id}", "limit": 1})
-    headers = {"apikey": key, "Content-Type": "application/json"}
-    if not key.startswith("sb_secret_"):
-        headers["Authorization"] = f"Bearer {key}"
-    request = Request(f"{url}/rest/v1/panels?{query}", headers=headers)
-    try:
-        with urlopen(request, timeout=10) as response:
-            rows: list[dict[str, Any]] = json.loads(response.read() or b"[]")
-    except (HTTPError, URLError) as exc:
-        raise HTTPException(status_code=502, detail="The published panel could not be loaded from Supabase.") from exc
+    rows: list[dict[str, Any]] = supabase_rest.select(
+        "panels",
+        {"select": "config", "id": f"eq.{panel_id}", "limit": "1"},
+        "The published panel could not be loaded from Supabase.",
+    )
 
     if not rows:
         raise HTTPException(status_code=404, detail="This interview invitation is invalid or no longer available.")
@@ -92,3 +85,46 @@ def start_published_panel(panel_id: str, body: StartPublishedPanelRequest):
         candidate_name=body.candidate_name,
         candidate_ref=body.candidate_ref,
     ))
+
+
+@router.post("/{panel_id}/sessions/{session_id}/report", response_model=FinalizePublishedReportResponse)
+def finalize_published_report(panel_id: str, session_id: str, body: FinalizePublishedReportRequest):
+    """Build the candidate's report and store it against the panel's owner.
+
+    The candidate is anonymous, so the browser cannot do this write: it has no
+    Supabase session, and `interview_reports` is gated on `auth.uid() = user_id`.
+    The invite is re-checked here rather than trusted from the start call, so a
+    session id on its own is not enough to write a row.
+
+    Storage failing does not fail the request. The session lives in this
+    process's memory and is gone on the next restart, so a report that exists
+    but could not be saved is still worth handing back - the candidate sees
+    their result, and the response says plainly that it was not stored.
+    """
+    _load_published_panel(panel_id, body.invite)
+
+    session_data = SESSIONS.get(session_id)
+    if session_data is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Session not found. Reports live in memory and are lost when the "
+                   "backend restarts, so finalize the report before ending the session.",
+        )
+
+    report = build_report(session_data["state"], session_data["panel"])
+
+    if not supabase_rest.is_configured():
+        return FinalizePublishedReportResponse(
+            report_id=None,
+            stored=False,
+            store_error="Supabase is not configured on the backend, so this report was not stored.",
+            report=report,
+        )
+
+    try:
+        report_id = persist_published_report(report, panel_id, role_name=None)
+    except HTTPException as exc:
+        return FinalizePublishedReportResponse(
+            report_id=None, stored=False, store_error=str(exc.detail), report=report,
+        )
+    return FinalizePublishedReportResponse(report_id=report_id, stored=True, report=report)

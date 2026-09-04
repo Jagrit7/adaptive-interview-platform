@@ -31,6 +31,10 @@ export function PanelVisualizer({ agents, onClick }: PanelVisualizerProps) {
           </div>
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', minHeight: '60px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid var(--accent-slate)', display: 'grid', placeItems: 'center', color: '#fff', fontSize: '10px' }}>+1</div>
+              <span style={{ fontSize: '10px', color: '#FFFFFF' }}>Host</span>
+            </div>
             {agents.length === 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', opacity: 0.5 }}>
                 <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px dashed #FFFFFF' }} />

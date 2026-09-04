@@ -18,6 +18,25 @@ keeps existing JSON reports, adds indexed report projections, creates
 `interview_report_scores`, backfills competency rows, and refreshes the RLS
 policies. Do not delete the existing table first.
 
+It also adds a `source` column separating reports written by a signed-in owner
+running their own panel (`self`) from reports written by the backend for an
+anonymous candidate on a published invite link (`published`). Existing rows are
+backfilled as `published`. There is no `test` value on purpose: a test run of a
+panel is never stored at all, so a column value for it could only ever be wrong.
+
+## Who writes a report
+
+Two writers, because the actors differ:
+
+- A signed-in owner testing their own panel writes from the browser, under their
+  own session, so Row Level Security governs the insert (`frontend/lib/reports.ts`).
+- A candidate on a published invite is anonymous and has no Supabase session, so
+  the browser insert is refused by `reports_insert_own` and always was. FastAPI
+  writes that row instead, with the secret key, attributing it to the panel's
+  owner - who remains the only person who can read it back. This needs
+  `SUPABASE_URL` and `SUPABASE_SECRET_KEY` in `backend/.env`; without them the
+  candidate still sees their report and the response says it was not stored.
+
 The DSA schema can also run before `schema_reports.sql`; in that case its
 optional report foreign key is omitted. Re-running the DSA schema after reports
 are installed adds that foreign key safely.

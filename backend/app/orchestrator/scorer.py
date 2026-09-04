@@ -11,6 +11,7 @@ class ScoreResult(BaseModel):
     coverage: float | None = None            # 0-1, how much of the reference answer was covered
     missing_points: list[str] = []           # what the reference answer had and the candidate didn't
     answer_correct: bool = False             # whether this specific question is resolved and may advance
+    assessment_satisfaction: float = 0.0      # confidence enough evidence exists; NOT answer quality
 
 
 def build_scoring_prompt(
@@ -86,12 +87,23 @@ Candidate's latest answer:
 {question_block}
 {grading_instruction}
 
+If this is a follow-up on the same current question, treat the latest answer as an addition to the
+candidate's earlier answer for that question. Judge their cumulative evidence; do not require them
+to repeat points they already established. Do not carry evidence from an unrelated question into
+the current question's correctness score.
+
 Set `answer_correct` to true only when the latest answer is substantively correct and at least 70%
-complete. This field describes quality only; the orchestrator records the proportional score and
-moves to the next question after every completed answer. Do not require identical wording.
+complete when combined with any same-question follow-up context. This field describes quality only;
+the orchestrator records the proportional score and controls whether to probe or advance. Do not
+require identical wording.
 
 Also flag if the answer is vague or contradicts something the candidate said earlier
 in the transcript.
+
+Set `assessment_satisfaction` from 0.0 to 1.0 to express how confident this CURRENT
+interviewer should be that it has enough evidence to assess the candidate on its configured
+competencies. This is evidence sufficiency, not candidate quality: a detailed weak answer can
+produce high satisfaction, while a short correct guess can produce low satisfaction.
 
 Separately, check these handoff conditions against the candidate's answer and full transcript.
 List which ones are true RIGHT NOW, if any (this can include the current interviewer's own condition):
@@ -104,7 +116,8 @@ Respond as JSON:
   "triggered_agent_ids": ["<agent_id>", ...],
   "coverage": <0-1 float or null>,
   "missing_points": ["<point>", ...],
-  "answer_correct": <true only when this question may advance>
+  "answer_correct": <true only when this question may advance>,
+  "assessment_satisfaction": <0-1 evidence-sufficiency confidence>
 }}
 """
 
@@ -149,5 +162,8 @@ async def score_turn(
     parsed.setdefault("triggered_agent_ids", [])
     parsed["missing_points"] = parsed.get("missing_points") or []
     parsed["answer_correct"] = bool(parsed.get("answer_correct", False))
+    parsed["assessment_satisfaction"] = max(
+        0.0, min(1.0, float(parsed.get("assessment_satisfaction") or 0.0))
+    )
 
     return ScoreResult(**parsed)

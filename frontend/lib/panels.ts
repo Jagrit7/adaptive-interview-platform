@@ -21,6 +21,27 @@ export interface PanelConfig {
   language: string;
   agents: Agent[];
   scorer: Scorer;
+  flow?: {
+    version: 1;
+    host: {
+      name: string;
+      systemPrompt: string;
+      introFields: string[];
+      openingInstruction: string;
+      closingInstruction: string;
+      voiceId?: string | null;
+    };
+    steps: Array<{
+      id: string;
+      agentId: string;
+      questionKinds: Array<'verbal' | 'written' | 'coding'>;
+      questionCount: number;
+      maxRetriesPerQuestion: number;
+      vagueProbe: boolean;
+      satisfactionThreshold: number;
+      handoffCondition: string;
+    }>;
+  };
   /** RecruitPro builder metadata. Kept inside config JSONB so the visual
    * workflow can evolve without a database migration for every new field. */
   enterprise?: {

@@ -56,6 +56,10 @@ export interface Agent {
     followUpAggressiveness: number;
     maxTurns: number;
     maxVisits: number;
+    questionKinds: Array<'verbal' | 'written' | 'coding'>;
+    maxRetriesPerQuestion: number;
+    vagueProbing: boolean;
+    satisfactionThreshold: number;
   };
   knowledge: Knowledge;
   skills: {
@@ -85,6 +89,23 @@ export interface Scorer {
   competencies: CompetencyRule[];
 }
 
+export interface HostConfig {
+  name: string;
+  systemPrompt: string;
+  introFields: string[];
+  openingInstruction: string;
+  closingInstruction: string;
+  voiceId?: string | null;
+}
+
+export const defaultHostConfig = (): HostConfig => ({
+  name: 'Interview Host',
+  systemPrompt: 'You are a warm, concise interview host. Make transitions natural and never announce scores.',
+  introFields: ['preferred_name', 'current_role'],
+  openingInstruction: 'Greet the candidate and ask one short introductory question.',
+  closingInstruction: 'Thank the candidate warmly and explain that the interview is complete.',
+});
+
 interface BuilderState {
   projectName: string;
   /** One language for the whole panel, not per agent.
@@ -98,6 +119,7 @@ interface BuilderState {
   language: string;
   agents: Agent[];
   scorer: Scorer;
+  host: HostConfig;
   selectedAgentId: string | 'scorer' | null;
   isSaved: boolean;
   activeSpeakerId: string | 'user' | null;
@@ -118,6 +140,8 @@ interface BuilderState {
   deleteAgent: (id: string) => void;
   selectAgent: (id: string | 'scorer' | null) => void;
   updateScorer: (updates: Partial<Scorer>) => void;
+  updateHost: (updates: Partial<HostConfig>) => void;
+  moveAgent: (id: string, direction: -1 | 1) => void;
   saveProject: () => Promise<void>;
   openPanel: (id: string) => Promise<void>;
   newPanel: () => void;
@@ -182,6 +206,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
   language: DEFAULT_LANGUAGE,
   agents: [],
   scorer: { competencies: [] },
+  host: defaultHostConfig(),
   selectedAgentId: null,
   isSaved: true,
   activeSpeakerId: null,
@@ -216,6 +241,10 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
         followUpAggressiveness: 5,
         maxTurns: 5,
         maxVisits: 3,
+        questionKinds: ['verbal', 'written', 'coding'],
+        maxRetriesPerQuestion: 1,
+        vagueProbing: true,
+        satisfactionThreshold: 0.8,
       },
       knowledge: emptyKnowledge(),
       skills: {
@@ -290,8 +319,19 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
     isSaved: false,
   })),
 
+  updateHost: (updates) => set((state) => ({ host: { ...state.host, ...updates }, isSaved: false })),
+
+  moveAgent: (id, direction) => set((state) => {
+    const index = state.agents.findIndex((agent) => agent.id === id);
+    const target = index + direction;
+    if (index < 0 || target < 0 || target >= state.agents.length) return state;
+    const agents = [...state.agents];
+    [agents[index], agents[target]] = [agents[target], agents[index]];
+    return { agents, isSaved: false };
+  }),
+
   saveProject: async () => {
-    const { projectName, language, agents, scorer, panelId, isSaving } = get();
+    const { projectName, language, agents, scorer, host, panelId, isSaving } = get();
 
     // The header Save button and the Finish button both call this. On a slow
     // connection the second call would still see panelId === null and insert a
@@ -300,7 +340,17 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
 
     set({ isSaving: true, saveError: null });
     try {
-      const config: PanelConfig = { projectName, language, agents, scorer };
+      const config: PanelConfig = { projectName, language, agents, scorer, flow: {
+        version: 1, host, steps: agents.map((agent, index) => ({
+          id: `step-${index + 1}`, agentId: agent.id,
+          questionKinds: agent.logic.questionKinds,
+          questionCount: agent.logic.maxTurns,
+          maxRetriesPerQuestion: agent.logic.maxRetriesPerQuestion,
+          vagueProbe: agent.logic.vagueProbing,
+          satisfactionThreshold: agent.logic.satisfactionThreshold,
+          handoffCondition: agent.turnTaking.handoffTriggers,
+        })),
+      } };
       const id = await savePanel(panelId, config);
       set({ panelId: id, isSaved: true, isSaving: false, lastSavedAt: Date.now() });
     } catch (err) {
@@ -324,8 +374,16 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
         // Panels saved before the knowledge feature have no `knowledge` block,
         // and every form reads agent.knowledge.mode unguarded.
         knowledge: a.knowledge ?? emptyKnowledge(),
+        logic: {
+          ...a.logic,
+          questionKinds: a.logic?.questionKinds ?? ['verbal', 'written', 'coding'],
+          maxRetriesPerQuestion: a.logic?.maxRetriesPerQuestion ?? 1,
+          vagueProbing: a.logic?.vagueProbing ?? true,
+          satisfactionThreshold: a.logic?.satisfactionThreshold ?? 0.8,
+        },
       })),
       scorer: config.scorer ?? { competencies: [] },
+      host: config.flow?.host ?? defaultHostConfig(),
       selectedAgentId: null,
       isSaved: true,
       saveError: null,
@@ -335,7 +393,7 @@ export const useBuilderStore = create<BuilderState>((set, get) => ({
 
   newPanel: () => set({
     panelId: null, projectName: '', language: DEFAULT_LANGUAGE, agents: [],
-    scorer: { competencies: [] }, selectedAgentId: null, isSaved: true,
+    scorer: { competencies: [] }, host: defaultHostConfig(), selectedAgentId: null, isSaved: true,
     saveError: null, lastSavedAt: null,
   }),
 

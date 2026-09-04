@@ -86,13 +86,12 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [language, activeLanguage]);
 
-  const handleChange = (section: keyof Agent, field: string, value: any) => {
+  const handleChange = (section: keyof Agent, field: string, value: unknown) => {
+    const current = agent[section];
+    if (typeof current !== 'object' || current === null) return;
     updateAgent(agent.id, {
-      [section]: {
-        ...(agent[section] as any),
-        [field]: value
-      }
-    });
+      [section]: { ...current, [field]: value },
+    } as Partial<Agent>);
   };
 
   const handleSelectRole = (role: RoleType) => {
@@ -336,7 +335,7 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
                 </h3>
                 <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: '0 0 16px', lineHeight: 1.5 }}>
                   Chosen automatically from the language. Nothing here needs configuring, and no extra
-                  API keys are required - both run on Agora's managed credentials.
+                  API keys are required - both run on Agora&apos;s managed credentials.
                 </p>
                 <ReadOnlyRow
                   label="Speech to text"
@@ -397,10 +396,8 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
 
               {agents.length > 1 && (
                 <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
-                  Each agent is given a different voice from the language's pool where one is available.
-                  Note that the current single-instance session cannot change voice mid-interview, so in
-                  practice the whole panel speaks with the opening agent's voice until multi-instance
-                  sessions land.
+                  Each agent and the LLM host receives a different voice from the language&apos;s pool
+                  where one is available. They remain separate meeting participants throughout the interview.
                 </p>
               )}
             </div>
@@ -494,6 +491,26 @@ export function AgentConfigForm({ agent }: { agent: Agent }) {
                   onChange={(e) => handleChange('logic', 'maxVisits', Number(e.target.value))}
                 />
               </Field>
+              <Field label="Allowed question formats" description="The orchestrator filters this agent's bank using these formats.">
+                <div className="flex flex-wrap gap-3">
+                  {(['verbal', 'written', 'coding'] as const).map((kind) => {
+                    const selected = (agent.logic.questionKinds ?? []).includes(kind);
+                    return <label key={kind} className="flex items-center gap-2 rounded-md border border-[var(--border)] px-3 py-2 text-sm capitalize"><input type="checkbox" checked={selected} onChange={() => { const current = agent.logic.questionKinds ?? []; const next = selected ? current.filter(item => item !== kind) : [...current, kind]; if (next.length) handleChange('logic', 'questionKinds', next); }}/>{kind}</label>;
+                  })}
+                </div>
+              </Field>
+              <Field label="Retries per question" description="Maximum clarification attempts before the orchestrator must advance.">
+                <Input type="number" min={0} max={5} value={agent.logic.maxRetriesPerQuestion ?? 1} onChange={(e) => handleChange('logic', 'maxRetriesPerQuestion', Number(e.target.value))}/>
+              </Field>
+              <Field label="Assessment satisfaction threshold" description="Evidence confidence required before this interviewer may finish. This is not the candidate score.">
+                <div className="flex items-center gap-3">
+                  <Slider min={50} max={100} value={Math.round((agent.logic.satisfactionThreshold ?? 0.8) * 100)} onChange={(val) => handleChange('logic', 'satisfactionThreshold', val / 100)}/>
+                  <span className="w-12 text-right text-sm text-[var(--text-secondary)]">{Math.round((agent.logic.satisfactionThreshold ?? 0.8) * 100)}%</span>
+                </div>
+              </Field>
+              <GlassTile style={{ padding: '16px' }}>
+                <Switch label="Probe vague answers" checked={agent.logic.vagueProbing ?? true} onChange={(val) => handleChange('logic', 'vagueProbing', val)}/>
+              </GlassTile>
             </div>
           )}
 
