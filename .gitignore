@@ -30,3 +30,11 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Design assets and decks. Kept locally, not in the repo: they are exports and
+# slides rather than source, they change as whole binaries so every revision is
+# stored in full, and frontend-improv alone was 31MB - a third of it duplicate
+# .zip copies of folders sitting right next to them.
+frontend-improv/
+*.pptx
+*.zip
