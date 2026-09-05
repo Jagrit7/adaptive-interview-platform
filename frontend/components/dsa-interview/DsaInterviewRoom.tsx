@@ -131,6 +131,11 @@ export function DsaInterviewRoom() {
   const verbalAnswerRef = useRef('');
   const hasStartedRef = useRef(false);
   const teardownTimerRef = useRef<number | null>(null);
+  // Set when the room unmounts. The bootstrap below runs several awaits before
+  // it has a session id, so a candidate who navigates away mid-start had the
+  // session created *after* teardown had already run - endBackendSession found
+  // no id, no-oped, and the Agora agent kept running until it idled out.
+  const abandonedRef = useRef(false);
   const sessionIdRef = useRef<string | null>(null);
 
   const {
@@ -229,6 +234,13 @@ export function DsaInterviewRoom() {
         if (!response.ok) throw new Error(data.detail ?? 'Ari could not start.');
 
         sessionIdRef.current = data.session_id;
+        if (abandonedRef.current) {
+          // They left while this was starting. Hand the session straight back
+          // rather than leaving an agent talking to an empty room.
+          void endBackendSession();
+          void leaveChannel();
+          return;
+        }
         setSessionId(data.session_id);
         setAgentUid(String(data.agent_uid));
         // Ari was audible to Agora and silent to the candidate.
@@ -265,6 +277,7 @@ export function DsaInterviewRoom() {
     void start();
     return () => {
       teardownTimerRef.current = window.setTimeout(() => {
+        abandonedRef.current = true;
         void endBackendSession();
         void leaveChannel();
         hasStartedRef.current = false;

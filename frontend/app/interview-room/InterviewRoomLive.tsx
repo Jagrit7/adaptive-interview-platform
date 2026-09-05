@@ -20,6 +20,7 @@ import type { PanelConfig } from '@/lib/panels';
 
 const APP_ID = '02bcecea17334c6dad96219c276fbd38';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000';
+const STALL_NOTICE_MS = 90_000;
 
 type WrittenQuestion = {
   id: string;
@@ -102,6 +103,7 @@ export default function InterviewRoomLive({
   const [xpAward, setXpAward] = useState<{ xp: number; level?: number; trophies?: string[] } | null>(null);
   const reportRecordRef = useRef<ReportRecord | null>(null);
   const reportSavedRef = useRef(false);
+  const finalizeInFlightRef = useRef<Promise<void> | null>(null);
 
   const [channel] = useState(() => `panel-${crypto.randomUUID()}`);
   // A fresh uid per session, not a hardcoded 1002.
@@ -736,8 +738,19 @@ export default function InterviewRoomLive({
    * reportSavedRef stops those two paths racing; the upsert on session_id is
    * the second line of defence if they do.
    */
-  const finalizeReport = async () => {
-    if (!sessionId || reportSavedRef.current) return;
+  const finalizeReport = async (): Promise<void> => {
+    if (!sessionId) return;
+    // Return the *in-flight* work rather than returning immediately.
+    //
+    // The guard used to be a boolean, so a second caller saw "already started"
+    // and continued straight on. handleClose then POSTed /end while the first
+    // call was still fetching /report - and since /end now deletes the session
+    // from memory, that fetch 404'd against a session that no longer existed
+    // and the report was gone for good. Awaiting the same promise makes Exit
+    // wait for the save it thought had happened.
+    if (finalizeInFlightRef.current) return finalizeInFlightRef.current;
+    if (reportSavedRef.current) return;
+    const work = (async () => {
     reportSavedRef.current = true;
     setReportState('saving');
     setReportError(null);
@@ -788,13 +801,19 @@ export default function InterviewRoomLive({
       setReportState('error');
       setReportError(err instanceof Error ? err.message : String(err));
     }
+    })();
+    finalizeInFlightRef.current = work;
+    try {
+      await work;
+    } finally {
+      finalizeInFlightRef.current = null;
+    }
   };
 
   // Save as soon as the backend says the interview is over, rather than waiting
   // for the user to click Exit. The session lives in the backend's memory and is
   // lost on restart, so the window to capture it is now.
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (isFinished) void finalizeReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFinished]);
@@ -803,6 +822,23 @@ export default function InterviewRoomLive({
   // just finished; the report is the thing they came for. Agora and the backend
   // session are torn down here, and the room is only left once they close the
   // report - or straight away if there was no report to show.
+  // The interview reaches "finished" only when one Agora event survives five
+  // guards, any of which silently returns. If that event is missed the room
+  // sits waiting forever.
+  //
+  // Deliberately not a failsafe that decides the interview is over: /report is
+  // readable at any point, so guessing wrong would hand somebody a partial
+  // report as though it were final. The candidate already has a working way out
+  // - End finalises and shows the report - so this only makes a stall visible
+  // and says what to do about it.
+  useEffect(() => {
+    if (isFinished || awaiting !== 'agent' || !sessionId) return;
+    const stalled = window.setTimeout(() => {
+      setStatus('Still waiting on the interviewer. If nothing happens, press End — your report is kept either way.');
+    }, STALL_NOTICE_MS);
+    return () => window.clearTimeout(stalled);
+  }, [awaiting, isFinished, sessionId, questionRevision]);
+
   const handleClose = async () => {
     await finalizeReport();
     if (sessionId) {

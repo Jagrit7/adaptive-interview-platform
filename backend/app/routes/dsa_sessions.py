@@ -7,6 +7,7 @@ import uuid
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
+from app.dsa.followups import followup_for, outcome_briefing, submission_trigger
 from app.dsa.code_runner import UnsafeCodeError, run_candidate_code
 from app.dsa.evaluator import VerbalEvaluation, evaluate_verbal_answer
 from app.dsa.preset import DSA_PANEL
@@ -248,40 +249,6 @@ def _build_report(session_id: str, session_data: dict) -> dict[str, Any]:
     }
 
 
-def _submission_trigger(code: str, starter: str, test_run: dict) -> str:
-    """Classify a submission so the follow-up can respond to it.
-
-    Compared against the starter code, not just emptiness: a candidate who
-    submits the untouched template has written nothing, and treating that as an
-    attempt is what produced "walk me through your complexity" for a blank
-    editor.
-    """
-    normalized = "".join(code.split())
-    if not normalized or normalized == "".join((starter or "").split()):
-        return "no_code"
-    total = test_run.get("total") or 0
-    passed = test_run.get("passed") or 0
-    if total == 0:
-        return "always"
-    if passed == 0:
-        return "none_passed"
-    return "all_passed" if passed >= total else "partial"
-
-
-def _followup_for(question: dict, trigger: str) -> str:
-    """The question's own prompt for this trigger, else the built-in one.
-
-    Falls back through the question's "always" entry before the built-ins, so an
-    author who wrote one deliberate follow-up still gets it used.
-    """
-    followups = question.get("followups") or []
-    by_key = {item.get("trigger_key", "always"): item.get("prompt", "") for item in followups}
-    for key in (trigger, "always"):
-        if by_key.get(key):
-            return by_key[key]
-    return DEFAULT_FOLLOWUPS_BY_TRIGGER.get(trigger, DEFAULT_FOLLOWUP)
-
-
 @router.post("/start", response_model=StartDsaSessionResponse)
 def start_dsa_session(body: StartDsaSessionRequest, authorization: str | None = Header(default=None)):
     if body.difficulty_min > body.difficulty_max:
@@ -341,9 +308,18 @@ def begin_coding(session_id: str):
         )
     _require_phase(session_data, "introduction")
     try:
+        recent = QUESTION_BANK.recent_question_ids(session_data.get("user_id"))
+    except Exception as exc:
+        # Avoiding a recently-seen question is a nicety; failing the interview
+        # because the list could not be fetched is not. Worth noting that the
+        # enclosing except below only catches ValueError, so this network error
+        # used to escape it entirely.
+        print(f"[dsa] recent-question lookup unavailable, allowing repeats: {exc}")
+        recent = set()
+    try:
         question, selection_metadata = QUESTION_BANK.select(
             session_id=session_id,
-            recent_question_ids=QUESTION_BANK.recent_question_ids(session_data.get("user_id")),
+            recent_question_ids=recent,
             **session_data["selection_request"],
         )
     except ValueError as exc:
@@ -356,7 +332,7 @@ def begin_coding(session_id: str):
     # Deliberately not chosen here any more. The follow-up now depends on what
     # the candidate submits, which is not known until they submit; this is only
     # the fallback for a session that somehow reaches scoring without one.
-    session_data["verbal_follow_up"] = _followup_for(question, "always")
+    session_data["verbal_follow_up"] = followup_for(question, "always")
     try:
         QUESTION_BANK.record_attempt(
             session_id=session_id, user_id=session_data.get("user_id"),
@@ -397,35 +373,27 @@ def submit_code(session_id: str, body: SubmitCodeRequest):
     )
     test_run = _execute(body.code, session_data["question"], include_hidden=True)
     question = session_data["question"]
-    submission_trigger = "gave_up" if body.gave_up else _submission_trigger(
-        body.code, question.get("starter_code", ""), test_run,
+    submission_trigger_key = submission_trigger(
+        body.code, question.get("starter_code", ""), test_run, gave_up=body.gave_up,
     )
-    follow_up = _followup_for(question, submission_trigger)
+    follow_up = followup_for(question, submission_trigger_key)
     session_data.update({
         "code": body.code, "language": body.language, "trigger": trigger,
         "submitted_at": now, "phase": "follow_up", "test_run": test_run,
-        "verbal_follow_up": follow_up, "code_outcome": submission_trigger,
+        "verbal_follow_up": follow_up, "code_outcome": submission_trigger_key,
     })
-    QUESTION_BANK.update_attempt(session_id, {
-        "submitted_at": now.isoformat(), "submission_trigger": trigger,
-        "test_summary": {"passed": test_run["passed"], "total": test_run["total"]},
-    })
+    # Best-effort: this is exposure bookkeeping, and losing it must not lose the
+    # submission the candidate just made. The same applies at finish below.
+    try:
+        QUESTION_BANK.update_attempt(session_id, {
+            "submitted_at": now.isoformat(), "submission_trigger": trigger,
+            "test_summary": {"passed": test_run["passed"], "total": test_run["total"]},
+        })
+    except Exception as exc:
+        print(f"[dsa {session_id[:8]}] attempt telemetry not recorded: {exc}")
     # Tell the agent what it is looking at. Without this it praised solutions
     # that failed every test, because the only thing it knew was the question.
-    outcome = {
-        "gave_up": "They said they do not know how to solve this and asked to move on. Accept that "
-                   "gracefully in one short sentence, without reassurance speeches, and do not ask "
-                   "them to attempt it anyway or explain what they would have done.",
-        "no_code": "They submitted no code at all. Do not congratulate them and do not ask about "
-                   "optimisation - there is nothing to optimise. Be warm and matter-of-fact.",
-        "none_passed": f"Their code passed 0 of {test_run['total']} tests. Do not call the solution "
-                       "correct or ask them to optimise it.",
-        "partial": f"Their code passed {test_run['passed']} of {test_run['total']} tests, so it is "
-                   "partially working. Acknowledge that honestly - neither congratulate a full "
-                   "solution nor dismiss it.",
-        "all_passed": f"Their code passed all {test_run['total']} tests.",
-        "always": "",
-    }[submission_trigger]
+    outcome = outcome_briefing(submission_trigger_key, test_run)
 
     inject_followup(
         session_data["agora_session"],
@@ -478,7 +446,10 @@ async def finish_dsa_session(session_id: str, body: FinishDsaSessionRequest):
         "verbal_evaluation": evaluation,
     })
     session_data["report"] = _build_report(session_id, session_data)
-    QUESTION_BANK.update_attempt(session_id, {"finished_at": session_data["finished_at"].isoformat()})
+    try:
+        QUESTION_BANK.update_attempt(session_id, {"finished_at": session_data["finished_at"].isoformat()})
+    except Exception as exc:
+        print(f"[dsa {session_id[:8]}] finish telemetry not recorded: {exc}")
     return DsaReportResponse(session_id=session_id, phase="finished", report=session_data["report"])
 
 
