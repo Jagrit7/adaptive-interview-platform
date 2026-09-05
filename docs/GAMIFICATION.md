@@ -137,6 +137,9 @@ bridge between the tiers rather than decoration:
 | Streak freeze | 30 | Protects a streak for one missed day |
 | Premium question set | 40 | One session with the harder curated bank |
 
+Prices come from `public.gem_prices()` in a single call — `GEM_SINKS` in
+TypeScript carries only labels, so there is no second copy of a price to drift.
+
 `spend_gems(source, ref)` refuses rather than allowing a negative balance, takes
 a row lock, and records what the spend bought.
 
@@ -352,9 +355,9 @@ grammar via `libpg_query`, including all fourteen PL/pgSQL bodies.
    on the first trophy grant, and internal functions left callable by any signed-in
    user — so this remains the highest-value unrun check in the project.
 3. **Day boundaries are UTC**, as above.
-4. **`loadGemPrices()` makes one RPC per sink.** Four round-trips where one
-   would do; fine at this size, worth a single `gem_prices()` function if the
-   list grows.
+4. **The daily gem and the streak are recorded once per tab per day**, guarded
+   in `sessionStorage`. A player using two browsers gets two calls; both are
+   idempotent server-side, so this costs a round-trip, not a double payout.
 
 ## Sources
 
