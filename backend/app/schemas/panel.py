@@ -152,7 +152,12 @@ class HostConfig(BaseModel):
         "You are a warm, concise interview host. Make transitions feel natural, "
         "never answer interview questions, and never announce scores."
     )
-    introFields: list[str] = Field(default_factory=lambda: ["preferred_name", "current_role"])
+    # The role they are interviewing FOR is asked explicitly. It was not, yet
+    # the handoff into the first interviewer played it back - so the panel
+    # replayed a detail the candidate had never given.
+    introFields: list[str] = Field(default_factory=lambda: [
+        "preferred_name", "current_role", "the role they are interviewing for",
+    ])
     openingInstruction: str = "Greet the candidate and ask one short introductory question."
     closingInstruction: str = "Thank the candidate warmly and explain that the interview is complete."
     voiceId: str | None = None

@@ -559,12 +559,39 @@ def _ask_from_bank(session_data: dict, agent: Agent, state: SessionState,
         # finished intake.
         state.question_revision += 1
         state.floor = "agent_speaking"
+        # An interviewer with no bank is not necessarily an interviewer with
+        # nothing to ask. In llm mode its questions live in its own brief and
+        # seed list, and it is expected to improvise from what the candidate
+        # has just said - which is the whole point of a role like a product
+        # manager reacting to a design. Telling it "do not invent a new
+        # question" made every such interviewer mute: it took the floor, said
+        # the next part was coming up, and handed straight back.
+        improvises = bool([q for q in agent.logic.seedQuestions if q.strip()])
+        if improvises:
+            # `agent_state` is bound further down, past this early return.
+            bankless_state = state.get_agent_state(agent.id)
+            # An improvised question still counts against this interviewer's
+            # question limit. The limit is measured in asked item ids, and a
+            # bankless agent marks none - so it never reached its cap and could
+            # only leave the rotation by being satisfied. A candidate who never
+            # satisfies it therefore kept the panel cycling with no way for the
+            # interview to close.
+            bankless_state.mark_asked(
+                f"improvised:{agent.id}:{len(bankless_state.asked_item_ids)}")
         _inject(
             session_data,
             agent.id,
-            "You have no prepared questions left for this candidate. In one short sentence, "
-            "thank them for their answers so far and say the next part of the interview is "
-            "coming up. Do not invent a new question and do not mention banks or configuration.",
+            (
+                "Ask your next question now, in your own words. Choose it from your own brief and "
+                "the areas you are responsible for, and make it follow naturally from what the "
+                "candidate has just said. Ask exactly one question, do not repeat a question you "
+                "have already asked, and do not mention that you are choosing it yourself.\n\n"
+                f"What the candidate last said {untrusted_quote(_last_candidate_answer(state))}"
+                if improvises else
+                "You have no prepared questions left for this candidate. In one short sentence, "
+                "thank them for their answers so far and say the next part of the interview is "
+                "coming up. Do not invent a new question and do not mention banks or configuration."
+            ),
             replace_pending=True,
         )
         return None
@@ -1146,8 +1173,18 @@ async def _process_turn(
             introduce_agent=True,
             transition_instruction=(
                 f"Thank {state.candidate_name or 'the candidate'} by name for the introduction, and "
-                "briefly play back the role they said they are interviewing for, so they can hear "
-                "that it was understood. One short sentence."
+                "briefly play back what they told the host about themselves, so they can hear that "
+                "it was understood. One short sentence. What they said was: "
+                + untrusted_quote(
+                    "; ".join(
+                        f"{field.replace('_', ' ')} - {value}"
+                        for field, value in state.host_details.items()
+                    )
+                )
+                # Built from what was actually captured. It used to say "play
+                # back the role they said they are interviewing for", but the
+                # panel never asks for that role, so the interviewer either
+                # invented one or replayed the wrong detail.
             ),
             allowed_kinds=first_step.questionKinds,
         )

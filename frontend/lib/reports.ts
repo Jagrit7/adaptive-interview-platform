@@ -57,9 +57,13 @@ function evidenceFor(report:InterviewReport, competency:string, strong:boolean, 
   // against every line, which misattributed evidence to claims it did not
   // support. See the note in backend/app/reports/store.py.
   const owners=new Set(report.agents.filter(a=>a.competencies.includes(competency)).map(a=>a.agent_id));
-  const answers=report.transcript.filter(t=>
+  const owned=report.transcript.filter(t=>
     t.speaker==='candidate' && typeof t.question_score==='number' && t.text.trim()
-    && !used.has(t.turn) && (owners.size===0 || owners.has(t.agent_id)));
+    && (owners.size===0 || owners.has(t.agent_id)));
+  // Prefer an unquoted answer, but never go silent rather than repeat one -
+  // see the note in backend/app/reports/store.py.
+  const fresh=owned.filter(t=>!used.has(t.turn));
+  const answers=fresh.length?fresh:owned;
   if(!answers.length) return '';
   let pick:TranscriptEntry; let lead:string;
   if(strong){

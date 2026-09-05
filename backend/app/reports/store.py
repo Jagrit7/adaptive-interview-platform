@@ -75,14 +75,20 @@ def _evidence_for(
     Mirrored in frontend/lib/reports.ts - see the note on presentation().
     """
     owners = {a.agent_id for a in report.agents if competency in a.competencies}
-    answers = [
+    owned = [
         turn for turn in report.transcript
         if turn.speaker == "candidate" and turn.question_score is not None
-        and turn.text.strip() and turn.turn not in used
+        and turn.text.strip()
         # Older reports predate per-agent competency lists; falling back to the
         # whole transcript is better than silently dropping the evidence.
         and (not owners or turn.agent_id in owners)
     ]
+    # Prefer an answer not already quoted, but do not go silent rather than
+    # repeat one. An interviewer often owns several competencies and answers
+    # only a question or two, so insisting on a fresh turn left most lines with
+    # a bare score and no evidence at all - which is what having evidence was
+    # meant to fix.
+    answers = [turn for turn in owned if turn.turn not in used] or owned
     if not answers:
         return ""
     if strong:

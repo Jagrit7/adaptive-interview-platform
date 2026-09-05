@@ -642,6 +642,30 @@ for _label, _src, _needle in [
     assert _needle in _src, f"{_label}: {_needle!r} is gone"
 ok("all ten room timing mechanisms are present in both interview rooms")
 
+print("\n=== 10h. A rate-limited grader retries instead of losing the answer ===")
+# Observed in a real interview: the provider returned 429 with "try again in
+# 630ms" and the grader gave up, so that answer scored neutral and carried
+# scorer_unavailable for the rest of the interview. A queue is not an outage.
+from app.orchestrator import scorer as _scorer
+
+
+class _Err(Exception):
+    pass
+
+
+_limited_ms = _Err("Error code: 429 - {'code': 'rate_limit_exceeded', "
+                   "'message': 'Please try again in 630ms.'}")
+_limited_s = _Err("Error code: 429 - rate_limit_exceeded. Please try again in 12.2175s.")
+assert 0.6 < _scorer._retry_after_seconds(_limited_ms) < 1.5, \
+    _scorer._retry_after_seconds(_limited_ms)
+assert _scorer._retry_after_seconds(_limited_s) == _scorer._MAX_SCORER_RETRY_WAIT, \
+    "a long back-off must be capped, not waited out on the critical path"
+# Everything else fails the same way twice, so retrying only adds latency to an
+# interview that is already degrading.
+assert _scorer._retry_after_seconds(_Err("Error code: 401 - invalid api key")) is None
+assert _scorer._retry_after_seconds(_Err("json_validate_failed")) is None
+ok("rate limits are retried and capped; auth and parse failures are not")
+
 print("\n=== 11. A pre-change saved panel still runs ===")
 legacy = {
     "projectName": "Old Panel",

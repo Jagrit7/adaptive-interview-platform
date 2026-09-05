@@ -210,12 +210,32 @@ def shared_candidate_context(all_agents: list[Agent], transcript: list, limit: i
         for agent in all_agents
         for item in agent.knowledge.items
     }
+    # What was actually asked, for every answer.
+    #
+    # Only bank questions could be resolved by id, so an answer to a follow-up
+    # or an improvised question was carried to the other interviewers as
+    # "Prior interview question" - they inherited the answer with no idea what
+    # it responded to, which is most of the value of sharing it. The transcript
+    # now records the interviewer's turn too, so the question that immediately
+    # preceded an answer is available directly.
+    asked_before: dict[int, str] = {}
+    last_agent_turn: str | None = None
+    for turn in transcript:
+        if turn.speaker == "agent":
+            last_agent_turn = turn.text
+        elif last_agent_turn:
+            asked_before[turn.turn_number] = last_agent_turn
+
     evidence: list[str] = []
     for turn in transcript[-limit:]:
         if turn.speaker != "candidate":
             continue
         interviewer = agent_names.get(turn.agent_id, turn.agent_id)
-        question = questions.get(turn.knowledge_item_id or "", "Prior interview question")
+        question = (
+            questions.get(turn.knowledge_item_id or "")
+            or asked_before.get(turn.turn_number)
+            or "Prior interview question"
+        )
         flags = f" Flags: {', '.join(turn.flags)}." if turn.flags else ""
         evidence.append(
             # Capped per turn. Ten turns of an uncapped 20,000-character answer
