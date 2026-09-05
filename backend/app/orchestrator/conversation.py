@@ -275,7 +275,18 @@ def question_command(
         f"their area), then "
         if opening
         else (
-            f"Introduce yourself naturally as {profile.name} — a quick friendly line about your "
+            # The acknowledgement has to survive this branch.
+            #
+            # It was dropped whenever `introducing` was true, which is exactly
+            # the two moments it matters: the host handing over after intake,
+            # and every handoff between interviewers. The host writes a
+            # transition instruction telling the next voice to respond to what
+            # the candidate just said, and it was being thrown away - so the new
+            # interviewer opened by introducing itself as though nothing had
+            # been said. That is what made handoffs abrupt and made the intake
+            # answer look ignored.
+            (f"{acknowledgement.strip()} Then " if acknowledgement else "")
+            + f"introduce yourself naturally as {profile.name} — a quick friendly line about your "
             f"role and what you'll be exploring together, then "
             if introducing
             else (

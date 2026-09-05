@@ -433,6 +433,29 @@ def _inject(session_data: dict, agent_id: str, instruction: str, *, replace_pend
         inject_followup(revived, instruction, replace_pending=replace_pending)
 
 
+def _record_turn(state: SessionState, *, speaker: str, agent_id: str, text: str,
+                 knowledge_item_id: str | None = None) -> None:
+    """Append one line of the spoken conversation to the interview transcript.
+
+    Both sides are recorded here. Only the candidate's half ever was, so a
+    stored "transcript" was a list of answers with no questions attached -
+    unreadable as a conversation, and the reason a finished interview could not
+    be reviewed afterwards.
+
+    Recording the interviewer's turns is inert for grading: every consumer that
+    feeds a score (`report.py` agent totals, coverage, flags, and
+    `shared_candidate_context`) already filters on speaker == "candidate", so
+    these turns are read by the report renderer and by nothing else.
+    """
+    state.transcript.append(TranscriptTurn(
+        turn_number=len(state.transcript) + 1,
+        agent_id=agent_id,
+        speaker=speaker,
+        text=text,
+        knowledge_item_id=knowledge_item_id,
+    ))
+
+
 def _last_candidate_answer(state: SessionState) -> str:
     """The candidate's most recent spoken turn, for the agent to react to."""
     for turn in reversed(state.transcript):
@@ -506,6 +529,16 @@ def _ask_from_bank(session_data: dict, agent: Agent, state: SessionState,
         in_language = f" Deliver that brief announcement in {native_name(language)}."
 
     rendered = _written_question(item, session_data)
+    # The question is recorded as the interviewer's turn. The agent rephrases it
+    # in its own voice, so this is the question that was put rather than the
+    # exact words spoken - which is what makes the transcript reviewable.
+    _record_turn(
+        state,
+        speaker="agent",
+        agent_id=agent.id,
+        text=item.question,
+        knowledge_item_id=item.id,
+    )
     opening = state.question_revision == 0
     state.question_revision += 1
     state.floor = "agent_speaking"
@@ -636,6 +669,13 @@ def start_session(body: StartSessionRequest):
 
     opening_question = None
     if use_llm_host:
+        _record_turn(
+            state,
+            speaker="agent",
+            agent_id=HOST_AGENT_ID,
+            text=f"Opened the interview and asked about: "
+                 f"{flow.host.introFields[0] if flow.host.introFields else 'their background'}",
+        )
         _inject(
             session_data,
             HOST_AGENT_ID,
@@ -779,6 +819,7 @@ async def _process_turn(
         if expected_question_revision is not None and expected_question_revision != state.question_revision:
             raise HTTPException(status_code=409, detail="That introduction belongs to an older host turn.")
         state.host_transcript.append(answer_text)
+        _record_turn(state, speaker="candidate", agent_id=HOST_AGENT_ID, text=answer_text)
         flow = panel.resolved_flow()
         intro_fields = flow.host.introFields
         if state.host_intake_index < len(intro_fields):
@@ -790,6 +831,10 @@ async def _process_turn(
             state.question_revision += 1
             state.floor = "agent_speaking"
             next_field = intro_fields[state.host_intake_index]
+            _record_turn(
+                state, speaker="agent", agent_id=HOST_AGENT_ID,
+                text=f"Asked about: {next_field}",
+            )
             _inject(
                 session_data,
                 HOST_AGENT_ID,
@@ -859,14 +904,13 @@ async def _process_turn(
         )
 
     # record the candidate's turn before scoring
-    turn_number = len(state.transcript) + 1
-    state.transcript.append(TranscriptTurn(
-        turn_number=turn_number,
-        agent_id=current_agent.id,
+    _record_turn(
+        state,
         speaker="candidate",
+        agent_id=current_agent.id,
         text=answer_text,
         knowledge_item_id=answered_item_id,
-    ))
+    )
     if answer_id:
         state.accepted_answer_ids.append(answer_id)
 
@@ -1005,6 +1049,17 @@ async def _process_turn(
             "not invent detail they did not give. "
             "Do not reveal the answer, introduce another question, or mention a score. "
             "IMPORTANT: Complete your full thought before stopping — never cut off mid-sentence."
+        )
+        # An improvised follow-up, not a bank question - the model chooses the
+        # words, so the transcript records that one was asked rather than
+        # claiming to know it. Without this the candidate's reply to it would
+        # appear in the transcript with nothing above it.
+        _record_turn(
+            state,
+            speaker="agent",
+            agent_id=current_agent.id,
+            text="Asked a follow-up on the previous answer.",
+            knowledge_item_id=current_state.pending_item_id,
         )
         _inject(session_data, current_agent.id, retry_instruction, replace_pending=True)
         return NextTurnResponse(
