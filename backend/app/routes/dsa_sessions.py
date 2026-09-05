@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import os
 from typing import Any, Literal
 import re
 import uuid
@@ -20,6 +21,23 @@ from app.orchestrator.agent_launcher import AGENT_UID, inject_followup, start_se
 
 router = APIRouter(prefix="/dsa/sessions", tags=["individual-dsa"])
 DSA_SESSIONS: dict[str, dict] = {}
+
+# Same lifetime problem as the panel store: nothing removed entries, so every
+# coding round ever started stayed in memory with its question, tests and
+# transcript for the life of the process.
+DSA_SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", "10800"))  # 3 hours
+
+
+def _sweep_expired_dsa_sessions() -> None:
+    cutoff = datetime.now(timezone.utc).timestamp() - DSA_SESSION_TTL_SECONDS
+    for sid in [s for s, data in DSA_SESSIONS.items() if data.get("touched_at", 0) < cutoff]:
+        data = DSA_SESSIONS.pop(sid, None)
+        agora = (data or {}).get("agora_session")
+        if agora is not None:
+            try:
+                agora.stop()
+            except Exception:
+                pass  # teardown is best-effort
 
 
 class StartDsaSessionRequest(BaseModel):
@@ -108,6 +126,8 @@ class PhaseResponse(BaseModel):
 
 def _get_session(session_id: str) -> dict:
     session_data = DSA_SESSIONS.get(session_id)
+    if session_data is not None:
+        session_data["touched_at"] = datetime.now(timezone.utc).timestamp()
     if session_data is None:
         raise HTTPException(status_code=404, detail="DSA session not found")
     return session_data
@@ -286,7 +306,9 @@ def start_dsa_session(body: StartDsaSessionRequest, authorization: str | None = 
         ) from exc
 
     session_id = str(uuid.uuid4())
+    _sweep_expired_dsa_sessions()
     DSA_SESSIONS[session_id] = {
+        "touched_at": datetime.now(timezone.utc).timestamp(),
         "phase": "introduction",
         "agora_session": agora_session,
         "agora_agent_id": agora_agent_id,
@@ -479,4 +501,6 @@ def end_dsa_session(session_id: str):
             stop()
         except Exception as exc:
             print(f"[dsa session {session_id[:8]}] Agora stop failed: {exc}")
+    # The report is fetched before /end, so nothing still needs this entry.
+    DSA_SESSIONS.pop(session_id, None)
     return PhaseResponse(session_id=session_id, phase="ended")
