@@ -79,7 +79,7 @@ Current interviewer: {current_agent.identity.name}
 Competencies this interviewer is checking: {competency_list}
 
 Full transcript so far:
-{transcript_so_far}
+{transcript_so_far[-6000:]}
 
 Candidate's latest answer:
 {latest_answer[:4000]}
