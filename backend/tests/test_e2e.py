@@ -315,6 +315,50 @@ assert all(t.coverage is None and not t.flags for t in questions), \
 assert [t.turn_number for t in turns] == list(range(1, len(turns) + 1)), "turn numbers must be dense"
 ok("the transcript interleaves the question asked with the answer given")
 
+print("\n=== 10b. Injected directives are marked, and the client strips them ===")
+from app.orchestrator.agent_launcher import INSTRUCTION_MARKER, inject_followup
+
+
+class _RecordingSession:
+    def __init__(self): self.said = []
+    def think(self, text, **kwargs): self.said.append(text)
+
+
+_rec = _RecordingSession()
+inject_followup(_rec, "HOST INTAKE. Ask about their current role.")
+assert _rec.said, "inject_followup never called think()"
+assert _rec.said[0].startswith(INSTRUCTION_MARKER), _rec.said[0]
+assert "HOST INTAKE." in _rec.said[0]
+ok("every injected instruction is marked at the single think() call site")
+
+# Agora echoes injections back as USER transcriptions, so the browser cannot
+# tell a directive from speech without this marker. If the two spellings drift
+# the interview silently starts posting its own prompts back as the candidate's
+# answers - with every type check, lint and test still green - so the drift is
+# asserted here rather than trusted.
+_hook = open(str(PROJECT / "frontend" / "hooks" / "useAgoraVoiceClient.ts"),
+             encoding="utf-8").read()
+_m = re.search(r'export const INSTRUCTION_MARKER = "([^"]+)"', _hook)
+assert _m, "the client no longer exports INSTRUCTION_MARKER"
+assert _m.group(1) == INSTRUCTION_MARKER, (_m.group(1), INSTRUCTION_MARKER)
+assert _hook.count(".includes(INSTRUCTION_MARKER)") >= 2, \
+    "the client exports the marker but no longer filters transcripts with it"
+ok("client and server agree on the marker, and the client still filters on it")
+
+# A stale client that does not filter would post the directive back as speech.
+# It must not be graded: that is exactly how a real answer came back at 0%.
+_leak = client.post(f"/sessions/{sid}/next", json={
+    "answer_text": f"{INSTRUCTION_MARKER} HOST INTAKE. Ask about their role. I'm a student",
+})
+assert _leak.status_code == 422, (_leak.status_code, _leak.text)
+_before = len(sessions_route.SESSIONS[sid]["state"].transcript)
+assert client.post(f"/sessions/{sid}/next", json={
+    "answer_text": f"{INSTRUCTION_MARKER} anything",
+}).status_code == 422
+assert len(sessions_route.SESSIONS[sid]["state"].transcript) == _before, \
+    "a refused answer must not reach the transcript"
+ok("a directive posted back as speech is refused, not scored or transcribed")
+
 print("\n=== 11. A pre-change saved panel still runs ===")
 legacy = {
     "projectName": "Old Panel",

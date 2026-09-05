@@ -31,6 +31,7 @@ from app.orchestrator.agent_launcher import (
     INACTIVE_REMOTE_UID,
     build_host_agent,
     inject_followup,
+    contains_injected_directive,
     resolve_meeting_voices,
     resolve_panel_voices,
     start_session_agent,
@@ -729,6 +730,22 @@ async def next_turn(session_id: str, body: NextTurnRequest):
         previous = session_data.get("last_response")
         if previous:
             return NextTurnResponse.model_validate(previous)
+    if contains_injected_directive(body.answer_text):
+        # Never reaches the scorer or the transcript. See the note on
+        # contains_injected_directive: this can only come from a client that is
+        # not filtering our own directives back out of the transcript stream.
+        print(
+            f"[directive-leak {session_id[:8]}] refused an answer carrying an "
+            f"orchestrator directive; the client is stale. "
+            f"chars={len(body.answer_text)}"
+        )
+        # No turn_busy bookkeeping here: this runs before this request claims
+        # the flag, so clearing it would release a different in-flight turn.
+        raise HTTPException(
+            status_code=422,
+            detail="That answer contained interviewer instructions rather than speech. "
+                   "Reload the interview page to pick up the current version.",
+        )
     if session_data.get("turn_busy"):
         raise HTTPException(status_code=409, detail="The previous answer is still being evaluated.")
     session_data["turn_busy"] = True

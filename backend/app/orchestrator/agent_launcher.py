@@ -470,6 +470,39 @@ def replace_active_agent(
     )
 
 
+# Agora echoes every think() injection back on the transcript stream as a
+# *user* transcription, indistinguishable in the browser from the candidate
+# actually speaking. The client was therefore posting the orchestrator's own
+# instruction back as the candidate's answer, and starting its end-of-answer
+# silence timer the moment that instruction landed - so whatever the candidate
+# then said was cut off after a word or two.
+#
+# Every injection carries this marker so the client can recognise a directive
+# it caused and drop it. It is ordinary prose the model ignores, like the
+# "ORCHESTRATOR TURN" and "HOST INTAKE." prefixes already in these
+# instructions, not a provider control token.
+#
+# The client half lives in frontend/hooks/useAgoraVoiceClient.ts and
+# test_e2e.py asserts the two spellings still match, because a silent drift
+# here would restore the bug with every check still green.
+INSTRUCTION_MARKER = "[interviewer-directive]"
+
+
+def contains_injected_directive(text: str) -> bool:
+    """True when candidate speech carries an orchestrator directive.
+
+    Only a client that does not filter these can produce it - an old tab, a
+    cached bundle. It is worth detecting rather than grading, because the
+    failure is silent and expensive: the directive gets stored as the
+    candidate's answer and scored as one, which is how a real answer came back
+    at 0% flagged "vague". Salvaging the speech is not possible here, since the
+    client joins the directive and the speech into a single line with no
+    boundary left to cut on - so this reports the condition and refuses, rather
+    than guessing and deleting a real answer.
+    """
+    return INSTRUCTION_MARKER in text
+
+
 def inject_followup(session, instruction_text: str, replace_pending: bool = False) -> None:
     """Injects a follow-up instruction into the CURRENTLY loaded persona,
     without switching agents or touching the system prompt/voice.
@@ -490,7 +523,7 @@ def inject_followup(session, instruction_text: str, replace_pending: bool = Fals
     """
     try:
         session.think(
-            instruction_text,
+            f"{INSTRUCTION_MARKER} {instruction_text}",
             on_listening_action="inject",   # never talk over the candidate
             on_thinking_action="interrupt" if replace_pending else "append",
             # NEVER interrupt active speech — let the agent finish its current
