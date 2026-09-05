@@ -23,6 +23,25 @@ import {
 
 const INTERRUPT_MIN_INTERVAL_MS = 1_000;
 
+/**
+ * Marks a transcript line as an instruction this app injected, not speech.
+ *
+ * Agora reports every server-side `think()` injection back to us as a USER
+ * transcription, so the orchestrator's own directives arrived looking exactly
+ * like the candidate talking. They were being posted back as the candidate's
+ * answer, and they started the end-of-answer silence timer before the
+ * candidate had said anything - which is what truncated real answers to a
+ * word or two.
+ *
+ * Dropping them here rather than in one page covers every voice surface: the
+ * interview room, the DSA room and the report workspace all inject and all
+ * read this list.
+ *
+ * Must stay identical to INSTRUCTION_MARKER in
+ * backend/app/orchestrator/agent_launcher.py; test_e2e.py fails if it drifts.
+ */
+export const INSTRUCTION_MARKER = "[interviewer-directive]";
+
 /** The toolkit's own TRANSCRIPT_UPDATED payload type. Named here because the
  *  bare `TranscriptHelperItem` is generic and will not compile without its
  *  type argument - which is why `next build` was failing type checking, and
@@ -385,11 +404,15 @@ export function useAgoraVoiceClient() {
             }));
 
             const completedMessages = convertedMessages
+              // A directive we injected is not something the candidate said.
+              .filter((msg) => !msg.text.includes(INSTRUCTION_MARKER))
               .filter((msg) => msg.status !== TurnStatus.IN_PROGRESS)
               .sort((a, b) => (a.timestamp ?? 0) - (b.timestamp ?? 0));
 
             const inProgress = convertedMessages.find(
-              (msg) => msg.status === TurnStatus.IN_PROGRESS,
+              (msg) =>
+                msg.status === TurnStatus.IN_PROGRESS &&
+                !msg.text.includes(INSTRUCTION_MARKER),
             );
 
             setMessageList(completedMessages);
