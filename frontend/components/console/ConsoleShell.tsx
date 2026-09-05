@@ -3,11 +3,12 @@
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bell, BriefcaseBusiness, ChevronDown, CircleHelp, FileBarChart, LayoutDashboard, PlayCircle, Plus, Search, Settings, Users, Video } from 'lucide-react';
+import { Bell, BookOpen, BriefcaseBusiness, ChevronDown, CircleHelp, FileBarChart, LayoutDashboard, PlayCircle, Plus, Search, Settings, Users, Video } from 'lucide-react';
 
 const NAV = [
   { href: '/enterprise', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/enterprise/interviews', label: 'Interviews', icon: BriefcaseBusiness },
+  { href: '/enterprise/question-banks', label: 'Question Banks', icon: BookOpen },
   { href: '/enterprise/candidates', label: 'Candidates', icon: Users },
   { href: '/enterprise/live', label: 'Live Sessions', icon: Video },
   { href: '/enterprise/reports', label: 'Reports', icon: FileBarChart },

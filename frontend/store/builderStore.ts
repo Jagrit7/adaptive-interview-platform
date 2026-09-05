@@ -25,7 +25,10 @@ export interface Knowledge {
    *  through the bank first, then improvise. */
   strict: boolean;
   sourceName: string;
-  bankId?: 'dsa' | 'system-design' | 'custom';
+  /** A built-in bank, this panel's own list, or `user:<uuid>` for one of the
+   *  owner's saved banks. The template literal keeps the built-ins checked
+   *  while leaving the user-bank form open. */
+  bankId?: 'dsa' | 'system-design' | 'behavioural' | 'custom' | `user:${string}`;
   items: KnowledgeItem[];
 }
 

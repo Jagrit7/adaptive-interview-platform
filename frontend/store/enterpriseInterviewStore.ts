@@ -3,13 +3,19 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { Agent, RoleType } from '@/store/builderStore';
-import { defaultCompetencies, defaultSystemPrompts, emptyKnowledge, roleColors } from '@/store/builderStore';
+import { defaultCompetencies, defaultSystemPrompts, emptyKnowledge, roleColors, type KnowledgeItem } from '@/store/builderStore';
 import { withEnterpriseQuestionBank, type PanelConfig } from '@/lib/panels';
 import { inferQuestionDomain } from '@/lib/questionDomains';
 
 export type EnterpriseStage = { id: string; title: string; duration: number };
 export type EnterpriseQuestion = { id: string; text: string; category: string; difficulty: string; selected: boolean };
-export type EnterpriseInterviewer = { id: string; name: string; role: RoleType; voice: string; prompt: string; opening: string; maxTurns: number; weight: number; competencies: string[]; questionBank: 'dsa' | 'system-design' | 'custom' };
+export type EnterpriseInterviewer = { id: string; name: string; role: RoleType; voice: string; prompt: string; opening: string; maxTurns: number; weight: number; competencies: string[]; questionBank: string; /** 'dsa' | 'system-design' | 'behavioural' | 'custom' | 'user:<uuid>' */
+  /** Questions copied from the selected user bank at the moment it was
+   *  chosen. Copied rather than referenced so a published interview keeps
+   *  asking what it was published with, even if the bank is later edited
+   *  or deleted - and so the candidate's backend never needs to read a
+   *  table that is owner-only by design. */
+  bankItems?: KnowledgeItem[] };
 
 type DraftSnapshot = {
   panelId: string | null;
@@ -21,6 +27,10 @@ type DraftSnapshot = {
   description: string;
   skills: string[];
   language: string;
+  /** Retained so panels saved before the Structure step was removed still
+   *  load and round-trip. Nothing edits or reads it any more: the runtime
+   *  has always derived its flow from the interviewers themselves, via
+   *  Panel.resolved_flow() on the backend. */
   stages: EnterpriseStage[];
   questions: EnterpriseQuestion[];
   interviewers: EnterpriseInterviewer[];
@@ -41,9 +51,6 @@ export type EnterpriseDraftStore = DraftSnapshot & {
   update: (patch: Partial<DraftSnapshot>) => void;
   reset: () => void;
   applyTemplate: (template: 'blank' | 'frontend' | 'product' | 'system-design') => void;
-  addStage: () => void;
-  updateStage: (id: string, patch: Partial<EnterpriseStage>) => void;
-  removeStage: (id: string) => void;
   addQuestion: () => void;
   updateQuestion: (id: string, patch: Partial<EnterpriseQuestion>) => void;
   removeQuestion: (id: string) => void;
@@ -78,7 +85,7 @@ const defaultDraft = (): DraftSnapshot => ({
   ],
   interviewers: [
     { id: 'technical-interviewer', name: 'Marcus', role: 'Technical', voice: 'Male · US English', prompt: defaultSystemPrompts.Technical, opening: 'Welcome. I will lead the technical portion of your interview.', maxTurns: 5, weight: 60, competencies: defaultCompetencies.Technical, questionBank: 'dsa' },
-    { id: 'behavioral-interviewer', name: 'Sarah', role: 'Behavioural', voice: 'Female · UK English', prompt: defaultSystemPrompts.Behavioural, opening: 'Hello. I will ask about your experience and collaboration style.', maxTurns: 4, weight: 40, competencies: defaultCompetencies.Behavioural, questionBank: 'custom' },
+    { id: 'behavioral-interviewer', name: 'Sarah', role: 'Behavioural', voice: 'Female · UK English', prompt: defaultSystemPrompts.Behavioural, opening: 'Hello. I will ask about your experience and collaboration style.', maxTurns: 4, weight: 40, competencies: defaultCompetencies.Behavioural, questionBank: 'behavioural' },
   ],
   candidateSettings: { expiresInDays: 7, attempts: 1, cameraRequired: true, identityCheck: true, integrityMonitoring: false, instructions: 'Find a quiet space, test your microphone and camera, and set aside 60 uninterrupted minutes.' },
   status: 'draft',
@@ -169,9 +176,6 @@ const enterpriseInterviewStore = create<EnterpriseDraftStore>()(persist((set) =>
     if (template === 'system-design') return { ...next, panelId: null, title: 'System Design Expert', role: 'Senior Software Engineer', skills: ['System Design','Scalability','Reliability','Communication'], interviewers: next.interviewers.map((agent,index)=>({...agent,questionBank:index===0?'system-design' as const:'custom' as const})), status:'draft' as const };
     return { ...next, panelId: null, status:'draft' as const };
   }),
-  addStage: () => set(s => ({ stages:[...s.stages,{id:uid(),title:'New Interview Stage',duration:10}] })),
-  updateStage: (id, patch) => set(s => ({ stages:s.stages.map(x=>x.id===id?{...x,...patch}:x) })),
-  removeStage: (id) => set(s => ({ stages:s.stages.filter(x=>x.id!==id) })),
   addQuestion: () => set(s => ({ questions:[...s.questions,{id:uid(),text:'New interview question',category:'Custom',difficulty:'Medium',selected:true}] })),
   updateQuestion: (id, patch) => set(s => ({ questions:s.questions.map(x=>x.id===id?{...x,...patch}:x) })),
   removeQuestion: (id) => set(s => ({ questions:s.questions.filter(x=>x.id!==id) })),
@@ -187,6 +191,11 @@ const enterpriseInterviewStore = create<EnterpriseDraftStore>()(persist((set) =>
 
 export const useEnterpriseInterviewStore = enterpriseInterviewStore as typeof enterpriseInterviewStore & (() => EnterpriseDraftStore);
 
+/** Narrowing helper: a draft's questionBank is an open string, but the panel
+ *  config's bankId is a checked union. */
+const isUserBank = (value: string): value is `user:${string}` => value.startsWith('user:');
+type KnowledgeItemBankId = Agent['knowledge']['bankId'];
+
 export function enterpriseDraftToPanelConfig(draft: DraftSnapshot, publish: boolean): PanelConfig {
   const agents: Agent[] = draft.interviewers.map((interviewer,index) => {
     const assignedQuestions = questionsForInterviewer(interviewer, draft.questions);
@@ -196,7 +205,13 @@ export function enterpriseDraftToPanelConfig(draft: DraftSnapshot, publish: bool
     voice:{provider:'minimax',voiceId:VOICE_IDS[interviewer.voice],language:draft.language,speakingStyle:'professional'},
     behavior:{systemPrompt:interviewer.prompt,greetingMessage:interviewer.opening,fallbackMessage:"I didn't catch that. Could you rephrase?",scenarioBrief:draft.description},
     logic:{difficultyBand:[3,7],seedQuestions:assignedQuestions.map(q=>q.text),followUpAggressiveness:5,maxTurns:interviewer.maxTurns,maxVisits:1,questionKinds:interviewer.questionBank==='dsa'?['coding','verbal']:interviewer.questionBank==='system-design'?['written','verbal']:['verbal','written','coding'],maxRetriesPerQuestion:1,vagueProbing:true,satisfactionThreshold:0.8},
-    knowledge:{...emptyKnowledge(),bankId:interviewer.questionBank,items:interviewer.questionBank==='custom'?assignedQuestions.map(q=>({id:q.id,question:q.text,idealAnswer:"Evaluate against the current interviewer's configured criteria.",tags:[q.category,q.difficulty],kind:/coding/i.test(q.category)?'coding' as const:/system design/i.test(q.category)?'written' as const:'verbal' as const,domain:inferQuestionDomain(q.category,q.text)})):[]},
+    knowledge:isUserBank(interviewer.questionBank)
+      // Already-resolved questions, so the backend treats this exactly like any
+      // other reviewed bank: hydrate_panel_banks filters them to the
+      // interviewer's domain and shuffles, and no server-side lookup of an
+      // owner-only table is needed.
+      ? {...emptyKnowledge(),bankId:interviewer.questionBank as `user:${string}`,mode:'knowledge_base' as const,strict:true,sourceName:'My question bank',items:interviewer.bankItems??[]}
+      : {...emptyKnowledge(),bankId:interviewer.questionBank as Exclude<NonNullable<KnowledgeItemBankId>, `user:${string}`>,items:interviewer.questionBank==='custom'?assignedQuestions.map(q=>({id:q.id,question:q.text,idealAnswer:"Evaluate against the current interviewer's configured criteria.",tags:[q.category,q.difficulty],kind:/coding/i.test(q.category)?'coding' as const:/system design/i.test(q.category)?'written' as const:'verbal' as const,domain:inferQuestionDomain(q.category,q.text)})):[]},
     skills:{rolePlayMode:false,loopUntilSatisfied:false,contradictionProbing:true},tools:[],
     turnTaking:{canOpen:index===0,handoffTriggers:'When the current stage is complete.',priority:index===0?'high':'medium'},
     scoring:{competencies:interviewer.competencies,weight:interviewer.weight/100},
