@@ -5,3 +5,7 @@ out/
 .env.*.local
 npm-debug.log*
 *.md
+
+# Regenerated inside the image by the prebuild step, so shipping the local copy
+# only makes the build context 16MB heavier.
+public/vad/
