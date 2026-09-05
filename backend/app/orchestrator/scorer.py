@@ -146,19 +146,37 @@ async def score_turn(
 
     client = AsyncGroq(api_key=os.environ["GROQ_API_KEY"])
 
-    response = await client.chat.completions.create(
-        model="openai/gpt-oss-120b",
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
-        temperature=0.2,  # scoring should be consistent, not creative
-        # The scorer returns a small JSON object, but generation is uncapped
-        # without this and sits on the critical path between the candidate
-        # finishing and the interviewer replying. 400 is well clear of a normal
-        # response and bounds the worst case.
-        max_tokens=400,
-    )
-
-    parsed = json.loads(response.choices[0].message.content)
+    try:
+        response = await client.chat.completions.create(
+            model="openai/gpt-oss-120b",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"},
+            temperature=0.2,  # scoring should be consistent, not creative
+            # gpt-oss-120b is a reasoning model, and max_tokens covers the
+            # reasoning *and* the answer. A previous 400 cap here was sized for
+            # the JSON alone, so a turn that reasoned at any length spent the
+            # whole budget thinking and returned an empty completion - which
+            # Groq rejects as json_validate_failed with failed_generation "".
+            # Latency is bought with reasoning_effort instead, which shortens
+            # the thinking rather than truncating the output.
+            reasoning_effort="low",
+            max_tokens=2_000,
+        )
+        parsed = json.loads(response.choices[0].message.content or "{}")
+    except Exception as exc:
+        # A grader that is down must not end a live interview. The turn scores
+        # neutrally and is flagged, so the transcript records that this answer
+        # was not really assessed rather than silently reading as mediocre.
+        print(f"[scorer] falling back to a neutral score: {exc}")
+        return ScoreResult(
+            competency_scores={name: 0.5 for name in current_agent.scoring.competencies},
+            flags=["scorer_unavailable"],
+            triggered_agent_ids=[],
+            coverage=None,
+            missing_points=[],
+            answer_correct=False,
+            assessment_satisfaction=0.5,
+        )
 
     # The model occasionally returns nulls or omits the optional fields entirely;
     # normalise rather than let a 500 kill a live interview mid-turn.

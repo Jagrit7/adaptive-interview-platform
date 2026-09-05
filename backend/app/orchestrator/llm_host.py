@@ -244,10 +244,18 @@ JSON fields: action, next_agent_id, transition_instruction, reason.
             model="openai/gpt-oss-120b",
             messages=[{"role": "system", "content": flow.host.systemPrompt}, {"role": "user", "content": prompt}],
             response_format={"type": "json_object"}, temperature=0.55,
-            max_tokens=320,
+            # Same reasoning-model trap as the scorer: max_tokens covers the
+            # thinking too, so the previous 320 cap starved the output and every
+            # call failed. The except below turned that into a silent
+            # degradation - the host quietly used its deterministic fallback for
+            # every turn, and nothing surfaced that the adaptive decisions had
+            # stopped happening.
+            reasoning_effort="low",
+            max_tokens=1_200,
         )
         decision = HostDecision.model_validate_json(response.choices[0].message.content or "{}")
-    except Exception:
+    except Exception as exc:
+        print(f"[llm_host] falling back to the deterministic decision: {exc}")
         return fallback
     if decision.action not in legal:
         return fallback
