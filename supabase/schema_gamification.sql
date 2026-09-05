@@ -160,6 +160,30 @@ create table if not exists public.league_members (
   constraint league_members_result_check check (result is null or result in ('promoted', 'held', 'demoted'))
 );
 
+-- Let PostgREST embed the profile when reading the board.
+--
+-- Both tables pointed at auth.users and never at each other, so
+-- `league_members.select(...player_profiles!inner(...))` failed with "Could not
+-- find a relationship between 'league_members' and 'player_profiles' in the
+-- schema cache" and the leaderboard rendered an error instead of rankings.
+--
+-- The foreign key is also the honest statement of the invariant: a league
+-- member is a player, and every path that creates a membership creates the
+-- profile first.
+insert into public.player_profiles (user_id)
+select distinct lm.user_id from public.league_members lm
+where not exists (select 1 from public.player_profiles p where p.user_id = lm.user_id)
+on conflict (user_id) do nothing;
+
+alter table public.league_members drop constraint if exists league_members_player_fk;
+alter table public.league_members
+  add constraint league_members_player_fk
+  foreign key (user_id) references public.player_profiles (user_id) on delete cascade;
+
+-- PostgREST caches the schema; without this the new relationship is not visible
+-- until the next reload.
+notify pgrst, 'reload schema';
+
 -- The leaderboard read: every query is "this cohort, ordered by weekly XP".
 create index if not exists league_members_board_idx
   on public.league_members (cohort_id, weekly_xp desc, joined_at);
