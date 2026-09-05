@@ -33,6 +33,24 @@ class AgentSessionState(BaseModel):
     pending_item_id: str | None = None
     bank_exhausted: bool = False
     retries_by_item: dict[str, int] = Field(default_factory=dict)
+
+    def retry_key(self, flow_step_index: int) -> str:
+        """The key this agent's retries are counted under.
+
+        Normally the pending bank item. An agent with no usable bank never sets
+        one, and the counter was only incremented when there was an item to key
+        it on - so `retries` read 0 forever, the "have we retried enough?" guard
+        never fired, and the host returned RETRY on every imperfect answer for
+        the rest of the interview.
+
+        That is not a rare configuration: the builder's "Add interviewer" button
+        creates a Custom role with an empty custom bank, and only the
+        behavioural and system-design domains have a built-in bank to fall back
+        on. Falling back to a per-step key makes the limit apply either way.
+
+        Both the counter and the guard call this, so they cannot disagree.
+        """
+        return self.pending_item_id or f"__step_{flow_step_index}__"
     # LLM-estimated confidence that this role has enough evidence to assess
     # ability. Unlike competency scores, a clear weak answer may increase this.
     assessment_satisfaction: float = 0.0
