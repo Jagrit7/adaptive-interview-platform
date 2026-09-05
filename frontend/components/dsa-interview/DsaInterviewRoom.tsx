@@ -129,6 +129,11 @@ export function DsaInterviewRoom() {
   const submissionRef = useRef(false);
   const awaitingAgentEvaluationRef = useRef(false);
   const verbalAnswerRef = useRef('');
+  // Latest text per candidate turn, in arrival order. Speech-to-text re-emits a
+  // turn as it grows and the toolkit updates that turn in place, so appending
+  // the first sighting and then skipping the turn captured only its opening
+  // words - the graded verbal answer was a fragment.
+  const verbalTurnsRef = useRef<Map<string, string>>(new Map());
   const hasStartedRef = useRef(false);
   const teardownTimerRef = useRef<number | null>(null);
   // Set when the room unmounts. The bootstrap below runs several awaits before
@@ -435,25 +440,33 @@ export function DsaInterviewRoom() {
     if (!sessionId || !agentUid) return;
     for (const message of messageList) {
       const key = `${message.uid}:${message.turn_id}`;
-      if (processedTurnsRef.current.has(key)) continue;
+      // A candidate turn is revisited as it grows; every other decision below
+      // must still fire exactly once for it.
+      const firstSighting = !processedTurnsRef.current.has(key);
       processedTurnsRef.current.add(key);
       const fromAgent = String(message.uid) === String(agentUid);
       const fromCandidate = String(message.uid) === String(uid);
       if (!fromAgent && !fromCandidate) continue;
       if (fromCandidate) {
         if (phase === 'introduction') {
+          if (!firstSighting) continue;
           introCandidateTurnsRef.current += 1;
           if (introCandidateTurnsRef.current >= 2) {
             introReadyRef.current = true;
             setConnectionStatus('Ari is acknowledging your answer before the coding round.');
           }
         } else if (phase === 'follow_up') {
-          const combined = [verbalAnswerRef.current, message.text].filter(Boolean).join(' ');
+          // Replace this turn's text rather than appending it, so the answer
+          // grows with the speech instead of freezing at the first fragment.
+          verbalTurnsRef.current.set(key, message.text);
+          const combined = [...verbalTurnsRef.current.values()].filter(Boolean).join(' ');
           verbalAnswerRef.current = combined;
           setVerbalAnswer(combined);
           awaitingAgentEvaluationRef.current = true;
           setConnectionStatus('Answer captured. Ari is evaluating it and will respond before the report.');
         }
+      } else if (!firstSighting) {
+        continue;
       } else if (phase === 'introduction' && introReadyRef.current) {
         // Let Ari finish the conversational acknowledgement instead of
         // injecting the coding brief while the candidate answer is processing.
