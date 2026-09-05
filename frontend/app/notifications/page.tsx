@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { PracticeShell } from '@/components/practice/PracticeShell';
-import { NOTIFICATIONS, USER } from '@/lib/mockData';
+import { NOTIFICATIONS } from '@/lib/mockData';
 
 const ICON = { trophy: '★', result: '📄', league: '▲', streak: '🔥' };
 const TINT = {
@@ -20,7 +20,7 @@ export default function NotificationsPage() {
   const unread = items.filter((n) => n.unread).length;
 
   return (
-    <PracticeShell user={USER}>
+    <PracticeShell>
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight mb-2">Notifications</h1>

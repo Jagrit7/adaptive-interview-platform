@@ -1,6 +1,5 @@
 import { PracticeShell } from '@/components/practice/PracticeShell';
 import { AuthGate } from '@/components/ui/AuthGate';
-import { USER } from '@/lib/mockData';
 
 const JOB_PANELS = [
   {
@@ -26,7 +25,7 @@ const JOB_PANELS = [
 export default function JobPanelsPage() {
   return (
     <AuthGate role="individual">
-      <PracticeShell user={USER}>
+      <PracticeShell>
         <section className="rounded-[var(--radius-panel)] bg-[var(--color-practice-sunken)] p-8 mb-8">
           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-practice-accent)] mb-3">
             Interview by role

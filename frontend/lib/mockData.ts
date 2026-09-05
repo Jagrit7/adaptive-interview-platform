@@ -1,16 +1,10 @@
-/** All practice-side mock data in one file, so swapping it for an API later is
- *  a single import change. Numbers and names come from the design photos. */
+/** Practice-side fixtures for content that is not yet backed by a table.
+ *
+ *  The gamification fixtures that used to live here - USER, PROFILE, RANKINGS
+ *  and PODIUM - are gone. XP, levels, gems, streaks, trophies and the weekly
+ *  league are real rows now; see lib/gamification.ts and
+ *  supabase/schema_gamification.sql. What remains is catalogue copy. */
 
-export const USER = {
-  name: 'Alex Johnson',
-  track: 'Senior Software Engineer Track',
-  level: 12,
-  xp: 2450,
-  streak: 14,
-  gems: 120,
-  globalRank: 428,
-  xpToNextRank: 3000,
-};
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard';
 
@@ -66,19 +60,7 @@ export const SKILLS = ['Technical', 'Behavioural', 'System Design', 'Frontend', 
 export const ROLES = ['Software Engineer', 'Senior Software Engineer', 'ML Engineer', 'Data Analyst'];
 export const LANGS = ['Python', 'TypeScript', 'Go', 'SQL', 'None'];
 
-export const RANKINGS = [
-  { rank: 426, name: 'Michael Chang',   track: 'Data Science Track',  streak: 5,  xp: 3120, you: false },
-  { rank: 427, name: 'Alex Johnson',    track: 'Senior SWE Track',    streak: 14, xp: 2450, you: true  },
-  { rank: 428, name: 'Samantha Jones',  track: 'Frontend Track',      streak: 2,  xp: 2410, you: false },
-  { rank: 429, name: 'Priya Nair',      track: 'Backend Track',       streak: 9,  xp: 2380, you: false },
-  { rank: 430, name: 'Tom Okafor',      track: 'ML Track',            streak: 3,  xp: 2295, you: false },
-];
 
-export const PODIUM = [
-  { place: 2, name: 'Sarah M.', xp: 5820 },
-  { place: 1, name: 'David K.', xp: 6410 },
-  { place: 3, name: 'Emily R.', xp: 5240 },
-];
 
 export const RESULT = {
   score: 85,
@@ -174,29 +156,6 @@ export const SKILL_PATHS = [
     availability: 'coming_soon' as const, locked: 'Coming soon' },
 ];
 
-export const PROFILE = {
-  name: 'Alex Johnson',
-  title: 'Frontend Aspirant',
-  goal: 'Junior Frontend Engineer',
-  level: 12,
-  totalXp: 15400,
-  toNextLevel: 75,
-  streak: 12,
-  gems: 45,
-  trophies: 3,
-  readiness: 82,
-  readyLabel: 'Interview ready',
-  earned: [
-    { name: 'First round',  hint: 'Finish your first interview' },
-    { name: 'Week warrior', hint: 'A 7-day streak' },
-    { name: 'System thinker', hint: 'Pass a system design round' },
-  ],
-  locked: [
-    { name: 'Polyglot', hint: 'Pass an interview in 3 languages' },
-    { name: 'Flawless', hint: 'Score above 90% on a Hard interview' },
-    { name: 'Marathon', hint: 'A 30-day streak' },
-  ],
-};
 
 /* ---------------- practice categories ---------------- */
 

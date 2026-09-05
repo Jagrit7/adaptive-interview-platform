@@ -254,7 +254,14 @@ ok("handoff replaced the active session with a private context and distinct voic
 asked_qs = ACTIVE_ITEMS
 injected = " ".join(FAKE_SESSION.thoughts)
 assert all(q["question"] in injected for q in asked_qs)
-assert len([t for t in FAKE_SESSION.thoughts if "Question:\n" in t]) == 3
+# Counts bank-question injections, as opposed to the flag-shaped nudges section
+# 8 checks. Anchored on the "ORCHESTRATOR TURN" prefix that question_command
+# always emits rather than on the delivery wording after it: this assertion
+# previously matched "Question:\n", which a prompt-text edit renamed to
+# "Question to ask (rephrase naturally):\n", silently taking the count to zero.
+# Since this whole file asserts at import, that failure was a collection error
+# and everything below it stopped running.
+assert len([t for t in FAKE_SESSION.thoughts if "ORCHESTRATOR TURN " in t]) == 3
 assert len(set(FAKE_SESSION.thoughts)) == len(FAKE_SESSION.thoughts), "a question was repeated"
 ok("all 3 session-randomized bank questions asked exactly once, none repeated")
 
@@ -404,3 +411,17 @@ for expected in ["GET /config/languages", "POST /knowledge/parse", "POST /knowle
 ok("every expected route registered, legacy /token and /agents/start still present")
 
 print("\nEND-TO-END: all checks passed.\n")
+
+SCENARIO_COMPLETED = True
+
+
+def test_end_to_end_scenario_completed():
+    """Gives the import-time scenario above a name pytest can count.
+
+    Everything in this file asserts at module scope, so a break surfaces as a
+    *collection error* and the module reports "no tests ran" even when it is
+    healthy - which is how a stale assertion sat here unnoticed while roughly
+    fifty later checks silently stopped running. This turns a green run into
+    "1 passed" and a broken one into a named failure.
+    """
+    assert SCENARIO_COMPLETED

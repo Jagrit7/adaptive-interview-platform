@@ -23,6 +23,40 @@ DEFAULT_FOLLOWUP = (
     "Which edge case was most important to handle?"
 )
 
+# Follow-ups keyed by what the candidate actually submitted.
+#
+# `trigger_key` has been on both the bank rows and the Supabase `dsa_followups`
+# table since the beginning, but nothing ever read it: every candidate got the
+# "always" prompt, chosen before they had typed a character. Asking someone to
+# analyse the complexity of an empty submission is the visible symptom - it
+# reads as an interviewer who was not paying attention, because it is.
+#
+# Ordered most to least specific; the resolver takes the first matching key the
+# question offers, and falls back to these when a question supplies none.
+DEFAULT_FOLLOWUPS_BY_TRIGGER = {
+    "gave_up": (
+        "No problem at all - not knowing one is part of the process. "
+        "Let's leave that there and move on."
+    ),
+    "no_code": (
+        "You didn't get code down this time, which is completely fine - talk me through it instead. "
+        "How would you have approached the problem, and where did you get stuck?"
+    ),
+    "none_passed": (
+        "None of the test cases passed, so let's talk through the thinking rather than the code. "
+        "What approach were you going for, and where do you think it went wrong?"
+    ),
+    "partial": (
+        "Some cases passed and some didn't. Which inputs do you think your solution mishandles, "
+        "and what would you change to fix them?"
+    ),
+    "all_passed": (
+        "All the tests passed. Walk me through the time and space complexity of your approach, "
+        "and tell me whether you could do better."
+    ),
+    "always": DEFAULT_FOLLOWUP,
+}
+
 
 def _request_json(
     method: str, url: str, key: str, *, bearer: str | None = None,
@@ -74,7 +108,10 @@ def _normalise_local_question(raw: dict[str, Any]) -> dict[str, Any]:
         "language": "python",
         "starter_code": raw["starter_code"]["python"],
         "test_cases": cases,
-        "followups": [{"prompt": DEFAULT_FOLLOWUP, "trigger_key": "always"}],
+        "followups": [
+            {"prompt": prompt, "trigger_key": key}
+            for key, prompt in DEFAULT_FOLLOWUPS_BY_TRIGGER.items()
+        ],
         "provenance_type": "original",
         "source_name": "Adaptive Interview Platform editorial",
         "source_license": "Project-owned content",

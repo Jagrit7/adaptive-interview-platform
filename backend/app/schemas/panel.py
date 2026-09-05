@@ -7,7 +7,21 @@ RoleType = Literal["Technical", "Hiring manager", "Product", "Customer", "Behavi
 
 KnowledgeMode = Literal["llm", "knowledge_base"]
 QuestionKind = Literal["coding", "written", "verbal"]
-QuestionBankId = Literal["dsa", "system-design", "custom"]
+# Which reviewed bank an interviewer draws from.
+#
+# A plain str rather than a Literal, because two of the four possible values are
+# not enumerable here:
+#
+#   dsa | system-design | behavioural   built-in banks
+#   custom                              this panel's own question list
+#   user:<uuid>                         one of the owner's saved banks
+#
+# It was a Literal of the first two plus "custom", which silently made every
+# panel using a behavioural or a user-owned bank fail validation at session
+# start - after the builder had already offered both as choices. Validation of
+# the meaning happens in question_banks/enterprise.py, which resolves the id and
+# falls back to the domain's built-in bank when it resolves to nothing.
+QuestionBankId = str
 QuestionDomain = Literal["dsa", "system_design", "behavioural", "product", "customer", "general"]
 
 

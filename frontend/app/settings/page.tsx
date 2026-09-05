@@ -2,16 +2,32 @@
 
 import { useState } from 'react';
 import { PracticeShell } from '@/components/practice/PracticeShell';
-import { PROFILE, USER } from '@/lib/mockData';
+import { usePlayer } from '@/hooks/usePlayer';
+import { updateDisplayName } from '@/lib/gamification';
 
 const TABS = ['Profile', 'Notifications', 'Practice', 'Account'] as const;
 type Tab = typeof TABS[number];
 
 export default function SettingsPage() {
+  const { profile, refresh } = usePlayer();
+  // The field was uncontrolled with a dead Save button, so a name typed here
+  // went nowhere. Derived rather than copied into state by an effect: null
+  // means "untouched, show whatever the profile says", which also means a
+  // refresh after saving is reflected without a second render pass.
+  const [draftName, setDraftName] = useState<string | null>(null);
+  const name = draftName ?? profile.display_name ?? '';
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveError, setSaveError] = useState('');
+
+  const saveName = async () => {
+    setSaveState('saving'); setSaveError('');
+    try { await updateDisplayName(name); setDraftName(null); await refresh(); setSaveState('saved'); }
+    catch (reason) { setSaveError(reason instanceof Error ? reason.message : String(reason)); setSaveState('error'); }
+  };
   const [tab, setTab] = useState<Tab>('Profile');
 
   return (
-    <PracticeShell user={USER}>
+    <PracticeShell>
       <h1 className="text-4xl font-extrabold tracking-tight mb-2">Settings</h1>
       <p className="text-[var(--color-practice-ink-soft)] mb-8">
         Your profile, what you get told about, and how interviews run.
@@ -35,11 +51,23 @@ export default function SettingsPage() {
         <div className="space-y-5">
           {tab === 'Profile' && (
             <Panel title="Profile">
-              <Field label="Display name" defaultValue={PROFILE.name} />
-              <Field label="Headline" defaultValue={PROFILE.title} />
-              <Field label="Target role" defaultValue={PROFILE.goal} />
+              <label className="block">
+                <span className="mb-2 block text-sm font-semibold">Display name</span>
+                <input
+                  value={name}
+                  maxLength={40}
+                  onChange={event => { setDraftName(event.target.value); setSaveState('idle'); }}
+                  placeholder="Shown to other players on the leaderboard"
+                  className="w-full rounded-[var(--radius-control)] border border-[var(--color-practice-border)] bg-[var(--color-practice-surface)] px-4 py-3 text-sm outline-none"
+                />
+                <span className="mt-1 block text-xs text-[var(--color-practice-ink-mute)]">
+                  {saveError || (saveState === 'saved' ? 'Saved.' : 'This is the name other players see on the leaderboard.')}
+                </span>
+              </label>
+              <Field label="Headline" defaultValue={profile.is_premium ? "Premium member" : "Free plan"} />
+              <Field label="Target role" defaultValue="" />
               <Field label="Email" defaultValue="alex@example.com" type="email" />
-              <Save />
+              <Save onClick={() => void saveName()} busy={saveState === 'saving'} />
             </Panel>
           )}
 
@@ -170,11 +198,11 @@ function Toggle({ label, hint, initial }:
   );
 }
 
-function Save() {
+function Save({ onClick, busy }: { onClick?: () => void; busy?: boolean } = {}) {
   return (
-    <button className="px-6 py-3 rounded-[var(--radius-control)] font-semibold text-white
+    <button onClick={onClick} disabled={busy} className="px-6 py-3 rounded-[var(--radius-control)] font-semibold text-white
                        bg-[var(--color-practice-accent)] hover:brightness-110 transition">
-      Save changes
+      {busy ? 'Saving…' : 'Save changes'}
     </button>
   );
 }

@@ -2,14 +2,14 @@
 
 import Link from 'next/link';
 import { PracticeShell } from '@/components/practice/PracticeShell';
-import { SKILL_PATHS, USER } from '@/lib/mockData';
+import { SKILL_PATHS } from '@/lib/mockData';
 
 export default function SkillPathsPage() {
   const featured = SKILL_PATHS.find((p) => p.featured);
   const rest = SKILL_PATHS.filter((p) => !p.featured);
 
   return (
-    <PracticeShell user={USER}>
+    <PracticeShell>
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight mb-3">Skill paths</h1>

@@ -1,5 +1,7 @@
 'use client';
 
+import { usePlayer } from '@/hooks/usePlayer';
+
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -43,8 +45,13 @@ const RAIL = [
 ];
 
 export function PracticeShell({
-  user, children,
-}: { user: PracticeUser; children: React.ReactNode }) {
+  user: providedUser, children,
+}: { user?: PracticeUser; children: React.ReactNode }) {
+  // Loaded here rather than by each page: every practice screen shows the same
+  // XP, streak and gem counters, and twelve pages each fetching their own copy
+  // is twelve chances for them to disagree.
+  const { user: livePlayer } = usePlayer({ touchDaily: true });
+  const user = providedUser ?? livePlayer;
   const pathname = usePathname();
 
   const isRailActive = (href: string) => {

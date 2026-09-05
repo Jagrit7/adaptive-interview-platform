@@ -30,6 +30,7 @@ function RoleAwareLogin() {
 
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
+  const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +66,7 @@ function RoleAwareLogin() {
           email,
           options: {
             emailRedirectTo: returnTo,
-            data: { account_role: role },
+            data: { account_role: role, full_name: fullName.trim() },
           },
         });
         if (authError) throw authError;
@@ -181,6 +182,20 @@ function RoleAwareLogin() {
             </div>
 
             <form className="space-y-4" onSubmit={submit}>
+              {mode === 'signup' && (
+                /* Asked here so the leaderboard has a real name from the first
+                   session. Without it the only fallback is the email's local
+                   part, which is a reasonable guess but often not a name. */
+                <AuthField
+                  label="Your name"
+                  type="text"
+                  value={fullName}
+                  autoComplete="name"
+                  placeholder="Priya Sharma"
+                  onChange={setFullName}
+                />
+              )}
+
               <AuthField
                 label="Email address"
                 type="email"
@@ -287,7 +302,7 @@ function RoleTab({ active, label, onClick, role }: {
 
 function AuthField({ label, type, value, autoComplete, placeholder, onChange }: {
   label: string;
-  type: 'email' | 'password';
+  type: 'email' | 'password' | 'text';
   value: string;
   autoComplete: string;
   placeholder: string;

@@ -4,7 +4,7 @@ import { use } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PracticeShell } from '@/components/practice/PracticeShell';
-import { CATEGORIES, USER } from '@/lib/mockData';
+import { CATEGORIES } from '@/lib/mockData';
 
 /**
  * One template, five categories. Technical, behavioural, case study, system
@@ -17,7 +17,7 @@ export default function CategoryPage({ params }: { params: Promise<{ category: s
   if (!c) notFound();
 
   return (
-    <PracticeShell user={USER}>
+    <PracticeShell>
       <div className="flex flex-wrap items-start justify-between gap-6 mb-8">
         <div className="max-w-[62ch]">
           <div className="text-[11px] font-bold tracking-[0.14em]

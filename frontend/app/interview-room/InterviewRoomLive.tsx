@@ -14,6 +14,7 @@ import {
   type ReportRecord,
 } from '@/lib/reports';
 import { InterviewReportView } from '@/components/reports/InterviewReportView';
+import { awardInterviewXp, beginInterview } from '@/lib/gamification';
 import type { PanelConfig } from '@/lib/panels';
 
 const APP_ID = '02bcecea17334c6dad96219c276fbd38';
@@ -97,6 +98,7 @@ export default function InterviewRoomLive({
   // state is the only copy that exists anywhere - nothing is written to
   // Supabase, localStorage or sessionStorage, so closing the window discards it.
   const [reportRecord, setReportRecord] = useState<ReportRecord | null>(null);
+  const [xpAward, setXpAward] = useState<{ xp: number; level?: number; trophies?: string[] } | null>(null);
   const reportRecordRef = useRef<ReportRecord | null>(null);
   const reportSavedRef = useRef(false);
 
@@ -564,7 +566,6 @@ export default function InterviewRoomLive({
         await setMicrophoneEnabled(false);
         setMicOn(false);
 
-
         setStatus('Starting panel session...');
         // The host RTC UID is a protocol constant for a newly created panel.
         // Grant it the initial acoustic floor before the start response so a
@@ -602,6 +603,13 @@ export default function InterviewRoomLive({
         }
 
         setSessionId(startData.session_id);
+        // Only the practice path consumes a daily attempt. An invited
+        // candidate is sitting a recruiter's interview, not practising, and a
+        // test run is the author checking their own panel.
+        if (!invitationAccess && !testMode) {
+          try { await beginInterview(startData.session_id); }
+          catch { /* signed out, or the progression schema is not installed */ }
+        }
         setHostAgentId(startData.host_agent_id ?? '__host__');
         hostUidRef.current = String(startData.agent_uids?.[startData.host_agent_id ?? '__host__'] ?? '1');
         setAgentUid(String(startData.agent_uid ?? '1'));
@@ -722,7 +730,16 @@ export default function InterviewRoomLive({
         // can hear their own interview back; its scores describe no real
         // candidate, and writing them would put invented people in the same
         // table the hiring decisions are read from.
-        if (!testMode) await saveReport(report, panelId, panelOverride?.enterprise?.role);
+        if (!testMode) {
+          const savedReportId = await saveReport(report, panelId, panelOverride?.enterprise?.role);
+          // Bank the XP from the row that was just stored. The report id is the
+          // only thing sent: the database reads the score off that row and
+          // decides the award, so a client cannot choose its own number.
+          // Failing here must not lose the report - the interview is finished
+          // and saved either way, and the award is idempotent on retry.
+          try { setXpAward(await awardInterviewXp(savedReportId)); }
+          catch { /* progression is an overlay; a missed award is not a failed interview */ }
+        }
       }
 
       const role = publishedPanel?.role ?? panelOverride?.enterprise?.role;
@@ -878,6 +895,7 @@ export default function InterviewRoomLive({
     return (
       <InterviewResultScreen
         record={reportRecord}
+        award={xpAward}
         ephemeral={testMode}
         storeError={reportState === 'error' ? reportError : null}
         onExit={exitRoom}
@@ -935,11 +953,13 @@ export default function InterviewRoomLive({
  */
 function InterviewResultScreen({
   record,
+  award,
   ephemeral,
   storeError,
   onExit,
 }: {
   record: ReportRecord;
+  award: { xp: number; level?: number; trophies?: string[] } | null;
   ephemeral: boolean;
   storeError: string | null;
   onExit: () => void;
@@ -957,6 +977,23 @@ function InterviewResultScreen({
           <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-800">
             The interview is complete and the result below is final, but it could not be
             stored: {storeError}
+          </div>
+        )}
+        {award && award.xp > 0 && (
+          // Shown immediately, next to the result that earned it. A reward that
+          // arrives later, on some other screen, stops being connected to the
+          // thing the player just did.
+          <div className="mb-5 flex flex-wrap items-center gap-4 rounded-xl border border-[#cfe3d5] bg-[#f1f8f3] px-5 py-4">
+            <span className="text-2xl">⭐</span>
+            <div>
+              <b className="text-[#256134]">+{award.xp} XP earned</b>
+              {award.level !== undefined && <span className="ml-2 text-sm text-[#3d6b4b]">Level {award.level}</span>}
+              {!!award.trophies?.length && (
+                <p className="mt-0.5 text-sm text-[#3d6b4b]">
+                  🏆 Trophy unlocked: {award.trophies.join(', ').replace(/_/g, ' ')}
+                </p>
+              )}
+            </div>
           </div>
         )}
         <InterviewReportView record={record} />

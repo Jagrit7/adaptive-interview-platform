@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { PracticeShell } from '@/components/practice/PracticeShell';
-import { ANALYTICS as A, USER } from '@/lib/mockData';
+import { ANALYTICS as A } from '@/lib/mockData';
 
 const TONE = {
   accent: 'var(--color-practice-accent)',
@@ -18,7 +18,7 @@ export default function AnalyticsPage() {
   const C = 2 * Math.PI * 54;
 
   return (
-    <PracticeShell user={USER}>
+    <PracticeShell>
       <div className="flex flex-wrap items-start justify-between gap-6 mb-8">
         <div className="max-w-[60ch]">
           <div className="text-[11px] font-bold tracking-[0.14em]

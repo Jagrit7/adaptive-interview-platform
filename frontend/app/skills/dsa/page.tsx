@@ -1,14 +1,14 @@
 import { PracticeShell } from '@/components/practice/PracticeShell';
 import { SkillPathDetail } from '@/components/practice/SkillPathDetail';
 import { DSA_INTERVIEW_PRESET } from '@/lib/interviewPresets/dsa';
-import { USER } from '@/lib/mockData';
+
 import { DSA_SKILL_PATH } from '@/lib/skillPaths/dsa';
 
 export default function DsaSkillPathPage() {
   const interviewer = DSA_INTERVIEW_PRESET.agents[0];
 
   return (
-    <PracticeShell user={USER}>
+    <PracticeShell>
       <SkillPathDetail
         eyebrow={DSA_SKILL_PATH.eyebrow}
         title={DSA_SKILL_PATH.title}
