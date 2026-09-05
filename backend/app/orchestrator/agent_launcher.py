@@ -358,11 +358,24 @@ def start_session_agent(
                 },
             },
         })
-        # Preserve speech that begins while Ari is finishing a sentence, but do
-        # not let incidental noise cut the interviewer off mid-question.
+        # Barge-in. The candidate can cut the interviewer off mid-sentence, the
+        # way you would interrupt a person who has already asked what you want
+        # to answer.
+        #
+        # This was disabled, which also made the "patient" start_of_speech VAD
+        # tuning above dead configuration: with interruption off, detecting the
+        # start of speech had nothing to trigger. The browser reinforced it by
+        # unpublishing the microphone whenever an agent spoke, so the candidate
+        # was inaudible rather than merely ignored.
+        #
+        # Incidental noise is held off by three things rather than by refusing
+        # to listen: the 500ms speaking_interrupt_duration_ms above, so a cough
+        # is too short to count; AEC/ANS on the browser track, so the agent's
+        # own voice does not interrupt it; and the client requiring sustained
+        # speech before it moves the floor.
         agent_builder = agent_builder.with_interruption({
-            "enable": False,
-            "disabled_config": {"strategy": "append"},
+            "enable": True,
+            "mode": "start_of_speech",
         })
         agent_builder = agent_builder.with_advanced_features({"enable_rtm": True})
         agent_builder = agent_builder.with_parameters({

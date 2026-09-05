@@ -51,3 +51,7 @@ frontend-improv/
 /sde-backend-english.csv
 /sde-backend-hindi.csv
 /product-manager.json
+
+# Silero VAD model and ONNX runtime, copied from node_modules by
+# scripts/copy-vad-assets.mjs on predev/prebuild. Build inputs, not source.
+frontend/public/vad/

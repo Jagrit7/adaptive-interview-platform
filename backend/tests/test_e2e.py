@@ -359,6 +359,48 @@ assert len(sessions_route.SESSIONS[sid]["state"].transcript) == _before, \
     "a refused answer must not reach the transcript"
 ok("a directive posted back as speech is refused, not scored or transcribed")
 
+# Speech-to-text re-emits a turn as it grows and the Agora toolkit updates that
+# turn in place, so any buffer that keeps the FIRST sighting of a turn and skips
+# the rest freezes an answer at its opening words. That shipped: answers were
+# reaching the scorer as "I'm" and "No.". Only a user transcription's `final`
+# reports finality - `turn_status`, and therefore the toolkit's `status`, is
+# undefined on every candidate line - so `status !== IN_PROGRESS` silently
+# called each fragment complete.
+_hook_src = open(str(PROJECT / "frontend" / "hooks" / "useAgoraVoiceClient.ts"),
+                 encoding="utf-8").read()
+assert "final === true" in _hook_src, \
+    "the hook no longer reads finality from the user transcription's `final` flag"
+
+for _name in ("app/interview-room/InterviewRoomLive.tsx",
+              "components/dsa-interview/DsaInterviewRoom.tsx"):
+    _src = open(str(PROJECT / "frontend" / _name), encoding="utf-8").read()
+    assert "firstSighting" in _src, f"{_name} no longer distinguishes a turn's first sighting"
+    assert ".set(key, " in _src, \
+        f"{_name} no longer replaces a turn's text as it grows - answers will truncate again"
+ok("candidate turns are replaced as they grow, not frozen at the first fragment")
+
+# Barge-in needs three things that live in three files and are individually
+# silent when wrong: the server must allow interruption, the browser must keep
+# publishing the microphone while an agent speaks, and the VAD model must be on
+# disk to be served. Any one of them reverting leaves an interview that simply
+# never lets the candidate cut in, with every other check still green.
+_launcher = open(str(BACKEND / "app" / "orchestrator" / "agent_launcher.py"),
+                 encoding="utf-8").read()
+_interruption = _launcher.split("with_interruption(")[1].split(")")[0]
+assert '"enable": True' in _interruption, \
+    "agent interruption is disabled again - barge-in cannot fire"
+assert '"start_of_speech"' in _interruption, _interruption
+
+_room = open(str(PROJECT / "frontend" / "app" / "interview-room" / "InterviewRoomLive.tsx"),
+             encoding="utf-8").read()
+assert "useSpeechDetector(" in _room, "the room no longer runs local voice-activity detection"
+assert "takeFloorFromAgent" in _room, "the shared floor-transfer path is gone"
+
+_pkg = json.loads(open(str(PROJECT / "frontend" / "package.json"), encoding="utf-8").read())
+assert "copy-vad-assets" in _pkg["scripts"].get("prebuild", ""), \
+    "prebuild no longer copies the VAD model - it would 404 in production"
+ok("barge-in is enabled server-side, wired client-side, and its model ships")
+
 print("\n=== 11. A pre-change saved panel still runs ===")
 legacy = {
     "projectName": "Old Panel",

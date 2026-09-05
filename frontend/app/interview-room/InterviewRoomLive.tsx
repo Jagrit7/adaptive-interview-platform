@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAgoraVoiceClient } from '@/hooks/useAgoraVoiceClient';
+import { useSpeechDetector } from '@/hooks/useSpeechDetector';
 import { useBuilderStore, type Agent } from '@/store/builderStore';
 import { ArenaRoom, type Panelist } from '@/components/arena/ArenaRoom';
 import { CandidateForm } from './CandidateForm';
@@ -162,14 +163,27 @@ export default function InterviewRoomLive({
   // sustained period of locally measured silence before submitting the joined
   // answer to the orchestrator.
   const ANSWER_SILENCE_MS = 2800;
+  // Applies only once speech-to-text has marked every buffered turn final.
+  const FINAL_TURN_GRACE_MS = 400;
   const SPEAKING_VOLUME_THRESHOLD = 0.025;
-  const pendingAnswerRef = useRef<string[]>([]);
-  const pendingAnswerIdsRef = useRef<string[]>([]);
+  // Keyed by `uid:turn_id`, in arrival order, holding the LATEST text for each
+  // turn. Speech-to-text re-emits a turn as it grows, so an append-only list
+  // plus a "seen this key" guard kept the FIRST fragment of every turn and
+  // discarded the rest - which is what truncated answers to "I'm" or "No.".
+  // Replacing by key keeps the fullest version and stays correct even if the
+  // final-flag never arrives.
+  const pendingAnswerRef = useRef<Map<string, { text: string; complete: boolean }>>(new Map());
   const answerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const answerQuietSinceRef = useRef(0);
   const inputVolumeRef = useRef(0);
   const turnInFlightRef = useRef(false);
   const echoGuardUntilRef = useRef(0);
+  // Guards against a burst of speech-start events queueing several floor
+  // transfers for the same interruption.
+  const bargeInFlightRef = useRef(false);
+  // `awaiting` as a ref, because the detector callback is created once and
+  // would otherwise capture a stale phase.
+  const awaitingRef = useRef<Awaiting>('agent');
   const acceptingVoiceRef = useRef(false);
   const questionRevisionRef = useRef(0);
   const agentUidRef = useRef<string | null>(null);
@@ -201,7 +215,10 @@ export default function InterviewRoomLive({
     agentTurnFinishedSequence,
     lastStartedAgentUid,
     lastFinishedAgentUid,
+    localAudioTrack,
   } = useAgoraVoiceClient();
+
+  useEffect(() => { awaitingRef.current = awaiting; }, [awaiting]);
 
   useEffect(() => {
     inputVolumeRef.current = inputVolume;
@@ -417,45 +434,62 @@ export default function InterviewRoomLive({
       if (m.source !== 'candidate') continue;
       if (!acceptingVoiceRef.current || awaiting !== 'candidate') continue;
 
-      // Agora may begin preparing an automatic LLM response as soon as its VAD
-      // finalises a segment. Cancel that response immediately; the orchestrator
-      // will provide the only acknowledgement after the complete answer settles.
-      if (agentUidRef.current) void interruptAgent(agentUidRef.current);
-      // The +1 host is the meeting's sole ASR listener. Specialists receive
-      // routed text, so cancel the host's automatic post-ASR response as well;
-      // only the validated orchestration decision may speak next.
-      if (hostUidRef.current && hostUidRef.current !== agentUidRef.current) {
-        void interruptAgent(hostUidRef.current);
+      // Key on uid AND turn_id. The agent and the candidate can carry the same
+      // turn_id within one exchange, so a turn_id-only key silently dropped
+      // real answers.
+      const key = `${m.uid}:${m.turn_id}`;
+      // Already sent as part of a submitted answer; re-emitting it must not
+      // reopen it.
+      if (processedTurnIds.has(key)) continue;
+
+      const firstSighting = !pendingAnswerRef.current.has(key);
+
+      if (firstSighting) {
+        // Agora may begin preparing an automatic LLM response as soon as its
+        // VAD finalises a segment. Cancel that response immediately; the
+        // orchestrator will provide the only acknowledgement after the
+        // complete answer settles.
+        //
+        // Once per turn, not once per update: speech-to-text re-emits a
+        // growing turn many times, and interrupting on each one is what
+        // produced the -10021 rate-limit storm that made the meaningful
+        // interrupts fail.
+        if (agentUidRef.current) void interruptAgent(agentUidRef.current);
+        // The +1 host is the meeting's sole ASR listener. Specialists receive
+        // routed text, so cancel the host's automatic post-ASR response as
+        // well; only the validated orchestration decision may speak next.
+        if (hostUidRef.current && hostUidRef.current !== agentUidRef.current) {
+          void interruptAgent(hostUidRef.current);
+        }
       }
+
+      if (Date.now() < echoGuardUntilRef.current) {
+        if (firstSighting) {
+          console.info(`[interview] ignored probable playback echo for turn ${m.turn_id}`);
+        }
+        continue;
+      }
+
+      // During a written task, ordinary speech must not accidentally submit
+      // the pad. An explicit pass still works by voice.
+      const explicitPass = /\b(?:i\s+(?:do\s*not|don't|dont)\s+know|no\s+(?:idea|clue)|skip|move\s+on|i\s+(?:can't|cannot|cant)\s+(?:answer|solve))\b/i.test(m.text);
+      if (writtenQuestion && writtenQuestion.kind !== 'verbal' && !explicitPass) continue;
 
       // Every candidate segment Agora delivers, as delivered. Comparing these
       // lines with the [transcript] line the backend logs is what tells you
       // whether a clipped answer was lost in ASR or lost on the way to the
       // orchestrator - a microphone problem versus a code problem, which is
       // otherwise guesswork.
-      console.info(`[asr] turn=${m.turn_id} chars=${m.text.length} text=${JSON.stringify(m.text)}`);
-
-      if (Date.now() < echoGuardUntilRef.current) {
-        console.info(`[interview] ignored probable playback echo for turn ${m.turn_id}`);
-        continue;
+      if (pendingAnswerRef.current.get(key)?.text !== m.text) {
+        console.info(
+          `[asr] turn=${m.turn_id} complete=${m.complete} chars=${m.text.length} ` +
+          `text=${JSON.stringify(m.text)}`,
+        );
       }
-
-      // Key on uid AND turn_id. The agent and the candidate can carry the same
-      // turn_id within one exchange, so a turn_id-only key silently dropped
-      // real answers.
-      const key = `${m.uid}:${m.turn_id}`;
-      if (processedTurnIds.has(key)) continue;
-      processedTurnIds.add(key);
-
-      // During a written task, ordinary speech must not accidentally submit
-      // the pad. An explicit pass still works by voice.
-      const explicitPass = /\b(?:i\s+(?:do\s*not|don't|dont)\s+know|no\s+(?:idea|clue)|skip|move\s+on|i\s+(?:can't|cannot|cant)\s+(?:answer|solve))\b/i.test(m.text);
-      if (writtenQuestion && writtenQuestion.kind !== 'verbal' && !explicitPass) continue;
-      pendingAnswerRef.current.push(m.text);
-      pendingAnswerIdsRef.current.push(key);
+      pendingAnswerRef.current.set(key, { text: m.text, complete: m.complete });
     }
 
-    if (pendingAnswerRef.current.length === 0) return;
+    if (pendingAnswerRef.current.size === 0) return;
 
     // Speech-to-text splits one spoken answer into several final segments. Poll
     // the local microphone meter so a breath or thinking pause cannot submit
@@ -463,6 +497,23 @@ export default function InterviewRoomLive({
     // every final segment remains buffered into the same answer.
     if (answerTimerRef.current) clearTimeout(answerTimerRef.current);
     answerQuietSinceRef.current = 0;
+    // How long to keep waiting before calling the answer finished.
+    //
+    // Agora's semantic endpointing has already decided the candidate completed
+    // a thought (1.2s of silence, 4s hard cap) before it marks a turn final.
+    // Waiting out a second, longer, volume-based timer on top of that stacked
+    // the two delays and left seconds of dead air after every answer - the very
+    // stack the server-side config comment claims to have removed.
+    //
+    // So once every buffered turn is final, only a short grace remains, just
+    // wide enough for the next turn of a continued sentence to arrive. Turns
+    // that are still open keep the full window, which is also what happens if
+    // the transcription never reports finality at all.
+    const requiredQuietMs = () =>
+      [...pendingAnswerRef.current.values()].every(seg => seg.complete)
+        ? FINAL_TURN_GRACE_MS
+        : ANSWER_SILENCE_MS;
+
     const waitForCompleteAnswer = () => {
       if (!acceptingVoiceRef.current || awaiting !== 'candidate') return;
       const now = Date.now();
@@ -470,11 +521,13 @@ export default function InterviewRoomLive({
         answerQuietSinceRef.current = 0;
       } else if (answerQuietSinceRef.current === 0) {
         answerQuietSinceRef.current = now;
-      } else if (now - answerQuietSinceRef.current >= ANSWER_SILENCE_MS) {
-        const combined = pendingAnswerRef.current.join(' ').trim();
-        const answerId = `${questionRevisionRef.current}:${pendingAnswerIdsRef.current.join(',')}`;
-        pendingAnswerRef.current = [];
-        pendingAnswerIdsRef.current = [];
+      } else if (now - answerQuietSinceRef.current >= requiredQuietMs()) {
+        const combined = [...pendingAnswerRef.current.values()].map(seg => seg.text).join(' ').trim();
+        const answerId = `${questionRevisionRef.current}:${[...pendingAnswerRef.current.keys()].join(',')}`;
+        // Retire these turns only once they are actually on their way, so a
+        // late re-emit cannot append to the next question's answer.
+        for (const sent of pendingAnswerRef.current.keys()) processedTurnIds.add(sent);
+        pendingAnswerRef.current = new Map();
         answerQuietSinceRef.current = 0;
         answerTimerRef.current = null;
         if (combined) void handleNextTurn(combined, answerId);
@@ -526,7 +579,13 @@ export default function InterviewRoomLive({
         setMicOn(true);
         setActiveSpeakerId('user');
       } else {
-        await setMicrophoneEnabled(false);
+        // The microphone stays published while the interviewer speaks so the
+        // candidate can cut in. Unpublishing it here made barge-in impossible
+        // regardless of any server setting - the candidate was not ignored,
+        // they were inaudible. The floor is still the agent's: the transcript
+        // aggregator refuses candidate speech until `awaiting` says otherwise,
+        // and only a sustained speech onset moves it.
+        await setMicrophoneEnabled(true);
         setMicOn(false);
       }
     };
@@ -865,6 +924,82 @@ export default function InterviewRoomLive({
     router.push(exitHref);
   };
 
+  /**
+   * Cuts the interviewer off and takes the floor.
+   *
+   * Shared by the microphone button and by barge-in, because they are the same
+   * act: stop the agent, tell the orchestrator the candidate is speaking now,
+   * and adopt whatever turn it returns. Two copies of this would be two things
+   * to keep in step, and the sequence is not obvious enough to survive that.
+   *
+   * Returns whether the floor actually moved.
+   */
+  const takeFloorFromAgent = useCallback(async (): Promise<boolean> => {
+    if (!sessionId) return false;
+    setAudibleAgentUid(null);
+    if (agentUidRef.current) await interruptAgent(agentUidRef.current);
+    if (hostUidRef.current && hostUidRef.current !== agentUidRef.current) {
+      await interruptAgent(hostUidRef.current);
+    }
+    const response = await fetch(`${BACKEND_URL}/sessions/${sessionId}/candidate-ready`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question_revision: questionRevisionRef.current }),
+    });
+    const data = await response.json() as TurnResponse & { detail?: string };
+    if (!response.ok) {
+      // 409 only means the orchestrator had already moved on, which is not an
+      // error worth showing mid-interview.
+      if (response.status !== 409) setStatus(`Error: ${data.detail ?? 'Could not interrupt the interviewer'}`);
+      return false;
+    }
+    handledAgentTurnRef.current = agentTurnFinishedSequence;
+    applyTurn(data);
+    return data.awaiting === 'candidate';
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, agentTurnFinishedSequence]);
+
+  /**
+   * Barge-in: the candidate starts talking over the interviewer.
+   *
+   * Driven by local voice-activity detection, which knows a human started
+   * speaking within about a quarter of a second. The previous trigger was the
+   * arrival of a transcript segment - a full speech-to-text round trip later,
+   * by which point the interviewer had been talking over the candidate for
+   * roughly a second.
+   */
+  const handleBargeIn = useCallback(() => {
+    if (!sessionId || isFinished) return;
+    if (awaitingRef.current !== 'agent') return;   // the floor is not the agent's to take
+    if (turnInFlightRef.current || bargeInFlightRef.current) return;
+    bargeInFlightRef.current = true;
+    void (async () => {
+      try {
+        console.info('[vad] barge-in: candidate started speaking over the interviewer');
+        const moved = await takeFloorFromAgent();
+        if (!moved) return;
+        // The words that triggered this are still arriving. Without clearing
+        // the guard they would be discarded as playback echo, and the
+        // candidate would have to repeat the sentence they just interrupted
+        // with.
+        echoGuardUntilRef.current = 0;
+        await setMicrophoneEnabled(true);
+        setMicOn(true);
+        acceptingVoiceRef.current = true;
+        setActiveSpeakerId('user');
+      } finally {
+        bargeInFlightRef.current = false;
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, isFinished, takeFloorFromAgent, setMicrophoneEnabled]);
+
+  useSpeechDetector({
+    track: localAudioTrack?.getMediaStreamTrack() ?? null,
+    enabled: isConnected && !isFinished,
+    onSpeechStart: handleBargeIn,
+  });
+
   // Checked before the form, not after the session-start request fails. The
   // backend rejects an opener-less panel with a 400, but by then the candidate
   // has already typed their name and is looking at a red stack trace.
@@ -943,21 +1078,7 @@ export default function InterviewRoomLive({
       return;
     }
     if (awaiting === 'agent' && sessionId) {
-      setAudibleAgentUid(null);
-      if (agentUidRef.current) await interruptAgent(agentUidRef.current);
-      const response = await fetch(`${BACKEND_URL}/sessions/${sessionId}/candidate-ready`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question_revision: questionRevisionRef.current }),
-      });
-      const data = await response.json() as TurnResponse & { detail?: string };
-      if (!response.ok) {
-        if (response.status !== 409) setStatus(`Error: ${data.detail ?? 'Could not interrupt the interviewer'}`);
-        return;
-      }
-      handledAgentTurnRef.current = agentTurnFinishedSequence;
-      applyTurn(data);
-      if (data.awaiting !== 'candidate') return;
+      if (!await takeFloorFromAgent()) return;
     } else if (awaiting !== 'candidate') {
       return;
     }

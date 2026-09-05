@@ -94,6 +94,15 @@ export interface IMessageListItem {
   status: number;
   timestamp?: number;
   source: "candidate" | "agent" | "unknown";
+  /** Whether speech-to-text considers this turn finished.
+   *
+   *  The toolkit records `status` from `message.turn_status`, but only an
+   *  AGENT transcription carries `turn_status`; a USER transcription reports
+   *  finality in `final`. So `status` is `undefined` on every candidate line,
+   *  and `status !== TurnStatus.IN_PROGRESS` (i.e. `undefined !== 0`) called
+   *  every interim fragment a finished turn. That is why answers arrived
+   *  truncated to their first few words. */
+  complete: boolean;
 }
 
 export function useAgoraVoiceClient() {
@@ -401,6 +410,11 @@ export function useAgoraVoiceClient() {
                 : m.metadata?.object === MessageType.AGENT_TRANSCRIPTION
                   ? "agent" as const
                   : "unknown" as const,
+              // Read finality from the field the speaker's message actually
+              // carries - see the note on IMessageListItem.complete.
+              complete: m.metadata?.object === MessageType.USER_TRANSCRIPTION
+                ? (m.metadata as Partial<UserTranscription>)?.final === true
+                : m.status !== TurnStatus.IN_PROGRESS,
             }));
 
             const completedMessages = convertedMessages

@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored binaries and minified bundles copied in by
+    // scripts/copy-vad-assets.mjs. Linting a minified worklet reports dozens
+    // of problems in code this project does not own or edit.
+    "public/vad/**",
   ]),
 ]);
 
