@@ -349,11 +349,24 @@ begin
     return jsonb_build_object('xp', 0, 'reason', 'already awarded');
   end if;
 
-  -- Enforced here rather than only in the UI: this is the one chokepoint every
-  -- client passes through, and a limit that lives only in the browser is a
-  -- suggestion. A blocked interview still keeps its report - the player loses
-  -- the XP, not the feedback they just earned.
-  if not (public.daily_interview_allowance(report.user_id)->>'allowed')::boolean then
+  -- Was this interview authorised when it started?
+  --
+  -- begin_interview already made that decision and recorded a start row, and a
+  -- player cannot forge one: interview_starts has no INSERT policy, so the only
+  -- writer is that SECURITY DEFINER function.
+  --
+  -- Re-running the *allowance* here instead was wrong in the worst possible
+  -- way. The allowance counts today's starts, and by the time the award runs,
+  -- this interview's own start is one of them - so a free player's first and
+  -- only interview of the day found used = 1, concluded the limit was reached,
+  -- and paid nothing. Every free user, every interview, zero XP.
+  --
+  -- The allowance check still applies when no start was recorded, which covers
+  -- a client that never called begin_interview.
+  if not exists (
+    select 1 from public.interview_starts
+    where user_id = report.user_id and session_ref = report.session_id
+  ) and not (public.daily_interview_allowance(report.user_id)->>'allowed')::boolean then
     return jsonb_build_object('xp', 0, 'reason', 'daily limit reached',
                               'limit_reached', true);
   end if;
@@ -651,6 +664,17 @@ as $$
     when 'spend_premium_bank' then 40
     when 'spend_report_deepdive' then 25
   end
+$$;
+
+
+-- All four prices in one call. loadGemPrices() was making a round-trip per sink
+-- to render a four-row list.
+create or replace function public.gem_prices()
+returns jsonb language sql immutable parallel safe
+as $$
+  select jsonb_object_agg(source, public.gem_price(source))
+  from unnest(array['spend_retry', 'spend_streak_freeze',
+                    'spend_premium_bank', 'spend_report_deepdive']) as source
 $$;
 
 
