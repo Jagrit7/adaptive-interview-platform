@@ -278,7 +278,12 @@ def question_command(
             f"Introduce yourself naturally as {profile.name} — a quick friendly line about your "
             f"role and what you'll be exploring together, then "
             if introducing
-            else (f"{acknowledgement.strip()} " if acknowledgement else "")
+            else (
+                "You have already introduced yourself earlier in this interview. Do not greet "
+                "the candidate again, do not say your name again, and do not restate your role - "
+                "continue as though mid-conversation. "
+                + (f"{acknowledgement.strip()} " if acknowledgement else "")
+            )
         )
     )
     boundary = f"ROLE BOUNDARY: {profile.boundary_instruction}"

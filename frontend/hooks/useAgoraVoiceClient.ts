@@ -21,6 +21,8 @@ import {
   type AgentTranscription,
 } from "agora-agent-client-toolkit";
 
+const INTERRUPT_MIN_INTERVAL_MS = 1_000;
+
 /** The toolkit's own TRANSCRIPT_UPDATED payload type. Named here because the
  *  bare `TranscriptHelperItem` is generic and will not compile without its
  *  type argument - which is why `next build` was failing type checking, and
@@ -115,6 +117,7 @@ export function useAgoraVoiceClient() {
   // talk over the specialist selected by the backend.
   const remoteAudioTracksRef = useRef<Map<string, IRemoteAudioTrack>>(new Map());
   const audibleAgentUidRef = useRef<string | null>(null);
+  const lastInterruptRef = useRef<Map<string, number>>(new Map());
   const speakingAgentUidsRef = useRef<Set<string>>(new Set());
   // Tracks RTC track-event handlers so they can be unregistered on leave.
   const rtcTrackHandlersRef = useRef<{
@@ -538,6 +541,19 @@ export function useAgoraVoiceClient() {
   const interruptAgent = useCallback(async (targetUid: string) => {
     const voiceAI = voiceAIRef.current;
     if (!voiceAI) return;
+    // Agora emits interim ASR messages continuously while somebody speaks, and
+    // the caller cancels the agent's autonomous reply on every one of them. A
+    // single spoken answer therefore fired dozens of RTM publishes, hit the
+    // -10021 rate limit, and from then on the interrupts that *mattered* failed
+    // too - which is how an agent ends up replying to a partial transcript and
+    // quoting the candidate as having said "I" or "Can we".
+    //
+    // One interrupt per burst is all the semantics need: it cancels whatever
+    // reply is pending, and a second one 50ms later cancels nothing new.
+    const now = Date.now();
+    const last = lastInterruptRef.current.get(targetUid) ?? 0;
+    if (now - last < INTERRUPT_MIN_INTERVAL_MS) return;
+    lastInterruptRef.current.set(targetUid, now);
     try {
       // Cancel the voice model's autonomous post-ASR response. The backend
       // orchestrator will inject the only permitted acknowledgement/next turn.

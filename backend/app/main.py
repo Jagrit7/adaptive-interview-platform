@@ -4,7 +4,7 @@ from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.dsa.question_bank import QUESTION_BANK
-from app.invitations import store as invitations
+from app.invitations import store as invitation_store
 from app.orchestrator.agent_launcher import start_agent_from_config
 from app.token_generator import generate_token
 from app.routes import config, dsa_sessions, invitations, job_panels, knowledge, report_queries, sessions
@@ -64,8 +64,8 @@ def _require_caller(authorization: str | None, invite: str | None) -> None:
     """
     if invite:
         # Raises if the token is unknown, revoked or expired.
-        invitation = invitations.load_invitation(invite)
-        invitations.assert_usable(invitation)
+        invitation = invitation_store.load_invitation(invite)
+        invitation_store.assert_usable(invitation)
         return
     try:
         if QUESTION_BANK.user_id_from_token(authorization):

@@ -428,6 +428,13 @@ export default function InterviewRoomLive({
         void interruptAgent(hostUidRef.current);
       }
 
+      // Every candidate segment Agora delivers, as delivered. Comparing these
+      // lines with the [transcript] line the backend logs is what tells you
+      // whether a clipped answer was lost in ASR or lost on the way to the
+      // orchestrator - a microphone problem versus a code problem, which is
+      // otherwise guesswork.
+      console.info(`[asr] turn=${m.turn_id} chars=${m.text.length} text=${JSON.stringify(m.text)}`);
+
       if (Date.now() < echoGuardUntilRef.current) {
         console.info(`[interview] ignored probable playback echo for turn ${m.turn_id}`);
         continue;

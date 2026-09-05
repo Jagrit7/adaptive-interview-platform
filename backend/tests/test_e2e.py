@@ -22,6 +22,7 @@ os.environ.setdefault("AGORA_APP_CERTIFICATE", "test-cert")
 os.environ.setdefault("GROQ_API_KEY", "test-groq-key")
 
 
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 import app.orchestrator.agent_launcher as launcher
@@ -409,6 +410,24 @@ for expected in ["GET /config/languages", "POST /knowledge/parse", "POST /knowle
                  "GET /token", "POST /agents/start"]:
     assert expected in routes, f"missing {expected}"
 ok("every expected route registered, legacy /token and /agents/start still present")
+
+print("\n=== 14. Token endpoint wiring ===")
+import app.main as _main
+# Regression guard. `from app.routes import ..., invitations, ...` once shadowed
+# the invitation-store import in main.py, so _require_caller raised
+# AttributeError and every invited candidate got a 500 from /token. The module
+# still imported cleanly, which is exactly why nothing caught it - so the check
+# is that the names it calls at *runtime* actually resolve.
+for _fn in ("load_invitation", "assert_usable"):
+    assert hasattr(_main.invitation_store, _fn), f"main.invitation_store is missing {_fn}"
+assert _main.invitation_store.__name__ == "app.invitations.store", \
+    f"invitation_store points at {_main.invitation_store.__name__}, not the store"
+try:
+    _main._require_caller(None, None)
+    raise AssertionError("_require_caller allowed an anonymous call")
+except HTTPException as _exc:
+    assert _exc.status_code == 401
+ok("/token rejects anonymous callers and resolves the invitation store")
 
 print("\nEND-TO-END: all checks passed.\n")
 
