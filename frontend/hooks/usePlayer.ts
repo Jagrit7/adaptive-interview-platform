@@ -8,6 +8,27 @@ import {
 import { isSupabaseConfigured } from '@/lib/supabaseClient';
 import type { PracticeUser } from '@/components/practice/PracticeShell';
 
+/**
+ * Has the streak already been recorded in this tab today?
+ *
+ * PracticeShell is rendered inside each page rather than in a layout, so it
+ * remounts on every navigation - and the streak call is a write. It is
+ * idempotent server-side, but firing it on every page view is a round-trip per
+ * click for something that can only change once a day.
+ */
+function shouldTouchToday(): boolean {
+  if (typeof window === 'undefined') return false;
+  const key = 'aip:streak-touched';
+  const today = new Date().toDateString();
+  try {
+    if (window.sessionStorage.getItem(key) === today) return false;
+    window.sessionStorage.setItem(key, today);
+  } catch {
+    return true;  // private mode: just make the call
+  }
+  return true;
+}
+
 const EMPTY: PlayerProfile = {
   user_id: '', display_name: '', total_xp: 0, gems: 0, streak_days: 0,
   longest_streak: 0, last_active_on: null, is_premium: false, premium_until: null,
@@ -42,7 +63,7 @@ export function usePlayer({ touchDaily = false }: { touchDaily?: boolean } = {})
     (async () => {
       if (!isSupabaseConfigured()) { if (active) setLoading(false); return; }
       try {
-        if (touchDaily) await touchDailyActivity();
+        if (touchDaily && shouldTouchToday()) await touchDailyActivity();
         const next = await loadProfile();
         if (!active) return;
         setProfile(next);

@@ -158,12 +158,17 @@ async function loadCohortRows(cohortId: string, meId: string): Promise<Leaderboa
 export function subscribeToCohort(cohortId: string, onChange: (rows: LeaderboardRow[]) => void) {
   let cancelled = false;
   let meId: string | undefined;
+  // Coalesce a burst into one query. Every XP award in the cohort emits an
+  // event, so thirty players finishing around the same time would otherwise
+  // trigger thirty full thirty-row refetches in every connected browser.
+  let pending: ReturnType<typeof setTimeout> | undefined;
   const channel = supabase
     .channel(`league:${cohortId}`)
     .on('postgres_changes',
       { event: '*', schema: 'public', table: 'league_members', filter: `cohort_id=eq.${cohortId}` },
       () => {
-        void (async () => {
+        if (pending) clearTimeout(pending);
+        pending = setTimeout(() => void (async () => {
           try {
             // Resolved once and cached, not per event: this fires every time
             // anyone in a cohort of thirty earns XP, and an auth round-trip on
@@ -173,10 +178,14 @@ export function subscribeToCohort(cohortId: string, onChange: (rows: Leaderboard
             const rows = await loadCohortRows(cohortId, meId);
             if (!cancelled) onChange(rows);
           } catch { /* a dropped refresh is not worth surfacing mid-session */ }
-        })();
+        })(), 400);
       })
     .subscribe();
-  return () => { cancelled = true; void supabase.removeChannel(channel); };
+  return () => {
+    cancelled = true;
+    if (pending) clearTimeout(pending);
+    void supabase.removeChannel(channel);
+  };
 }
 
 /* ---------------------------------------------------------------- writes ---- */
@@ -218,15 +227,11 @@ export const GEM_SINKS: Record<GemSpend, { label: string; blurb: string }> = {
   spend_report_deepdive: { label: 'Deep-dive report', blurb: 'Full transcript analysis on one past interview.' },
 };
 
-/** The prices the database will actually charge. */
+/** The prices the database will actually charge, in one round-trip. */
 export async function loadGemPrices(): Promise<Record<GemSpend, number>> {
-  const entries = await Promise.all(
-    (Object.keys(GEM_SINKS) as GemSpend[]).map(async source => {
-      const { data } = await supabase.rpc('gem_price', { p_source: source });
-      return [source, Number(data ?? 0)] as const;
-    }),
-  );
-  return Object.fromEntries(entries) as Record<GemSpend, number>;
+  const { data, error } = await supabase.rpc('gem_prices');
+  if (error) throw new Error(`Could not load gem prices: ${error.message}`);
+  return (data ?? {}) as Record<GemSpend, number>;
 }
 
 export async function spendGems(source: GemSpend, ref?: string): Promise<{ ok: boolean; gems: number; reason?: string }> {
@@ -285,8 +290,12 @@ export async function updateDisplayName(name: string): Promise<string> {
   if (!trimmed) throw new Error('A display name cannot be empty.');
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) throw new Error('You are signed out.');
+  // upsert, not update. A player whose profile row does not exist yet - anyone
+  // who has not triggered touch_daily_activity - would have had their name
+  // "saved" against zero rows: no error, no change, and a UI saying "Saved."
   const { error: updateError } = await supabase
-    .from('player_profiles').update({ display_name: trimmed }).eq('user_id', data.user.id);
+    .from('player_profiles')
+    .upsert({ user_id: data.user.id, display_name: trimmed }, { onConflict: 'user_id' });
   if (updateError) throw new Error(`Could not save your name: ${updateError.message}`);
   return trimmed;
 }

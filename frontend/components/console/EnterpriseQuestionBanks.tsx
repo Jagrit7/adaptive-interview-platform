@@ -193,7 +193,9 @@ function NewBankCard({ onCreated, onError }: { onCreated: (bank: UserBank) => vo
   return (
     <ConsoleCard className="p-5">
       <p className="text-xs font-semibold uppercase tracking-wider text-[#777c84]">New bank</p>
+      <label htmlFor="new-bank-name" className="sr-only">New bank name</label>
       <input
+        id="new-bank-name"
         value={name}
         onChange={event => setName(event.target.value)}
         placeholder="e.g. Senior backend — behavioural"
@@ -267,7 +269,9 @@ function AddQuestionsCard({ bank, onAdded, onError }: { bank: UserBank; onAdded:
         <p className="mt-2 text-[11px] text-[#858a92]">{KINDS.find(k => k.value === kind)?.hint}</p>
       </label>
 
+      <label htmlFor="paste-questions" className="sr-only">Paste questions, one per line</label>
       <textarea
+        id="paste-questions"
         value={pasted}
         onChange={event => setPasted(event.target.value)}
         rows={4}
@@ -297,6 +301,7 @@ function AddQuestionsCard({ bank, onAdded, onError }: { bank: UserBank; onAdded:
         </button>
         <input
           ref={fileRef}
+          aria-label="Upload a question file"
           type="file"
           accept=".csv,.tsv,.json,.jsonl,.md,.txt"
           className="hidden"

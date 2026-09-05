@@ -123,7 +123,9 @@ export default function LeaderboardPage() {
             Live rankings
             {rows.length > 0 && <span className="ml-2 text-sm font-normal text-[var(--color-practice-ink-mute)]">{rows.length} in your cohort</span>}
           </h2>
+          <label htmlFor="league-search" className="sr-only">Find a player in your league</label>
           <input
+            id="league-search"
             value={find}
             onChange={event => setFind(event.target.value)}
             placeholder="Find a player…"
@@ -150,10 +152,22 @@ export default function LeaderboardPage() {
                   zone === 'promote' ? 'bg-[var(--color-practice-pass)] text-white'
                   : zone === 'demote' ? 'bg-[#e4b3b3] text-[#7a1f1f]'
                   : 'bg-[var(--color-practice-sunken)]'}`}
-                title={zone === 'promote' ? 'Promotion zone' : zone === 'demote' ? 'Demotion zone' : 'Holding'}
               >
                 {row.rank}
+                <span className="sr-only">
+                  {zone === 'promote' ? ' — promotion zone'
+                    : zone === 'demote' ? ' — demotion zone'
+                    : ' — holding position'}
+                </span>
               </span>
+              {zone !== 'hold' && (
+                <span
+                  aria-hidden="true"
+                  className={`shrink-0 text-xs font-bold ${zone === 'promote' ? 'text-[var(--color-practice-pass)]' : 'text-[#a33]'}`}
+                >
+                  {zone === 'promote' ? '▲' : '▼'}
+                </span>
+              )}
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">
                   {row.display_name}
