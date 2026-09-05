@@ -151,6 +151,11 @@ async def score_turn(
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
         temperature=0.2,  # scoring should be consistent, not creative
+        # The scorer returns a small JSON object, but generation is uncapped
+        # without this and sits on the critical path between the candidate
+        # finishing and the interviewer replying. 400 is well clear of a normal
+        # response and bounds the worst case.
+        max_tokens=400,
     )
 
     parsed = json.loads(response.choices[0].message.content)

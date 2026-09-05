@@ -178,6 +178,30 @@ async def plan_host_action(
     legal, fallback = legal_host_actions(
         state, panel, result, gave_up=gave_up, adaptive=adaptive,
     )
+    # Two places where the model has nothing left to decide, and asking it costs
+    # a full round-trip on the critical path between the candidate finishing and
+    # the interviewer replying:
+    #
+    #   - the candidate declined the question. The action is forced, and the
+    #     right transition is brisk rather than a warm three-sentence bridge -
+    #     dwelling on a question somebody just asked to skip is precisely the
+    #     behaviour that made it feel like the agent was not listening.
+    #   - only one action is legal and the deterministic fallback already
+    #     carries a usable instruction.
+    if gave_up:
+        return HostDecision(
+            action=fallback.action,
+            next_agent_id=fallback.next_agent_id,
+            transition_instruction=(
+                "The candidate said they cannot answer this one. Acknowledge that briefly and "
+                "without judgement - one short clause, no reassurance speech - then move straight "
+                "on. Do not re-ask it, do not rephrase it, do not hint at the answer, and do not "
+                "tell them it was a good point."
+            ),
+            reason="the candidate declined the question, so the next action is not a judgement call",
+        )
+    if len(legal) == 1 and fallback.action in legal and fallback.transition_instruction.strip():
+        return fallback
     flow = panel.resolved_flow()
     step = flow.steps[min(state.flow_step_index, len(flow.steps) - 1)]
     current_agent = next(agent for agent in panel.agents if agent.id == step.agentId)
@@ -220,6 +244,7 @@ JSON fields: action, next_agent_id, transition_instruction, reason.
             model="openai/gpt-oss-120b",
             messages=[{"role": "system", "content": flow.host.systemPrompt}, {"role": "user", "content": prompt}],
             response_format={"type": "json_object"}, temperature=0.55,
+            max_tokens=320,
         )
         decision = HostDecision.model_validate_json(response.choices[0].message.content or "{}")
     except Exception:

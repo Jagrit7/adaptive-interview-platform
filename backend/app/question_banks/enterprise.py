@@ -13,7 +13,11 @@ from typing import Any
 
 from app.dsa.question_bank import QUESTION_BANK
 from app.schemas.panel import KnowledgeItem, Panel
-from app.orchestrator.conversation import question_allowed_for_agent
+from app.orchestrator.conversation import (
+    SpecialistDomain,
+    question_allowed_for_agent,
+    specialist_domain,
+)
 
 
 SYSTEM_DESIGN_SCENARIOS = [
@@ -117,6 +121,78 @@ def _system_design_items() -> list[KnowledgeItem]:
     return items
 
 
+# Behavioural competencies, as (slug, prompt, what a strong answer contains).
+#
+# This bank exists because its absence was a silent failure, not a missing
+# nicety. A Behavioural interviewer could only select the "custom" bank, and an
+# empty custom bank leaves knowledge.is_active() False, so _ask_from_bank
+# returned None and nothing was ever injected: the interview went quiet after
+# the host's intake, and where the agent did speak it fell back on its system
+# prompt and repeated itself.
+#
+# Phrased to invite a specific past incident rather than a policy opinion -
+# "tell me about a time" produces evidence, "how do you handle conflict"
+# produces a platitude. The ideal answers name the STAR beats so the scorer can
+# tell a complete story from a vague one.
+BEHAVIOURAL_PROMPTS = [
+    ("conflict", "Tell me about a time you disagreed with a teammate on a technical decision. How did it play out?",
+     "names the specific disagreement and both positions, what they did to resolve it, and the outcome including what they conceded"),
+    ("failure", "Describe a project that did not go the way you expected. What happened?",
+     "owns a real failure without deflecting, explains the cause, and names a concrete change they made afterwards"),
+    ("ownership", "Tell me about something you shipped end to end that nobody asked you to do.",
+     "shows self-directed scope, why they judged it worth doing, and the measurable result"),
+    ("feedback", "Tell me about a piece of critical feedback you received. What did you do with it?",
+     "recalls the actual feedback, their first reaction honestly, and a specific behaviour change"),
+    ("deadline", "Describe a time you knew you were going to miss a deadline. What did you do?",
+     "raised it early, renegotiated scope or asked for help, and says what they would do sooner next time"),
+    ("ambiguity", "Tell me about a time you had to make progress with unclear or changing requirements.",
+     "explains how they narrowed the problem, what assumptions they made explicit, and who they checked with"),
+    ("mentoring", "Tell me about someone you helped grow. What did you actually do?",
+     "describes the person's starting point, the specific support given, and evidence they improved"),
+    ("influence", "Describe a time you changed someone's mind without any authority over them.",
+     "names the evidence or framing that moved them, not just persistence"),
+    ("pressure", "Tell me about the most stressful stretch of work you have had. How did you handle it?",
+     "is specific about the pressure source and the coping strategy, and avoids glorifying overwork"),
+    ("mistake", "Tell me about a mistake that reached production or a customer.",
+     "states the impact plainly, the immediate mitigation, and the durable prevention that followed"),
+    ("collaboration", "Describe working with a team or function very different from your own.",
+     "shows adaptation to different vocabulary and priorities, with a concrete outcome"),
+    ("prioritisation", "Tell me about a time you had more work than you could finish. How did you decide what to drop?",
+     "gives an explicit basis for the trade-off and says who they communicated it to"),
+    ("pushback", "Describe a time you pushed back on a request from a manager or stakeholder.",
+     "explains the reasoning offered, how it was received, and the eventual resolution"),
+    ("initiative", "Tell me about a process on your team that was broken and what you did about it.",
+     "identifies the concrete cost of the problem and the change they drove, including resistance met"),
+    ("learning", "Tell me about something significant you had to learn quickly.",
+     "names the method, the timeline, and how they knew they had actually learned it"),
+    ("handover", "Describe a time you inherited someone else's unfamiliar code or project.",
+     "explains how they built understanding before changing things, and what they improved"),
+    ("disagreement-up", "Tell me about a decision you thought was wrong but had to implement anyway.",
+     "shows they voiced the concern properly, then committed, and reflects on the outcome honestly"),
+    ("customer", "Tell me about a time user or customer feedback changed what you built.",
+     "cites the actual feedback, the change made, and the effect on the user"),
+    ("scope", "Describe a time you had to say no to a feature or a request.",
+     "gives the reasoning, the alternative offered, and how the relationship was preserved"),
+    ("proudest", "What piece of work are you proudest of, and why that one?",
+     "explains the difficulty honestly and what specifically they contributed versus the team"),
+]
+
+
+def _behavioural_items() -> list[KnowledgeItem]:
+    # Verbal only, matching _KINDS[SpecialistDomain.BEHAVIOURAL] in
+    # orchestrator/conversation.py. A written behavioural question would be
+    # filtered straight back out by question_allowed_for_agent.
+    return [
+        KnowledgeItem(
+            id=f"behavioural-{slug}", kind="verbal", difficulty=3,
+            question=question,
+            idealAnswer=f"A strong answer {ideal}.",
+            tags=["Behavioural", "Verbal"], domain="behavioural",
+        )
+        for slug, question, ideal in BEHAVIOURAL_PROMPTS
+    ]
+
+
 _RECENT_QUESTIONS: dict[str, deque[str]] = {}
 _RECENT_WINDOW = 30
 
@@ -161,6 +237,43 @@ def _stable_shuffle(items: list[KnowledgeItem], session_id: str, agent_id: str,
     ]
 
 
+_BUILT_IN_BANKS = {
+    SpecialistDomain.BEHAVIOURAL: ("behavioural", "Behavioural Core 20", _behavioural_items),
+    SpecialistDomain.SYSTEM_DESIGN: ("system-design", "System Design Core 50", _system_design_items),
+}
+
+
+def _fill_empty_bank(agent, session_id: str, panel_name: str) -> None:
+    """Give an interviewer the built-in bank for its domain when it has none.
+
+    Two ways an agent reaches this with nothing to ask, and both ended as dead
+    air in the room rather than as an error anybody could see:
+
+      - it was never given a bank. The builder only ever offered dsa,
+        system-design and custom, so a Behavioural interviewer had no correct
+        choice available and an empty custom bank was the default outcome.
+      - it had a bank, and the specialist-boundary filter above removed every
+        item. A panel that copied one mixed question list into every
+        interviewer leaves the behavioural agent holding only technical
+        questions, all of which are then correctly discarded.
+
+    Only domains with a built-in bank are filled. A Product or Customer
+    interviewer with an empty custom bank still ends up with nothing, which
+    _ask_from_bank now says out loud instead of returning None in silence.
+    """
+    if agent.knowledge.is_active():
+        return
+    built_in = _BUILT_IN_BANKS.get(specialist_domain(agent))
+    if built_in is None:
+        return
+    bank_id, source_name, factory = built_in
+    agent.knowledge.bankId = bank_id
+    agent.knowledge.items = _stable_shuffle(factory(), session_id, agent.id, panel_name)
+    agent.knowledge.mode = "knowledge_base"
+    agent.knowledge.strict = True
+    agent.knowledge.sourceName = source_name
+
+
 def hydrate_panel_banks(panel: Panel, session_id: str) -> tuple[Panel, dict[str, dict[str, Any]]]:
     """Hydrate bank references and return private coding contracts by item id."""
     hydrated = panel.model_copy(deep=True)
@@ -192,6 +305,11 @@ def hydrate_panel_banks(panel: Panel, session_id: str) -> tuple[Panel, dict[str,
             agent.knowledge.mode = "knowledge_base"
             agent.knowledge.strict = True
             agent.knowledge.sourceName = "DSA Core (Supabase runtime)"
+        elif bank_id == "behavioural":
+            agent.knowledge.items = _stable_shuffle(_behavioural_items(), session_id, agent.id, hydrated.projectName)
+            agent.knowledge.mode = "knowledge_base"
+            agent.knowledge.strict = True
+            agent.knowledge.sourceName = "Behavioural Core 20"
         elif bank_id == "system-design":
             agent.knowledge.items = _stable_shuffle(_system_design_items(), session_id, agent.id, hydrated.projectName)
             agent.knowledge.mode = "knowledge_base"
@@ -204,4 +322,7 @@ def hydrate_panel_banks(panel: Panel, session_id: str) -> tuple[Panel, dict[str,
             # wander into behavioural questions.
             compatible = [item for item in agent.knowledge.items if question_allowed_for_agent(agent, item)]
             agent.knowledge.items = _stable_shuffle(compatible, session_id, agent.id, hydrated.projectName)
+            _fill_empty_bank(agent, session_id, hydrated.projectName)
+        else:
+            _fill_empty_bank(agent, session_id, hydrated.projectName)
     return hydrated, coding_contracts
