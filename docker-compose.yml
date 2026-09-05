@@ -26,6 +26,11 @@ services:
       # Which browser origin may call this API. The backend reads it in main.py;
       # hardcoded localhost:3000 would break the moment this is deployed anywhere.
       CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-http://localhost:3000}
+      # Both read at import, so they are only tunable if the container sees
+      # them. Without these lines setting them in .env changes nothing and says
+      # nothing about it.
+      AGENT_IDLE_TIMEOUT_SECONDS: ${AGENT_IDLE_TIMEOUT_SECONDS:-1800}
+      SESSION_TTL_SECONDS: ${SESSION_TTL_SECONDS:-10800}
     restart: unless-stopped
 
   frontend:

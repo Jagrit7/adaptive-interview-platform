@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { PracticeShell } from '@/components/practice/PracticeShell';
 import { AuthGate } from '@/components/ui/AuthGate';
 
@@ -5,6 +6,7 @@ const JOB_PANELS = [
   {
     name: 'Software Development Engineer',
     shortName: 'SDE',
+    slug: 'sde',
     description: 'A complete software-engineering panel with coding, architecture, and behavioural rounds.',
     duration: '75 min',
     interviewers: 3,
@@ -14,6 +16,7 @@ const JOB_PANELS = [
   {
     name: 'Civil Services Examination',
     shortName: 'UPSC',
+    slug: null,
     description: 'A structured panel for knowledge, judgement, current affairs, and communication.',
     duration: 'Coming later',
     interviewers: null,
@@ -83,11 +86,25 @@ export default function JobPanelsPage() {
                   ))}
                 </div>
 
-                <div className="pt-4 border-t border-[var(--color-practice-border)] flex items-center gap-4 text-sm">
+                <div className="pt-4 border-t border-[var(--color-practice-border)] flex flex-wrap items-center gap-4 text-sm">
                   <span className="font-semibold">{panel.duration}</span>
                   {panel.interviewers && (
                     <span className="text-[var(--color-practice-ink-mute)]">
                       {panel.interviewers} live interviewers
+                    </span>
+                  )}
+                  {available && panel.slug ? (
+                    <Link
+                      href={`/job-panels/${panel.slug}`}
+                      className="ml-auto inline-flex items-center gap-2 rounded-[var(--radius-control)]
+                                 bg-[var(--color-practice-accent)] px-5 py-2.5 font-semibold text-white
+                                 transition hover:brightness-110"
+                    >
+                      Start interview
+                    </Link>
+                  ) : (
+                    <span className="ml-auto text-xs font-semibold text-[var(--color-practice-ink-mute)]">
+                      Not available yet
                     </span>
                   )}
                 </div>

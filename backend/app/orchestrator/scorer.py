@@ -82,7 +82,7 @@ Full transcript so far:
 {transcript_so_far}
 
 Candidate's latest answer:
-{latest_answer}
+{latest_answer[:4000]}
 {language_note}
 {question_block}
 {grading_instruction}

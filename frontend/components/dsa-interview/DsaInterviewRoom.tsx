@@ -18,6 +18,7 @@ const STARTER_CODE = `def solution(values):
     pass
 `;
 
+const INTRO_FAILSAFE_MS = 120_000;
 const QUESTION_SECONDS = 20 * 60;
 const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID ?? '02bcecea17334c6dad96219c276fbd38';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000';
@@ -98,6 +99,9 @@ export function DsaInterviewRoom() {
   const [phase, setPhase] = useState<InterviewPhase>('introduction');
   const [code, setCode] = useState(STARTER_CODE);
   const [secondsLeft, setSecondsLeft] = useState(QUESTION_SECONDS);
+  // Read once when the coding phase opens, so the deadline is fixed rather than
+  // recomputed from a value the timer itself is changing.
+  const secondsLeftRef = useRef(QUESTION_SECONDS);
   const [question, setQuestion] = useState<DsaQuestion | null>(null);
   const [micOn, setMicOn] = useState(true);
   const [cameraOn, setCameraOn] = useState(true);
@@ -114,7 +118,8 @@ export function DsaInterviewRoom() {
   // Told at the start, not at the end: a free player who has used today's
   // attempt should know before sitting a full round, not after.
   const [allowanceNotice, setAllowanceNotice] = useState('');
-  const [channel] = useState(() => `dsa-${Date.now()}`);
+  const [saveError, setSaveError] = useState('');
+  const [channel] = useState(() => `dsa-${crypto.randomUUID()}`);
   const [uid] = useState(() => Math.floor(Math.random() * 1_000_000) + 100_000);
 
   const processedTurnsRef = useRef(new Set<string>());
@@ -181,7 +186,13 @@ export function DsaInterviewRoom() {
     const start = async () => {
       try {
         setConnectionStatus('Checking interview services...');
-        const tokenResponse = await fetch(`${BACKEND_URL}/token?channel=${channel}&uid=${uid}`);
+        const { data: tokenSession } = await supabase.auth.getSession();
+        const tokenResponse = await fetch(
+          `${BACKEND_URL}/token?channel=${encodeURIComponent(channel)}&uid=${uid}`,
+          tokenSession.session?.access_token
+            ? { headers: { Authorization: `Bearer ${tokenSession.session.access_token}` } }
+            : undefined,
+        );
         if (!tokenResponse.ok) throw new Error('Could not create an Agora token.');
         const { token } = await tokenResponse.json();
 
@@ -274,6 +285,8 @@ export function DsaInterviewRoom() {
     window.addEventListener('pagehide', onPageHide);
     return () => window.removeEventListener('pagehide', onPageHide);
   }, [endBackendSession, leaveChannel]);
+
+  useEffect(() => { secondsLeftRef.current = secondsLeft; }, [secondsLeft]);
 
   const beginCoding = useCallback(async () => {
     if (!sessionId || codingStartedRef.current) return;
@@ -377,11 +390,23 @@ export function DsaInterviewRoom() {
       // best-effort: a signed-out practice run, or a progression schema that is
       // not installed yet, must still show the candidate their result. The
       // sessionStorage copy above is what the screen renders either way.
+      // Two different failures, deliberately handled differently. Losing the
+      // XP is cosmetic. Losing the *report* means the candidate is looking at a
+      // result that was never stored - and the copy on screen comes from
+      // sessionStorage, so it looks saved either way. That one gets said out loud.
+      let reportId: string | null = null;
       try {
-        const reportId = await saveDsaReport(finished);
-        setXpAward(await awardInterviewXp(reportId));
-      } catch {
-        /* progression is an overlay on the product, not a gate in front of it */
+        reportId = await saveDsaReport(finished);
+      } catch (error) {
+        setSaveError(
+          error instanceof Error && /signed out/i.test(error.message)
+            ? 'You are signed out, so this report was not saved to your history.'
+            : 'This report could not be saved to your history. It is shown below but will be lost when you close this page.',
+        );
+      }
+      if (reportId) {
+        try { setXpAward(await awardInterviewXp(reportId)); }
+        catch { /* progression is an overlay on the product, not a gate in front of it */ }
       }
       await setMicrophoneEnabled(false);
       setPhase('finished');
@@ -430,20 +455,38 @@ export function DsaInterviewRoom() {
     }
   }, [agentUid, beginCoding, finish, messageList, phase, sessionId, uid]);
 
+  const submitCodeRef = useRef(submitCode);
+  useEffect(() => { submitCodeRef.current = submitCode; }, [submitCode]);
+
+  // Safety net for the conversational hand-off above. If the introduction is
+  // still running well after the session came up, start the coding round
+  // regardless: an interview that stalls forever is worse than one that moves
+  // on a little early, and the candidate has no way to tell what went wrong.
+  useEffect(() => {
+    if (phase !== 'introduction' || !sessionId) return;
+    const failsafe = window.setTimeout(() => {
+      if (!codingStartedRef.current) {
+        setConnectionStatus('Moving on to the coding round.');
+        void beginCoding();
+      }
+    }, INTRO_FAILSAFE_MS);
+    return () => window.clearTimeout(failsafe);
+  }, [phase, sessionId, beginCoding]);
+
   useEffect(() => {
     if (phase !== 'coding') return;
-    const timer = window.setInterval(() => {
-      setSecondsLeft((current) => {
-        if (current <= 1) {
-          window.clearInterval(timer);
-          void submitCode('expired');
-          return 0;
-        }
-        return current - 1;
-      });
-    }, 1000);
+    const deadline = Date.now() + secondsLeftRef.current * 1000;
+    const tick = () => {
+      const remaining = Math.max(0, Math.round((deadline - Date.now()) / 1000));
+      setSecondsLeft(remaining);
+      if (remaining <= 0) {
+        window.clearInterval(timer);
+        void submitCodeRef.current('expired');
+      }
+    };
+    const timer = window.setInterval(tick, 1000);
     return () => window.clearInterval(timer);
-  }, [phase, submitCode]);
+  }, [phase]);
 
   const time = useMemo(() => {
     const minutes = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
@@ -520,7 +563,7 @@ export function DsaInterviewRoom() {
           {allowanceNotice}
         </div>
       )}
-      {phase === 'finished' && <FinishedStage report={report} award={xpAward} onExit={() => void exit()} />}
+      {phase === 'finished' && <FinishedStage report={report} award={xpAward} saveError={saveError} onExit={() => void exit()} />}
     </div>
   );
 }
@@ -931,7 +974,7 @@ function FollowUpStage({
   );
 }
 
-function FinishedStage({ report, award, onExit }: { report: DsaReport | null; award: { xp: number; level?: number; trophies?: string[]; reason?: string } | null; onExit: () => void }) {
+function FinishedStage({ report, award, saveError, onExit }: { report: DsaReport | null; award: { xp: number; level?: number; trophies?: string[]; reason?: string } | null; saveError: string; onExit: () => void }) {
   return (
     <main className="flex-1 grid place-items-center p-6">
       <section className="w-full max-w-[860px] rounded-2xl border border-[var(--color-arena-line)]
@@ -943,6 +986,12 @@ function FinishedStage({ report, award, onExit }: { report: DsaReport | null; aw
           <p className="font-mono text-[11px] tracking-[0.18em] text-emerald-300 mt-6">SESSION COMPLETE · REPORT READY</p>
           <h1 className="text-3xl font-extrabold mt-2">{report?.candidate_name ?? 'Your'} DSA report</h1>
         </div>
+
+        {saveError && (
+          <div className="mt-6 rounded-xl border border-amber-400/40 bg-amber-400/10 px-5 py-3 text-center text-sm text-amber-200/90">
+            {saveError}
+          </div>
+        )}
 
         {award && (award.xp > 0 || award.reason === 'daily limit reached') && (
           // Next to the result that earned it. A reward delivered later, on

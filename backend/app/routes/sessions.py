@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 import json
+import os
 import re
 from typing import Literal
 
@@ -48,6 +49,35 @@ router = APIRouter()
 # support) - fine for a hackathon single-process backend. Move to Redis or a DB
 # table before this needs to survive a restart or run on more than one worker.
 SESSIONS: dict[str, dict] = {}
+
+# How long an untouched session is kept before it is swept.
+#
+# Nothing removed entries from SESSIONS at all: every interview ever started
+# stayed for the life of the process, holding its full transcript and a hydrated
+# panel of fifty questions with ideal answers. Worse, a candidate who closes the
+# tab never reaches /end, so the Agora agents for that session kept running -
+# and raising the agent idle timeout to 1800s to fix the handoff bug made an
+# abandoned session linger ten times longer than it used to.
+SESSION_TTL_SECONDS = int(os.getenv("SESSION_TTL_SECONDS", "10800"))  # 3 hours
+
+
+def _sweep_expired_sessions() -> int:
+    """Drop sessions nothing has touched in a while, stopping their agents.
+
+    Swept lazily on each new session rather than from a background task: this
+    process has no scheduler, and a sweeper that only runs when work arrives is
+    one less thing that can silently stop.
+    """
+    cutoff = datetime.now(timezone.utc).timestamp() - SESSION_TTL_SECONDS
+    stale = [
+        sid for sid, data in SESSIONS.items()
+        if data.get("touched_at", 0) < cutoff
+    ]
+    for sid in stale:
+        data = SESSIONS.pop(sid, None)
+        if data:
+            _stop_meeting(data)
+    return len(stale)
 
 
 def _stop_meeting(session_data: dict) -> None:
@@ -103,7 +133,10 @@ class WrittenQuestion(BaseModel):
 
 
 class NextTurnRequest(BaseModel):
-    answer_text: str
+    # Bounded like every other payload here. A spoken answer is a few hundred
+    # words; the ceiling exists so an untrusted client cannot push arbitrary
+    # volume into an in-memory transcript and a paid LLM prompt.
+    answer_text: str = Field(max_length=20_000)
     question_id: str | None = None
     question_revision: int | None = None
     answer_id: str | None = None
@@ -591,6 +624,8 @@ def start_session(body: StartSessionRequest):
         "coding_contracts": coding_contracts,
         "use_llm_host": use_llm_host,
     }
+    session_data["touched_at"] = datetime.now(timezone.utc).timestamp()
+    _sweep_expired_sessions()
     SESSIONS[state.session_id] = session_data
 
     opening_question = None
@@ -651,6 +686,7 @@ async def next_turn(session_id: str, body: NextTurnRequest):
     if session_data.get("turn_busy"):
         raise HTTPException(status_code=409, detail="The previous answer is still being evaluated.")
     session_data["turn_busy"] = True
+    session_data["touched_at"] = datetime.now(timezone.utc).timestamp()
     state: SessionState = session_data["state"]
     state_snapshot = state.model_copy(deep=True)
     try:
@@ -709,6 +745,9 @@ def end_session(session_id: str):
     if not state.finished_at:
         state.finished_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
     _stop_meeting(session_data)
+    # The report is fetched before /end by both clients, so nothing still needs
+    # this entry. Leaving it behind was what made SESSIONS grow without bound.
+    SESSIONS.pop(session_id, None)
     return {"status": "ended", "session_id": session_id}
 
 

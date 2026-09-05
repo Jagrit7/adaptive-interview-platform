@@ -1,8 +1,10 @@
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.dsa.question_bank import QUESTION_BANK
+from app.invitations import store as invitations
 from app.orchestrator.agent_launcher import start_agent_from_config
 from app.token_generator import generate_token
 from app.routes import config, dsa_sessions, invitations, job_panels, knowledge, report_queries, sessions
@@ -43,12 +45,58 @@ def health():
     return {"status": "ok"}
 
 
+def _require_caller(authorization: str | None, invite: str | None) -> None:
+    """Prove the caller is either a signed-in user or an invited candidate.
+
+    Both of the endpoints below hand out something that costs money: an Agora
+    RTC token, and a running agent. They took no credential at all, so anyone
+    who knew the backend URL could mint tokens against this app id.
+
+    Worse than the billing: an RTC token is issued *for a named channel*, and
+    channel names were `panel-<epoch millis>`. Anyone who knew roughly when an
+    interview ran could enumerate a few minutes of timestamps, mint a token for
+    the winning channel, and sit silently in a live interview listening to the
+    candidate. Channel names are random now (see the clients), and this check
+    means guessing one is no longer enough on its own.
+
+    Invited candidates have no Supabase session by design, so the invitation
+    token is accepted as the equivalent proof.
+    """
+    if invite:
+        # Raises if the token is unknown, revoked or expired.
+        invitation = invitations.load_invitation(invite)
+        invitations.assert_usable(invitation)
+        return
+    try:
+        if QUESTION_BANK.user_id_from_token(authorization):
+            return
+    except ValueError:
+        pass
+    raise HTTPException(
+        status_code=401,
+        detail="Sign in, or open your interview invitation link, before joining a room.",
+    )
+
+
 @app.post("/agents/start")
-def start_agent(agent_id: str, channel: str, remote_uid: str):
+def start_agent(
+    agent_id: str,
+    channel: str,
+    remote_uid: str,
+    authorization: str | None = Header(default=None),
+    invite: str | None = Query(default=None),
+):
+    _require_caller(authorization, invite)
     agent_instance_id = start_agent_from_config(agent_id, channel, remote_uid)
     return {"agent_id": agent_instance_id}
 
 
 @app.get("/token")
-def get_token(channel: str, uid: int):
+def get_token(
+    channel: str,
+    uid: int,
+    authorization: str | None = Header(default=None),
+    invite: str | None = Query(default=None),
+):
+    _require_caller(authorization, invite)
     return {"token": generate_token(channel, uid)}

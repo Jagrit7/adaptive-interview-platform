@@ -14,6 +14,7 @@ import {
   type ReportRecord,
 } from '@/lib/reports';
 import { InterviewReportView } from '@/components/reports/InterviewReportView';
+import { supabase } from '@/lib/supabaseClient';
 import { awardInterviewXp, beginInterview } from '@/lib/gamification';
 import type { PanelConfig } from '@/lib/panels';
 
@@ -102,7 +103,7 @@ export default function InterviewRoomLive({
   const reportRecordRef = useRef<ReportRecord | null>(null);
   const reportSavedRef = useRef(false);
 
-  const [channel] = useState(() => `panel-${Date.now()}`);
+  const [channel] = useState(() => `panel-${crypto.randomUUID()}`);
   // A fresh uid per session, not a hardcoded 1002.
   //
   // Agora RTM rejects a second login with a uid that is already active on the
@@ -114,6 +115,10 @@ export default function InterviewRoomLive({
   // you and a broken room.
   const [uid] = useState(() => Math.floor(Math.random() * 1_000_000) + 100_000);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  // Mirrored into a ref because the pagehide handler is registered once with an
+  // empty dependency list, so it would otherwise close over the initial null
+  // and never send the beacon.
+  const sessionIdRef = useRef<string | null>(null);
   // The uid the agent speaks under, straight from /sessions/start. Everything
   // that is not the agent is the candidate - see the note in the turn effect.
   const [agentUid, setAgentUid] = useState<string | null>(null);
@@ -548,7 +553,26 @@ export default function InterviewRoomLive({
         }
 
         setStatus('Fetching token...');
-        const tokenRes = await fetch(`${BACKEND_URL}/token?channel=${channel}&uid=${uid}`);
+        // The token endpoint now wants proof of who is asking: the invitation
+        // token for a candidate, a Supabase session for the panel's owner.
+        const tokenHeaders: Record<string, string> = {};
+        if (!invitationAccess) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (sessionData.session?.access_token) {
+            tokenHeaders.Authorization = `Bearer ${sessionData.session.access_token}`;
+          }
+        }
+        const tokenQuery = invitationAccess
+          ? `&invite=${encodeURIComponent(invitationAccess.token)}`
+          : '';
+        const tokenRes = await fetch(
+          `${BACKEND_URL}/token?channel=${encodeURIComponent(channel)}&uid=${uid}${tokenQuery}`,
+          { headers: tokenHeaders },
+        );
+        if (!tokenRes.ok) {
+          const body = await tokenRes.json().catch(() => ({}));
+          throw new Error(typeof body.detail === 'string' ? body.detail : 'Could not join the interview room.');
+        }
         const { token } = await tokenRes.json();
 
         // JOIN THE CHANNEL BEFORE STARTING THE AGENT.
@@ -603,6 +627,7 @@ export default function InterviewRoomLive({
         }
 
         setSessionId(startData.session_id);
+        sessionIdRef.current = startData.session_id;
         // Only the practice path consumes a daily attempt. An invited
         // candidate is sitting a recruiter's interview, not practising, and a
         // test run is the author checking their own panel.
@@ -673,7 +698,16 @@ export default function InterviewRoomLive({
   // best-effort - the unique uid above is what actually guarantees the next
   // session still works.
   useEffect(() => {
-    const onUnload = () => { void leaveChannel(); };
+    const onUnload = () => {
+      void leaveChannel();
+      // Tell the backend too. Leaving the channel frees the browser's side but
+      // leaves the session and its Agora agents running server-side until they
+      // idle out - and the idle budget is half an hour, so an abandoned tab was
+      // quietly paying for thirty minutes of agent time. sendBeacon is the only
+      // request shape that reliably survives the page going away.
+      const id = sessionIdRef.current;
+      if (id) navigator.sendBeacon(`${BACKEND_URL}/sessions/${id}/end`);
+    };
     window.addEventListener("pagehide", onUnload);
     return () => window.removeEventListener("pagehide", onUnload);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -773,6 +807,7 @@ export default function InterviewRoomLive({
     await finalizeReport();
     if (sessionId) {
       await fetch(`${BACKEND_URL}/sessions/${sessionId}/end`, { method: 'POST' }).catch(() => undefined);
+      sessionIdRef.current = null;
     }
     await leaveChannel();
     setActiveSpeakerId(null);
