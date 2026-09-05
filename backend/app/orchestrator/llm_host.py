@@ -161,8 +161,15 @@ def legal_host_actions(
         return [HostAction.HANDOFF], HostDecision(
             action=HostAction.HANDOFF, next_agent_id=next_agent,
             transition_instruction=(
-                "Acknowledge one relevant point from the candidate's answer, then pass the conversation "
-                "naturally to the next interviewer in the rotation."
+                # Spoken by the interviewer being handed TO. Telling it to pass
+                # the conversation on made it announce a handoff that had
+                # already happened, and left the previous answer unaddressed -
+                # which is what makes a handoff feel abrupt. This is the common
+                # path; the cross-role trigger above had already been fixed and
+                # this one had not.
+                "Before anything else, give the candidate one sentence of genuine feedback on the "
+                "answer they just gave - name something specific they said and whether it landed - "
+                "so that topic is closed properly rather than dropped."
             ),
             reason="satisfaction-aware round robin selected the next eligible interviewer",
         )

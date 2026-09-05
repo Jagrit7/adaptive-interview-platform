@@ -1,3 +1,6 @@
+import asyncio
+import re
+
 from pydantic import BaseModel
 
 from app.knowledge.store import find_reference_answer, format_reference_for_scorer
@@ -122,6 +125,26 @@ Respond as JSON:
 """
 
 
+_MAX_SCORER_RETRY_WAIT = 5.0
+
+
+def _retry_after_seconds(exc: Exception) -> float | None:
+    """How long the provider asked us to wait, or None if this is not a retry.
+
+    Only rate limits are retried. Anything else - a bad key, a malformed
+    response - will fail again immediately and the interview should degrade
+    visibly instead of stalling on it.
+    """
+    if getattr(exc, "status_code", None) != 429 and "rate_limit" not in str(exc):
+        return None
+    match = re.search(r"try again in ([0-9.]+)\s*(ms|s)\b", str(exc))
+    if not match:
+        return 1.0
+    value = float(match.group(1))
+    seconds = value / 1000 if match.group(2) == "ms" else value
+    return min(seconds + 0.2, _MAX_SCORER_RETRY_WAIT)
+
+
 async def score_turn(
     current_agent: Agent,
     all_agents: list[Agent],
@@ -146,7 +169,7 @@ async def score_turn(
 
     client = AsyncGroq(api_key=os.environ["GROQ_API_KEY"])
 
-    try:
+    async def _grade():
         response = await client.chat.completions.create(
             model="openai/gpt-oss-120b",
             messages=[{"role": "user", "content": prompt}],
@@ -162,7 +185,22 @@ async def score_turn(
             reasoning_effort="low",
             max_tokens=2_000,
         )
-        parsed = json.loads(response.choices[0].message.content or "{}")
+        return json.loads(response.choices[0].message.content or "{}")
+
+    try:
+        try:
+            parsed = await _grade()
+        except Exception as first:
+            # A rate limit is not a broken grader, it is a queue. The provider
+            # says how long to wait - typically under a second - and giving up
+            # costs the candidate a real score on that answer for the rest of
+            # the interview. Retried once, briefly, then allowed to fail.
+            delay = _retry_after_seconds(first)
+            if delay is None:
+                raise
+            print(f"[scorer] rate limited, retrying in {delay:.1f}s")
+            await asyncio.sleep(delay)
+            parsed = await _grade()
     except Exception as exc:
         # A grader that is down must not end a live interview. The turn scores
         # neutrally and is flagged, so the transcript records that this answer

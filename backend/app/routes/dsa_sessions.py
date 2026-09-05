@@ -8,6 +8,7 @@ from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
 from app.dsa.followups import followup_for, outcome_briefing, submission_trigger
+from app.routes.sessions import BREAK_MAX_COUNT, BREAK_SECONDS
 from app.dsa.code_runner import UnsafeCodeError, run_candidate_code
 from app.dsa.evaluator import VerbalEvaluation, evaluate_verbal_answer
 from app.dsa.preset import DSA_PANEL
@@ -291,6 +292,8 @@ def start_dsa_session(body: StartDsaSessionRequest, authorization: str | None = 
         "selection_metadata": None,
         "question": None,
         "user_id": user_id,
+        "breaks_taken": 0,
+        "break_until": None,
     }
     return StartDsaSessionResponse(
         session_id=session_id, agora_agent_id=agora_agent_id, agent_uid=AGENT_UID,
@@ -406,6 +409,98 @@ def submit_code(session_id: str, body: SubmitCodeRequest):
         session_id=session_id, phase="follow_up", trigger=trigger,
         follow_up=follow_up, test_run=TestRunResponse(**test_run),
     )
+
+
+class DsaBreakRequest(BaseModel):
+    action: Literal["start", "end"]
+
+
+class DsaSilenceRequest(BaseModel):
+    stage: Literal["nudge", "repeat"]
+
+
+def _dsa_break_seconds_remaining(session_data: dict) -> int:
+    """Seconds left on the current break; 0 when not on one."""
+    until = session_data.get("break_until")
+    if not until:
+        return 0
+    return max(0, int((until - datetime.now(timezone.utc)).total_seconds()))
+
+
+@router.post("/{session_id}/break")
+def dsa_break(session_id: str, body: DsaBreakRequest):
+    """The same bounded pause the panel interview offers.
+
+    Kept deliberately identical in limits and wording to the panel version in
+    routes/sessions.py, because a candidate should not find that a practice
+    interview and a real one behave differently.
+    """
+    session_data = _get_session(session_id)
+    agora_session = session_data["agora_session"]
+    if body.action == "start":
+        if _dsa_break_seconds_remaining(session_data) > 0:
+            raise HTTPException(status_code=409, detail="A break is already running.")
+        if session_data["breaks_taken"] >= BREAK_MAX_COUNT:
+            raise HTTPException(status_code=409, detail="You have used all your breaks.")
+        session_data["breaks_taken"] += 1
+        session_data["break_until"] = datetime.now(timezone.utc) + timedelta(seconds=BREAK_SECONDS)
+        # A coding deadline must not keep running while the interview is paused,
+        # or the break silently costs the candidate their remaining time.
+        if session_data.get("deadline"):
+            session_data["paused_deadline_left"] = max(
+                0, (session_data["deadline"] - datetime.now(timezone.utc)).total_seconds())
+        inject_followup(
+            agora_session,
+            f"The candidate is taking a short break of about {BREAK_SECONDS // 60} minutes. In one "
+            "warm sentence tell them to take their time and that you will pick up exactly where "
+            "you left off. Do not ask anything and do not continue the interview.",
+            replace_pending=True,
+        )
+    else:
+        if not session_data.get("break_until"):
+            raise HTTPException(status_code=409, detail="No break is running.")
+        session_data["break_until"] = None
+        left = session_data.pop("paused_deadline_left", None)
+        if left is not None:
+            session_data["deadline"] = datetime.now(timezone.utc) + timedelta(seconds=left)
+        inject_followup(
+            agora_session,
+            "The candidate is back from their break. Welcome them back in one short sentence and "
+            "carry on from exactly where you left off.",
+            replace_pending=True,
+        )
+    return {
+        "breaks_remaining": BREAK_MAX_COUNT - session_data["breaks_taken"],
+        "break_seconds_remaining": _dsa_break_seconds_remaining(session_data),
+        "deadline": (session_data["deadline"].isoformat()
+                     if session_data.get("deadline") else None),
+    }
+
+
+@router.post("/{session_id}/silence-prompt")
+def dsa_silence_prompt(session_id: str, body: DsaSilenceRequest):
+    """Say something when the candidate has gone quiet on a spoken question."""
+    session_data = _get_session(session_id)
+    if _dsa_break_seconds_remaining(session_data) > 0:
+        raise HTTPException(status_code=409, detail="The interview is paused for a break.")
+    if session_data["phase"] == "coding":
+        # They are typing, not stalling. The coding round has its own clock.
+        raise HTTPException(status_code=409, detail="The candidate is working on the task.")
+    inject_followup(
+        session_data["agora_session"],
+        (
+            "The candidate has gone quiet for a while and may not have caught the question. Ask it "
+            "again, clearly and a little more slowly. You may rephrase for clarity but must not "
+            "change what is being asked, add a hint, or reveal any part of the answer."
+            if body.stage == "repeat" else
+            "The candidate has been silent for a few seconds. In one short, warm sentence, let them "
+            "know there is no rush and offer to repeat the question if it would help. Do not answer "
+            "it, do not hint, and do not move on to anything else."
+        ),
+        replace_pending=True,
+    )
+    print(f"[silence {session_id[:8]}] dsa stage={body.stage}")
+    return {"stage": body.stage}
 
 
 @router.get("/catalog", response_model=dict[str, Any])

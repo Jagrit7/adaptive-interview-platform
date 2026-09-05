@@ -20,6 +20,11 @@ const STARTER_CODE = `def solution(values):
 
 const INTRO_FAILSAFE_MS = 120_000;
 const QUESTION_SECONDS = 20 * 60;
+// Matched to the panel interview so a practice run does not behave
+// differently from a real one.
+// Each stage waits this long once the interviewer has finished speaking, so the
+// re-ask lands after roughly twenty seconds of the candidate being quiet.
+const SILENCE_NUDGE_MS = 10_000;
 const APP_ID = process.env.NEXT_PUBLIC_AGORA_APP_ID ?? '02bcecea17334c6dad96219c276fbd38';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000';
 const AGORA_JOIN_TIMEOUT_MS = 15_000;
@@ -97,6 +102,12 @@ export function DsaInterviewRoom() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [phase, setPhase] = useState<InterviewPhase>('introduction');
+  // When the candidate last said anything, and how far the silence escalation
+  // has got for the current phase.
+  const lastCandidateAtRef = useRef(0);
+  const silenceStageRef = useRef<{ phase: InterviewPhase; stage: number }>(
+    { phase: 'introduction', stage: 0 },
+  );
   const [code, setCode] = useState(STARTER_CODE);
   const [secondsLeft, setSecondsLeft] = useState(QUESTION_SECONDS);
   // Read once when the coding phase opens, so the deadline is fixed rather than
@@ -306,6 +317,44 @@ export function DsaInterviewRoom() {
 
   useEffect(() => { secondsLeftRef.current = secondsLeft; }, [secondsLeft]);
 
+  // The same silence handling the panel interview has: a check-in first, the
+  // question again only if the quiet continues. Skipped during the coding
+  // phase, which has its own clock and where quiet means "typing".
+  useEffect(() => {
+    if (!sessionId || phase === 'coding' || phase === 'finished') return;
+    // Silence only counts once the interviewer has stopped talking. Counting
+    // from the phase start meant the first prompt landed ten seconds into Ari's
+    // own greeting and interrupted it.
+    if (isAgentSpeaking) return;
+    const startedAt = Date.now();
+    const ask = async (stage: 'nudge' | 'repeat') => {
+      try {
+        await fetch(`${BACKEND_URL}/dsa/sessions/${sessionId}/silence-prompt`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stage }),
+        });
+      } catch {
+        // A missed nudge is not worth interrupting the interview over.
+      }
+    };
+    const timer = setInterval(() => {
+      // Anything the candidate has said since the interviewer finished means
+      // they are answering, not stuck.
+      const quietSince = Math.max(startedAt, lastCandidateAtRef.current);
+      if (Date.now() - quietSince < SILENCE_NUDGE_MS) return;
+      // Escalation is tracked against the phase, not this effect run: the
+      // prompt itself makes the agent speak, which re-runs the effect.
+      const progress = silenceStageRef.current;
+      if (progress.phase !== phase) silenceStageRef.current = { phase, stage: 0 };
+      const stage = silenceStageRef.current.stage;
+      if (stage >= 2) return;
+      silenceStageRef.current = { phase, stage: stage + 1 };
+      void ask(stage === 0 ? 'nudge' : 'repeat');
+    }, 500);
+    return () => clearInterval(timer);
+  }, [sessionId, phase, isAgentSpeaking]);
+
   const beginCoding = useCallback(async () => {
     if (!sessionId || codingStartedRef.current) return;
     codingStartedRef.current = true;
@@ -448,6 +497,7 @@ export function DsaInterviewRoom() {
       const fromCandidate = String(message.uid) === String(uid);
       if (!fromAgent && !fromCandidate) continue;
       if (fromCandidate) {
+        lastCandidateAtRef.current = Date.now();
         if (phase === 'introduction') {
           if (!firstSighting) continue;
           introCandidateTurnsRef.current += 1;

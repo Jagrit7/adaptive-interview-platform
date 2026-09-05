@@ -28,6 +28,13 @@ export interface Panelist {
 export interface ArenaRoomProps {
   roundName: string;
   elapsed: string;
+  /** Remaining time on a timed task, pre-formatted. Null when untimed. */
+  timeLeft?: string | null;
+  /** Breaks left in this interview; null hides the control entirely. */
+  breaksRemaining?: number | null;
+  /** Counts down while a break is running; null when not on one. */
+  breakTimeLeft?: string | null;
+  onBreak?: () => void;
   questionNumber: number;
   questionTotal: number;
   question: string;
@@ -73,7 +80,8 @@ const LANGUAGES = ['Python', 'C', 'Java'];
 
 export function ArenaRoom(props: ArenaRoomProps) {
   const {
-    roundName, elapsed, questionNumber, questionTotal, question, questionDetails,
+    roundName, elapsed, timeLeft = null, breaksRemaining = null, breakTimeLeft = null, onBreak,
+    questionNumber, questionTotal, question, questionDetails,
     panelists, agentState, code, onCodeChange,
     language, onLanguageChange, micOn, onToggleMic,
     micListening = false, micLevel = 0, candidateSpeaking = false, canInterrupt = false,
@@ -85,7 +93,8 @@ export function ArenaRoom(props: ArenaRoomProps) {
 
   return (
     <div className="arena-grid h-dvh overflow-hidden flex flex-col text-[var(--color-arena-ink)]">
-      <StatusBar roundName={roundName} elapsed={elapsed} />
+      <StatusBar roundName={roundName} elapsed={elapsed} timeLeft={timeLeft}
+                 breaksRemaining={breaksRemaining} breakTimeLeft={breakTimeLeft} onBreak={onBreak} />
 
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-4">
         <div
@@ -144,7 +153,11 @@ export function ArenaRoom(props: ArenaRoomProps) {
 
 /* ------------------------------------------------------------------ bars -- */
 
-function StatusBar({ roundName, elapsed }: { roundName: string; elapsed: string }) {
+function StatusBar({ roundName, elapsed, timeLeft, breaksRemaining, breakTimeLeft, onBreak }: {
+  roundName: string; elapsed: string; timeLeft?: string | null;
+  breaksRemaining?: number | null; breakTimeLeft?: string | null; onBreak?: () => void;
+}) {
+  const onBreakNow = Boolean(breakTimeLeft);
   return (
     <header className="shrink-0 flex items-center justify-between px-5 py-3 border-b
                        border-[var(--color-arena-line)] bg-[var(--color-arena-panel)]">
@@ -157,8 +170,30 @@ function StatusBar({ roundName, elapsed }: { roundName: string; elapsed: string 
           LIVE
         </span>
         <span className="font-mono text-sm text-[var(--color-arena-ink-soft)]">{elapsed}</span>
+        {timeLeft && (
+          <span
+            className="rounded-md bg-[var(--color-arena-line)] px-2 py-0.5 font-mono text-sm
+                       text-[var(--color-arena-ink)]"
+            aria-label="Time remaining on this task"
+          >
+            {timeLeft} left
+          </span>
+        )}
       </div>
-      <span className="font-mono text-sm text-[var(--color-arena-ink-soft)]">{roundName}</span>
+      <div className="flex items-center gap-3">
+        {onBreak && typeof breaksRemaining === 'number' && (breaksRemaining > 0 || onBreakNow) && (
+          <button
+            type="button"
+            onClick={onBreak}
+            className="rounded-md border border-[var(--color-arena-line)] px-2.5 py-1 font-mono
+                       text-xs text-[var(--color-arena-ink-soft)]
+                       hover:text-[var(--color-arena-ink)]"
+          >
+            {onBreakNow ? `Resume · ${breakTimeLeft}` : `Break · ${breaksRemaining} left`}
+          </button>
+        )}
+        <span className="font-mono text-sm text-[var(--color-arena-ink-soft)]">{roundName}</span>
+      </div>
     </header>
   );
 }

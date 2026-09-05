@@ -47,6 +47,72 @@ def _score_text(score: float) -> str:
     return f"{int(score * 100 + 0.5)}/100"
 
 
+# Longest quotation to lift out of an answer. Enough to recognise what was
+# said; short enough that a report stays readable.
+_EVIDENCE_QUOTE_CHARS = 160
+
+
+def _evidence_for(
+    report: InterviewReport, competency: str, *, strong: bool, used: set[int],
+) -> str:
+    """A sentence of transcript evidence to sit behind one competency's score.
+
+    "Architecture needs improvement (48/100)" is a grade, not feedback: it tells
+    a candidate nothing about what they said, and gives a recruiter nothing to
+    check the judgement against.
+
+    The evidence has to belong to the competency it is offered for. Searching
+    the whole transcript quoted the single best and single worst answer of the
+    interview against every line, so a report could assert "Complexity analysis
+    was a strength" and then quote an answer about sharding - misattributed
+    evidence, which is worse than none. Competencies are owned by the
+    interviewers that assess them, so the candidate's answers to those
+    interviewers are the only ones that can support the claim.
+
+    `used` carries the turns already quoted, so three strengths do not print the
+    same sentence three times.
+
+    Mirrored in frontend/lib/reports.ts - see the note on presentation().
+    """
+    owners = {a.agent_id for a in report.agents if competency in a.competencies}
+    owned = [
+        turn for turn in report.transcript
+        if turn.speaker == "candidate" and turn.question_score is not None
+        and turn.text.strip()
+        # Older reports predate per-agent competency lists; falling back to the
+        # whole transcript is better than silently dropping the evidence.
+        and (not owners or turn.agent_id in owners)
+    ]
+    # Prefer an answer not already quoted, but do not go silent rather than
+    # repeat one. An interviewer often owns several competencies and answers
+    # only a question or two, so insisting on a fresh turn left most lines with
+    # a bare score and no evidence at all - which is what having evidence was
+    # meant to fix.
+    answers = [turn for turn in owned if turn.turn not in used] or owned
+    if not answers:
+        return ""
+    if strong:
+        pick = max(answers, key=lambda turn: turn.question_score or 0.0)
+        if (pick.question_score or 0.0) < 0.6:
+            return ""
+        lead = f"{pick.agent_name} scored their strongest answer here"
+    else:
+        # A flagged answer explains a low score better than the lowest number,
+        # which may just be a question they never reached.
+        flagged = [turn for turn in answers if turn.flags]
+        pool = flagged or answers
+        pick = min(pool, key=lambda turn: turn.question_score or 0.0)
+        if (pick.question_score or 0.0) > 0.75:
+            return ""
+        reason = f" ({', '.join(pick.flags).replace('_', ' ')})" if pick.flags else ""
+        lead = f"{pick.agent_name} flagged this exchange{reason}"
+    used.add(pick.turn)
+    quote = pick.text.strip()
+    if len(quote) > _EVIDENCE_QUOTE_CHARS:
+        quote = quote[:_EVIDENCE_QUOTE_CHARS].rstrip() + "..."
+    return f' {lead} (turn {pick.turn}): "{quote}"'
+
+
 def presentation(report: InterviewReport, role_name: str | None = None) -> dict[str, Any]:
     """The denormalised, human-readable projection stored alongside the JSON.
 
@@ -55,12 +121,17 @@ def presentation(report: InterviewReport, role_name: str | None = None) -> dict[
     """
     ranked = sorted(report.competencies, key=lambda item: item.score, reverse=True)
 
+    # One shared set, so a turn quoted as a strength is not also quoted as a
+    # growth area, and no quote is repeated.
+    quoted: set[int] = set()
     strengths = [
         f"{item.name} was a demonstrated strength ({_score_text(item.score)})."
+        f"{_evidence_for(report, item.name, strong=True, used=quoted)}"
         for item in ranked if item.covered
     ][:3]
     growth = [
         f"{item.name} needs further evidence or improvement ({_score_text(item.score)})."
+        f"{_evidence_for(report, item.name, strong=False, used=quoted)}"
         for item in reversed(ranked) if not item.covered
     ][:3]
 

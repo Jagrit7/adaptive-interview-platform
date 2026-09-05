@@ -39,8 +39,8 @@ SDE_PANEL = JobPanelPreset.model_validate({
                 "tools": ["dsa_question_bank", "code_runner"],
                 "knowledge": {"mode": "knowledge_base", "strict": True, "bankId": "dsa",
                               "sourceName": "DSA Core (shared bank)", "items": []},
-                "turnTaking": {"canOpen": True, "handoffTriggers": "coding and verbal follow-up complete", "priority": "high"},
-                "scoring": {"competencies": ["Algorithmic correctness", "Complexity analysis", "Problem solving"], "weight": 0.45},
+                "turnTaking": {"canOpen": True, "handoffTriggers": "the candidate has given a working implementation or design but has not said who it affects, what it costs, or why it matters to a user or the business", "priority": "high"},
+                "scoring": {"competencies": ["Algorithmic correctness", "Complexity analysis", "Problem solving"], "weight": 0.40},
             },
             {
                 "id": "sde-system-design",
@@ -71,8 +71,61 @@ SDE_PANEL = JobPanelPreset.model_validate({
                 "tools": [],
                 "knowledge": {"mode": "knowledge_base", "strict": True, "bankId": "system-design",
                               "sourceName": "System Design Core 50", "items": []},
-                "turnTaking": {"canOpen": False, "handoffTriggers": "system-design round complete", "priority": "medium"},
-                "scoring": {"competencies": ["Requirements", "Architecture", "Scalability and trade-offs"], "weight": 0.35},
+                "turnTaking": {"canOpen": False, "handoffTriggers": "the candidate describes an architecture without stating its trade-offs, failure modes, or scaling limits", "priority": "medium"},
+                "scoring": {"competencies": ["Requirements", "Architecture", "Scalability and trade-offs"], "weight": 0.30},
+            },
+            {
+                # The brief's example scenario needs a role whose job is to be
+                # unsatisfied by a correct answer: the technical interviewer
+                # accepts a working implementation, and this one asks who it is
+                # for and what it costs. Without a non-engineering voice on the
+                # panel there is nobody to raise that.
+                "id": "sde-product",
+                "identity": {"name": "Devan", "role": "Product", "color": "#F59E0B", "avatar": "DV"},
+                "behavior": {
+                    "systemPrompt": (
+                        "You are Devan, the product manager on an SDE panel. Speak only when the "
+                        "coordinator gives you the floor. You are not assessing whether the code or the "
+                        "architecture is correct - a colleague has already done that. You care about who "
+                        "the work is for. Push the candidate to say which users are affected, what it "
+                        "costs, what they would measure, and what they would cut if the deadline halved. "
+                        "Accept a business answer in plain language; do not require jargon. If they "
+                        "retreat into implementation detail, acknowledge it and ask the impact question "
+                        "again."
+                    ),
+                    "greetingMessage": "",
+                    "fallbackMessage": "Let me put it another way - who notices if this ships, and who notices if it does not?",
+                    "scenarioBrief": (
+                        "You are the product manager who owns this area. The candidate has just proposed "
+                        "something technically sound. Your quarter's goal depends on it being the right "
+                        "thing to build, not merely a working one. Stay in that role for the whole "
+                        "exchange."
+                    ),
+                },
+                "logic": {
+                    "difficultyBand": [2, 4],
+                    "seedQuestions": [
+                        "Who is actually affected by what you just described, and how would they notice?",
+                        "How would you measure whether that change worked?",
+                        "If the deadline halved, what would you cut first and why?",
+                        "What would you tell a customer who asked why this took a quarter?",
+                        "What is the cost of getting this wrong?",
+                    ],
+                    "followUpAggressiveness": 6, "maxTurns": 3, "maxVisits": 2,
+                },
+                # Role-play on, and a scenario to inhabit - this was configured
+                # False on every agent, which left the scenario support in
+                # agent_launcher unreachable.
+                "skills": {"rolePlayMode": True, "loopUntilSatisfied": True, "contradictionProbing": True},
+                "tools": [],
+                # No bank: this role's value is reacting to what the candidate
+                # just built, which a fixed question list cannot do.
+                "knowledge": {"mode": "llm", "strict": False, "bankId": "",
+                              "sourceName": "", "items": []},
+                "turnTaking": {"canOpen": False, "handoffTriggers":
+                               "the candidate justifies a decision purely in technical terms with no "
+                               "reference to users, cost, or business outcome", "priority": "medium"},
+                "scoring": {"competencies": ["Product sense", "Communication clarity"], "weight": 0.15},
             },
             {
                 "id": "sde-hr",
@@ -104,18 +157,19 @@ SDE_PANEL = JobPanelPreset.model_validate({
                 "tools": [],
                 "knowledge": {"mode": "knowledge_base", "strict": True, "bankId": "behavioural",
                               "sourceName": "Behavioural Core 20", "items": []},
-                "turnTaking": {"canOpen": False, "handoffTriggers": "panel interview complete", "priority": "low"},
-                "scoring": {"competencies": ["Communication clarity", "Ownership", "Collaboration"], "weight": 0.20},
+                "turnTaking": {"canOpen": False, "handoffTriggers": "the candidate describes working with other people, a disagreement, or a decision they owned, and the human side of it is worth exploring", "priority": "low"},
+                "scoring": {"competencies": ["Communication clarity", "Ownership", "Collaboration"], "weight": 0.15},
             },
         ],
         "scorer": {"competencies": [
-            {"name": "Algorithmic correctness", "weight": 25, "threshold": 0.6},
+            {"name": "Algorithmic correctness", "weight": 22, "threshold": 0.6},
             {"name": "Complexity analysis", "weight": 10, "threshold": 0.6},
             {"name": "Problem solving", "weight": 10, "threshold": 0.6},
             {"name": "Requirements", "weight": 10, "threshold": 0.6},
-            {"name": "Architecture", "weight": 15, "threshold": 0.6},
+            {"name": "Architecture", "weight": 12, "threshold": 0.6},
             {"name": "Scalability and trade-offs", "weight": 10, "threshold": 0.6},
             {"name": "Communication clarity", "weight": 8, "threshold": 0.6},
+            {"name": "Product sense", "weight": 6, "threshold": 0.55},
             {"name": "Ownership", "weight": 6, "threshold": 0.6},
             {"name": "Collaboration", "weight": 6, "threshold": 0.6},
         ]},
@@ -123,7 +177,8 @@ SDE_PANEL = JobPanelPreset.model_validate({
     "stages": [
         {"id": "dsa", "title": "DSA & Coding", "agentId": "sde-dsa", "order": 1, "kind": "hybrid_coding", "durationMinutes": 35, "description": "Random written coding problem plus verbal analysis."},
         {"id": "system-design", "title": "System Design", "agentId": "sde-system-design", "order": 2, "kind": "verbal", "durationMinutes": 25, "description": "Architecture discussion with adaptive probing."},
-        {"id": "hr", "title": "HR & Communication", "agentId": "sde-hr", "order": 3, "kind": "verbal", "durationMinutes": 15, "description": "Behavioural and communication assessment."},
+        {"id": "product", "title": "Product & Impact", "agentId": "sde-product", "order": 3, "kind": "verbal", "durationMinutes": 15, "description": "Business impact and user outcomes."},
+        {"id": "hr", "title": "HR & Communication", "agentId": "sde-hr", "order": 4, "kind": "verbal", "durationMinutes": 15, "description": "Behavioural and communication assessment."},
     ],
 })
 
