@@ -818,7 +818,11 @@ async def _process_turn(
         question = _ask_from_bank(
             session_data, first_agent, state, state.language,
             introduce_agent=True,
-            transition_instruction="Thank the candidate briefly for the introduction.",
+            transition_instruction=(
+                f"Thank {state.candidate_name or 'the candidate'} by name for the introduction, and "
+                "briefly play back the role they said they are interviewing for, so they can hear "
+                "that it was understood. One short sentence."
+            ),
             allowed_kinds=first_step.questionKinds,
         )
         return NextTurnResponse(
@@ -907,6 +911,14 @@ async def _process_turn(
                 agent_uid=session_data["agent_uids"][current_agent.id],
                 voice_id=voices[current_agent.id],
             )
+
+    # Logged verbatim, with its length, because "the agent replied to half my
+    # sentence" is otherwise impossible to confirm from the outside: this is the
+    # exact string the scorer and the interviewer were given.
+    print(
+        f"[transcript {session_id[:8]}] agent={current_agent.id} "
+        f"chars={len(answer_text)} answer={answer_text!r}"
+    )
 
     gave_up = current_agent.knowledge.is_active() and _candidate_gave_up(answer_text)
     if score_override is not None:
