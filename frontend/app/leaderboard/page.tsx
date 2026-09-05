@@ -1,182 +1,194 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PracticeShell } from '@/components/practice/PracticeShell';
-import { PODIUM, RANKINGS, USER } from '@/lib/mockData';
+import { usePlayer } from '@/hooks/usePlayer';
+import {
+  levelProgress, loadLeagueStanding, subscribeToCohort,
+  type LeaderboardRow, type LeagueStanding,
+} from '@/lib/gamification';
 
+/**
+ * The weekly league board.
+ *
+ * Ranked on XP earned this week inside a cohort of at most thirty, not on
+ * lifetime totals. That is the whole design: a lifetime board is won once and
+ * then read by nobody, whereas a weekly one resets the question every Monday
+ * and puts a new player within reach of the top on their first day.
+ */
 export default function LeaderboardPage() {
-  const [scope, setScope] = useState<'Global' | 'Friends'>('Global');
+  const { profile, signedIn, loading: playerLoading } = usePlayer();
+  const [standing, setStanding] = useState<LeagueStanding | null>(null);
+  const [rows, setRows] = useState<LeaderboardRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [find, setFind] = useState('');
 
-  const rows = RANKINGS.filter((r) =>
-    !find.trim() || r.name.toLowerCase().includes(find.toLowerCase()));
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const data = await loadLeagueStanding();
+        if (!active) return;
+        setStanding(data);
+        setRows(data?.rows ?? []);
+      } catch (reason) {
+        if (active) setError(reason instanceof Error ? reason.message : String(reason));
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, []);
 
-  const progress = (USER.xp / USER.xpToNextRank) * 100;
+  // Live: somebody finishing an interview moves the board under you.
+  useEffect(() => {
+    if (!standing?.cohortId) return;
+    return subscribeToCohort(standing.cohortId, setRows);
+  }, [standing?.cohortId]);
+
+  const visible = rows.filter(row => !find.trim() || row.display_name.toLowerCase().includes(find.toLowerCase()));
+  const me = rows.find(row => row.you);
+  const progress = levelProgress(profile.total_xp);
+
+  const promoteCount = standing?.tier.promote_count ?? 0;
+  const demoteFrom = rows.length - (standing?.tier.demote_count ?? 0);
+  const zoneOf = (rank: number) =>
+    rank <= promoteCount ? 'promote' : rank > demoteFrom ? 'demote' : 'hold';
 
   return (
-    <PracticeShell user={USER}>
-      <div className="flex items-start justify-between gap-6 mb-8">
+    <PracticeShell>
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-extrabold tracking-tight
-                         text-[var(--color-practice-deep)] mb-3">
-            Hall of fame
+          <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-[var(--color-practice-deep)]">
+            {standing ? `${standing.tier.name} league` : 'Leaderboard'}
           </h1>
-          <p className="text-[var(--color-practice-ink-soft)] max-w-[52ch]">
-            See how you stack up against the rest of the InterviewPro community.
+          <p className="max-w-[52ch] text-[var(--color-practice-ink-soft)]">
+            {standing
+              ? `Top ${promoteCount} move up. Bottom ${standing.tier.demote_count} move down. Ranked on XP earned this week.`
+              : 'Finish an interview to join this week’s league.'}
           </p>
         </div>
+        {standing?.seasonEndsOn && (
+          <div className="shrink-0 rounded-[var(--radius-card)] bg-[var(--color-practice-sunken)] px-5 py-3 text-center">
+            <p className="text-xs text-[var(--color-practice-ink-mute)]">Week ends</p>
+            <p className="font-bold">{new Date(standing.seasonEndsOn).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+          </div>
+        )}
+      </div>
 
-        <div className="shrink-0 flex rounded-full p-1 bg-[var(--color-practice-sunken)]">
-          {(['Global', 'Friends'] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setScope(s)}
-              aria-pressed={scope === s}
-              className={`px-6 py-2 rounded-full text-sm font-semibold transition ${
-                scope === s
-                  ? 'bg-[var(--color-practice-surface)] text-[var(--color-practice-accent)] shadow-sm'
-                  : 'text-[var(--color-practice-ink-soft)]'
-              }`}
-            >
-              {s}
-            </button>
-          ))}
+      {error && <Card tone="warn"><p className="text-sm">{error}</p></Card>}
+
+      {!playerLoading && !signedIn && (
+        <Card><p className="text-sm text-[var(--color-practice-ink-soft)]">Sign in to join the league and start earning XP.</p></Card>
+      )}
+
+      <section className="mb-6 rounded-[var(--radius-panel)] bg-[var(--color-practice-sunken)] p-7">
+        <div className="mb-6 flex items-center gap-5">
+          <div className="relative">
+            <div className="grid h-20 w-20 place-items-center rounded-full bg-[var(--color-practice-accent)] text-2xl font-bold text-white">
+              {(profile.display_name || 'Y').charAt(0).toUpperCase()}
+            </div>
+            <span className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full bg-[var(--color-practice-xp)] text-xs font-bold text-white ring-4 ring-[var(--color-practice-sunken)]">
+              {progress.level}
+            </span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-extrabold">{profile.display_name?.trim() || 'You'}</h2>
+            <p className="font-medium text-[var(--color-practice-accent)]">
+              {profile.is_premium ? 'Premium member' : 'Free plan'}
+            </p>
+          </div>
         </div>
-      </div>
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_320px] mb-6">
-        <section className="rounded-[var(--radius-panel)] p-7
-                            bg-[var(--color-practice-sunken)]">
-          <div className="flex items-center gap-5 mb-6">
-            <div className="relative">
-              <div className="w-20 h-20 rounded-full bg-[var(--color-practice-accent)]
-                              grid place-items-center text-white text-2xl font-bold">
-                {USER.name.charAt(0)}
-              </div>
-              <span className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full grid place-items-center
-                               text-xs font-bold text-white bg-[var(--color-practice-xp)]
-                               ring-4 ring-[var(--color-practice-sunken)]">
-                {USER.level}
-              </span>
-            </div>
-            <div>
-              <h2 className="text-2xl font-extrabold">{USER.name}</h2>
-              <p className="text-[var(--color-practice-accent)] font-medium">{USER.track}</p>
-            </div>
-          </div>
+        <div className="mb-6 flex flex-wrap gap-3">
+          <Stat label="This week" value={`${(me?.weekly_xp ?? 0).toLocaleString()} XP`} tone="xp" />
+          <Stat label="League rank" value={me ? `#${me.rank}` : '—'} />
+          <Stat label="Streak" value={`${profile.streak_days} day${profile.streak_days === 1 ? '' : 's'}`} tone="xp" />
+          <Stat label="Gems" value={profile.gems.toLocaleString()} tone="gem" />
+        </div>
 
-          <div className="flex flex-wrap gap-3 mb-6">
-            <Stat label="Global rank" value={`#${USER.globalRank}`} />
-            <Stat label="Current streak" value={`${USER.streak} days`} tone="xp" />
-          </div>
+        <div className="mb-2 flex justify-between text-xs text-[var(--color-practice-ink-soft)]">
+          <span>Level {progress.level} · {profile.total_xp.toLocaleString()} XP total</span>
+          <span>{progress.toNext.toLocaleString()} XP to level {progress.level + 1}</span>
+        </div>
+        <div className="h-2.5 rounded-full bg-[var(--color-practice-surface)]">
+          <div className="h-full rounded-full bg-[var(--color-practice-accent)]" style={{ width: `${progress.percent}%` }} />
+        </div>
+      </section>
 
-          <div className="flex justify-between text-xs text-[var(--color-practice-ink-soft)] mb-2">
-            <span>{USER.xp.toLocaleString()} XP</span>
-            <span>{USER.xpToNextRank.toLocaleString()} XP to rank #{USER.globalRank - 1}</span>
-          </div>
-          <div className="h-2.5 rounded-full bg-[var(--color-practice-surface)]">
-            <div className="h-full rounded-full bg-[var(--color-practice-accent)]"
-                 style={{ width: `${progress}%` }} />
-          </div>
-        </section>
-
-        <section className="rounded-[var(--radius-panel)] p-6
-                            bg-[var(--color-practice-surface)]
-                            border border-[var(--color-practice-border)]">
-          <h2 className="font-bold text-center mb-6">Top contenders</h2>
-          <div className="flex items-end justify-center gap-3">
-            {PODIUM.map((p) => {
-              const h = p.place === 1 ? 'h-24' : p.place === 2 ? 'h-16' : 'h-12';
-              const c = p.place === 1 ? 'var(--color-practice-xp)'
-                      : p.place === 2 ? '#cbd5e1' : '#d9a066';
-              return (
-                <div key={p.place} className="flex-1 text-center">
-                  <div className="w-11 h-11 mx-auto rounded-full mb-2 grid place-items-center
-                                  text-white font-bold text-sm"
-                       style={{ background: c }}>
-                    {p.name.charAt(0)}
-                  </div>
-                  <div className="text-xs font-medium mb-2 truncate">{p.name}</div>
-                  <div className={`${h} rounded-t-lg grid place-items-start justify-center pt-2
-                                   font-extrabold text-white`}
-                       style={{ background: c }}>
-                    {p.place}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-      </div>
-
-      <section className="rounded-[var(--radius-panel)] bg-[var(--color-practice-surface)]
-                          border border-[var(--color-practice-border)] overflow-hidden">
-        <div className="flex items-center justify-between gap-4 p-6
-                        border-b border-[var(--color-practice-border)]">
-          <h2 className="text-xl font-bold">Live rankings</h2>
+      <section className="overflow-hidden rounded-[var(--radius-panel)] border border-[var(--color-practice-border)] bg-[var(--color-practice-surface)]">
+        <div className="flex items-center justify-between gap-4 border-b border-[var(--color-practice-border)] p-6">
+          <h2 className="text-xl font-bold">
+            Live rankings
+            {rows.length > 0 && <span className="ml-2 text-sm font-normal text-[var(--color-practice-ink-mute)]">{rows.length} in your cohort</span>}
+          </h2>
           <input
             value={find}
-            onChange={(e) => setFind(e.target.value)}
-            placeholder="Find a user…"
-            className="px-4 py-2 rounded-[var(--radius-control)] text-sm w-[240px]
-                       bg-[var(--color-practice-bg)]
-                       border border-[var(--color-practice-border)]
-                       placeholder:text-[var(--color-practice-ink-mute)]"
+            onChange={event => setFind(event.target.value)}
+            placeholder="Find a player…"
+            className="h-10 w-48 rounded-[var(--radius-control)] border border-[var(--color-practice-border)] bg-[var(--color-practice-sunken)] px-3 text-sm outline-none"
           />
         </div>
 
-        {rows.length === 0 ? (
-          <p className="p-10 text-center text-sm text-[var(--color-practice-ink-soft)]">
-            Nobody by that name in this leaderboard.
+        {loading && <p className="p-6 text-sm text-[var(--color-practice-ink-mute)]">Loading the board…</p>}
+        {!loading && !rows.length && (
+          <p className="p-8 text-sm text-[var(--color-practice-ink-soft)]">
+            Nobody has earned XP in this cohort yet. Finish an interview and you will be first.
           </p>
-        ) : rows.map((r) => (
-          <div key={r.rank}
-               className={`flex items-center gap-4 px-6 py-4 border-b last:border-0
-                           border-[var(--color-practice-border)] ${
-                 r.you ? 'bg-[var(--color-practice-sunken)]' : ''}`}>
-            <span className={`w-12 font-bold ${
-              r.you ? 'text-[var(--color-practice-accent)]' : ''}`}>{r.rank}</span>
-            <span className="w-9 h-9 rounded-full grid place-items-center text-xs font-bold
-                             bg-[var(--color-practice-sunken)]
-                             text-[var(--color-practice-accent)]">
-              {r.name.split(' ').map((n) => n[0]).join('')}
-            </span>
-            <div className="min-w-0 flex-1">
-              <div className="font-semibold text-sm truncate">
-                {r.name}{r.you && ' (you)'}
-              </div>
-              <div className="text-xs text-[var(--color-practice-ink-mute)]">{r.track}</div>
-            </div>
-            <div className="text-right hidden sm:block">
-              <div className="text-[11px] text-[var(--color-practice-ink-mute)]">Streak</div>
-              <div className="text-sm font-semibold">{r.streak}</div>
-            </div>
-            <div className={`w-24 text-right font-bold ${
-              r.you ? 'text-[var(--color-practice-accent)]' : ''}`}>
-              {r.xp.toLocaleString()}
-              <span className="text-[10px] font-normal text-[var(--color-practice-ink-mute)] ml-1">XP</span>
-            </div>
-          </div>
-        ))}
+        )}
 
-        <button className="w-full py-4 text-sm font-medium text-[var(--color-practice-accent)]
-                           hover:bg-[var(--color-practice-sunken)] transition">
-          Load more rankings
-        </button>
+        {visible.map(row => {
+          const zone = zoneOf(row.rank);
+          return (
+            <div
+              key={row.user_id}
+              className={`flex items-center gap-4 border-b border-[var(--color-practice-border)] p-4 last:border-0 ${row.you ? 'bg-[var(--color-practice-sunken)]' : ''}`}
+            >
+              <span
+                className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-sm font-bold ${
+                  zone === 'promote' ? 'bg-[var(--color-practice-pass)] text-white'
+                  : zone === 'demote' ? 'bg-[#e4b3b3] text-[#7a1f1f]'
+                  : 'bg-[var(--color-practice-sunken)]'}`}
+                title={zone === 'promote' ? 'Promotion zone' : zone === 'demote' ? 'Demotion zone' : 'Holding'}
+              >
+                {row.rank}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold">
+                  {row.display_name}
+                  {row.you && <span className="ml-2 text-xs text-[var(--color-practice-accent)]">you</span>}
+                  {row.is_premium && <span className="ml-2 rounded bg-[var(--color-practice-sunken)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-practice-gem)]">PRO</span>}
+                </p>
+                <p className="text-xs text-[var(--color-practice-ink-mute)]">Level {row.level}</p>
+              </div>
+              <span className="shrink-0 font-bold">{row.weekly_xp.toLocaleString()} XP</span>
+            </div>
+          );
+        })}
+
+        {!loading && rows.length > 0 && !visible.length && (
+          <p className="p-6 text-sm text-[var(--color-practice-ink-soft)]">No player matches that search.</p>
+        )}
       </section>
     </PracticeShell>
   );
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: 'xp' }) {
+function Stat({ label, value, tone }: { label: string; value: string; tone?: 'xp' | 'gem' }) {
+  const color = tone === 'xp' ? 'var(--color-practice-xp)' : tone === 'gem' ? 'var(--color-practice-gem)' : 'inherit';
   return (
-    <div className="px-5 py-3 rounded-[var(--radius-control)]
-                    bg-[var(--color-practice-surface)]">
-      <div className="text-[11px] tracking-wide text-[var(--color-practice-ink-mute)]">{label}</div>
-      <div className="text-lg font-extrabold"
-           style={tone === 'xp' ? { color: 'var(--color-practice-xp)' } : undefined}>
-        {value}
-      </div>
+    <div className="rounded-[var(--radius-card)] bg-[var(--color-practice-surface)] px-4 py-3">
+      <p className="text-xs text-[var(--color-practice-ink-mute)]">{label}</p>
+      <p className="font-bold" style={{ color }}>{value}</p>
+    </div>
+  );
+}
+
+function Card({ children, tone }: { children: React.ReactNode; tone?: 'warn' }) {
+  return (
+    <div className={`mb-5 rounded-[var(--radius-card)] p-5 ${tone === 'warn' ? 'bg-[#fdf3e3] text-[#6b5713]' : 'bg-[var(--color-practice-sunken)]'}`}>
+      {children}
     </div>
   );
 }

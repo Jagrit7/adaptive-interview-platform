@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PracticeShell } from '@/components/practice/PracticeShell';
-import { CONFIGURATION as C, USER } from '@/lib/mockData';
+import { CONFIGURATION as C } from '@/lib/mockData';
 
 export default function ConfigurePage() {
   const router = useRouter();
@@ -12,7 +12,7 @@ export default function ConfigurePage() {
   const [liveFeedback, setLiveFeedback] = useState(true);
 
   return (
-    <PracticeShell user={USER}>
+    <PracticeShell>
       <span className="inline-flex px-4 py-1.5 rounded-full text-xs font-bold mb-6
                        bg-[color-mix(in_srgb,var(--color-practice-pass)_18%,white)]
                        text-[var(--color-practice-pass)]">

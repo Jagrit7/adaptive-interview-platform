@@ -11,7 +11,9 @@ In the Supabase SQL Editor, run these files in order:
 1. `schema.sql`
 2. `schema_reports.sql`
 3. `schema_invitations.sql`
-4. `schema_dsa_question_bank.sql`
+4. `schema_user_question_banks.sql`
+5. `schema_gamification.sql`
+6. `schema_dsa_question_bank.sql`
 
 `schema_reports.sql` is also the upgrade migration for the earlier minimal
 `interview_reports` table. Re-run the whole file after pulling this version. It
@@ -67,6 +69,44 @@ those checks would be advisory.
 Attempts are counted when an interview *starts*, not when it finishes, so
 abandoning halfway still consumes one - otherwise `max_attempts` could be
 sidestepped by quitting before the last question.
+
+## Bring-your-own question banks
+
+`schema_user_question_banks.sql` adds `user_question_banks` and
+`user_question_bank_items`: a recruiter's own questions, stored the same shape
+the built-in banks use, owner-only under RLS.
+
+Two tables rather than one jsonb column because a bank is edited item by item.
+As a single document, renaming one question rewrites the whole bank and two
+tabs editing it lose each other's work.
+
+Each item carries a `kind` (`verbal`, `written`, `coding`) and a `domain`. Both
+matter at runtime: `kind` decides whether the candidate is asked out loud or
+given a writing pad, and an interviewer only receives questions from the domains
+its role permits - so a behavioural bank attached to a DSA interviewer is
+filtered away to nothing.
+
+Selecting a bank in the builder copies its questions into the panel config
+rather than storing a reference. A published interview then keeps asking what it
+was published with even if the bank is later edited or deleted, and the
+candidate's session never needs to read a table that is owner-only by design.
+
+## Progression: XP, leagues, gems, trophies
+
+`schema_gamification.sql` adds the individual-side progression system. The design
+rationale, the formulas and the known gaps are in `docs/GAMIFICATION.md`.
+
+The one thing to know here: no player-facing write policy exists on `xp_events`
+or `gem_events`. Every award goes through a `SECURITY DEFINER` function that
+reads the stored report and computes the amount itself, because a browser that
+can POST its own XP has a leaderboard measuring devtools rather than practice.
+
+After running it, enable Realtime on `league_members` (Database -> Replication)
+so the leaderboard updates live.
+
+To verify it works against your data, run `schema_gamification_test.sql`. It
+asserts the award, limit, spend, premium and league behaviour and rolls back, so
+it is safe on a database with live rows.
 
 ## Publish the reviewed bank
 

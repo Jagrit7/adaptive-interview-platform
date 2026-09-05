@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { PracticeShell } from '@/components/practice/PracticeShell';
 import { AuthGate } from '@/components/ui/AuthGate';
-import { INTERVIEWS, ROLES, LANGS, USER, type Difficulty } from '@/lib/mockData';
+import { INTERVIEWS, ROLES, LANGS, type Difficulty } from '@/lib/mockData';
 
 const DIFFICULTIES: Difficulty[] = ['Easy', 'Medium', 'Hard'];
 
@@ -38,7 +38,7 @@ export default function DiscoveryPage() {
 
   return (
     <AuthGate role="individual">
-    <PracticeShell user={USER}>
+    <PracticeShell>
       <section className="rounded-[var(--radius-panel)] bg-[var(--color-practice-sunken)]
                           p-8 mb-8">
         <h1 className="text-4xl font-extrabold tracking-tight mb-3">

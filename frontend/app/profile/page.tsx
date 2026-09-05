@@ -1,148 +1,167 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { PracticeShell } from '@/components/practice/PracticeShell';
-import { PROFILE as P, USER } from '@/lib/mockData';
+import { usePlayer } from '@/hooks/usePlayer';
+import {
+  BILLING_ENABLED, GEM_SINKS, PREMIUM_BENEFITS, levelProgress, loadGemPrices, loadTrophies,
+  type GemSpend, type Trophy,
+} from '@/lib/gamification';
 
 export default function ProfilePage() {
+  const { profile, signedIn, loading } = usePlayer();
+  const [trophies, setTrophies] = useState<Trophy[]>([]);
+  const [prices, setPrices] = useState<Partial<Record<GemSpend, number>>>({});
+
+  useEffect(() => {
+    let active = true;
+    loadTrophies()
+      .then(rows => { if (active) setTrophies(rows); })
+      .catch(() => { /* signed out, or the tables are not installed yet */ });
+    loadGemPrices()
+      .then(rows => { if (active) setPrices(rows); })
+      .catch(() => { /* prices render as a dash rather than a wrong number */ });
+    return () => { active = false; };
+  }, []);
+
+  const progress = levelProgress(profile.total_xp);
+  const earned = trophies.filter(trophy => trophy.earned_at);
+  const locked = trophies.filter(trophy => !trophy.earned_at);
+  const name = profile.display_name?.trim() || 'You';
+
   return (
-    <PracticeShell user={USER}>
-      <div className="flex flex-wrap items-start gap-6 mb-8">
+    <PracticeShell>
+      <div className="mb-8 flex flex-wrap items-start gap-6">
         <div className="relative">
-          <div className="w-28 h-28 rounded-full grid place-items-center text-4xl font-extrabold
-                          text-white bg-[var(--color-practice-accent)]">
-            {P.name.charAt(0)}
+          <div className="grid h-28 w-28 place-items-center rounded-full bg-[var(--color-practice-accent)] text-4xl font-extrabold text-white">
+            {name.charAt(0).toUpperCase()}
           </div>
-          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full
-                           text-xs font-bold text-white bg-[var(--color-practice-deep)]">
-            Lvl {P.level}
+          <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 rounded-full bg-[var(--color-practice-deep)] px-3 py-1 text-xs font-bold text-white">
+            Lvl {progress.level}
           </span>
         </div>
 
-        <div className="flex-1 min-w-[220px]">
-          <h1 className="text-4xl font-extrabold tracking-tight">{P.name}</h1>
-          <p className="text-xl font-bold text-[var(--color-practice-accent)] mt-1">{P.title}</p>
-          <p className="text-sm text-[var(--color-practice-ink-soft)] mt-2">
-            Goal: {P.goal}
+        <div className="min-w-[220px] flex-1">
+          <h1 className="text-4xl font-extrabold tracking-tight">{name}</h1>
+          <p className="mt-1 text-xl font-bold text-[var(--color-practice-accent)]">
+            {profile.is_premium ? 'Premium member' : 'Free plan'}
+          </p>
+          <p className="mt-2 text-sm text-[var(--color-practice-ink-soft)]">
+            {profile.total_xp.toLocaleString()} XP total · longest streak {profile.longest_streak} day{profile.longest_streak === 1 ? '' : 's'}
           </p>
         </div>
+      </div>
 
-        <div className="flex flex-col gap-2">
-          <button className="px-6 py-3 rounded-full font-semibold text-white
-                             bg-[var(--color-practice-accent)] hover:brightness-110 transition">
-            Edit profile
-          </button>
-          <button className="px-6 py-3 rounded-full font-semibold
-                             bg-[var(--color-practice-surface)]
-                             border border-[var(--color-practice-border)]
-                             hover:bg-[var(--color-practice-sunken)] transition">
-            Account settings
-          </button>
+      {!loading && !signedIn && (
+        <div className="mb-6 rounded-[var(--radius-card)] bg-[var(--color-practice-sunken)] p-5 text-sm text-[var(--color-practice-ink-soft)]">
+          Sign in to start earning XP, gems and trophies.
         </div>
-      </div>
+      )}
 
-      <div className="grid gap-5 lg:grid-cols-[1fr_320px] mb-6">
-        <section className="rounded-[var(--radius-panel)] p-7
-                            bg-[var(--color-practice-surface)]
-                            border border-[var(--color-practice-border)]">
-          <div className="flex items-center justify-between mb-5">
-            <h2 className="text-xl font-extrabold">Experience points</h2>
-            <span className="px-3 py-1.5 rounded-full text-xs font-semibold
-                             bg-[var(--color-practice-sunken)]">
-              Total: {P.totalXp.toLocaleString()} XP
-            </span>
+      <div className="mb-6 grid gap-5 lg:grid-cols-[1fr_320px]">
+        <section className="rounded-[var(--radius-panel)] border border-[var(--color-practice-border)] bg-[var(--color-practice-surface)] p-7">
+          <h2 className="mb-5 text-xl font-bold">Progress</h2>
+          <div className="mb-2 flex justify-between text-sm">
+            <span>Level {progress.level}</span>
+            <span className="text-[var(--color-practice-ink-mute)]">{progress.into.toLocaleString()} / {progress.needed.toLocaleString()} XP</span>
           </div>
+          <div className="h-3 rounded-full bg-[var(--color-practice-sunken)]">
+            <div className="h-full rounded-full bg-[var(--color-practice-accent)]" style={{ width: `${progress.percent}%` }} />
+          </div>
+          <p className="mt-3 text-xs text-[var(--color-practice-ink-mute)]">
+            {progress.toNext.toLocaleString()} XP to level {progress.level + 1}.
+          </p>
 
-          <div className="flex justify-between text-sm mb-2">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold
-                             bg-[var(--color-practice-sunken)]
-                             text-[var(--color-practice-accent)]">
-              Level {P.level}
-            </span>
-            <span className="text-[var(--color-practice-ink-soft)]">
-              {P.toNextLevel}% to level {P.level + 1}
-            </span>
-          </div>
-          <div className="h-3 rounded-full bg-[var(--color-practice-sunken)] mb-7">
-            <div className="h-full rounded-full bg-[var(--color-practice-accent)]"
-                 style={{ width: `${P.toNextLevel}%` }} />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <Tile label="Streak"   value={`${P.streak} days`} tone="pass" />
-            <Tile label="Gems"     value={String(P.gems)}     tone="xp" />
-            <Tile label="Trophies" value={String(P.trophies)} tone="gem" />
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <Metric label="Streak" value={`${profile.streak_days}d`} tone="xp" />
+            <Metric label="Gems" value={profile.gems.toLocaleString()} tone="gem" />
+            <Metric label="Trophies" value={`${earned.length}/${trophies.length}`} />
+            <Metric label="Total XP" value={profile.total_xp.toLocaleString()} />
           </div>
         </section>
 
-        <section className="rounded-[var(--radius-panel)] p-7 text-white
-                            bg-[var(--color-practice-accent)]">
-          <h2 className="text-xl font-extrabold mb-1">Readiness score</h2>
-          <p className="text-sm text-white/75 mb-6">Based on your recent interviews.</p>
-          <div className="flex items-baseline gap-1 mb-5">
-            <span className="text-6xl font-extrabold">{P.readiness}</span>
-            <span className="text-white/70 text-xl">/100</span>
-          </div>
-          <span className="inline-flex px-4 py-1.5 rounded-full text-xs font-bold
-                           bg-[#6cf8bb] text-[#00714d]">
-            {P.readyLabel}
-          </span>
+        <section className="rounded-[var(--radius-panel)] border border-[var(--color-practice-border)] bg-[var(--color-practice-surface)] p-6">
+          <h2 className="font-bold">Spend gems</h2>
+          <p className="mt-1 text-xs text-[var(--color-practice-ink-mute)]">You have {profile.gems.toLocaleString()}.</p>
+          <ul className="mt-4 space-y-3">
+            {Object.entries(GEM_SINKS).map(([key, item]) => (
+              <li key={key} className="flex items-start justify-between gap-3 border-b border-[var(--color-practice-border)] pb-3 last:border-0">
+                <span className="min-w-0">
+                  <b className="block text-sm">{item.label}</b>
+                  <span className="text-xs leading-5 text-[var(--color-practice-ink-mute)]">{item.blurb}</span>
+                </span>
+                <span className="shrink-0 font-bold" style={{ color: 'var(--color-practice-gem)' }}>{prices[key as GemSpend] ?? '—'}</span>
+              </li>
+            ))}
+          </ul>
         </section>
       </div>
 
-      <section className="rounded-[var(--radius-panel)] p-7
-                          bg-[var(--color-practice-surface)]
-                          border border-[var(--color-practice-border)]">
-        <h2 className="text-xl font-extrabold mb-5">Trophy cabinet</h2>
+      <section className="mb-6 rounded-[var(--radius-panel)] border border-[var(--color-practice-border)] bg-[var(--color-practice-surface)] p-7">
+        <h2 className="mb-1 text-xl font-bold">Trophies</h2>
+        <p className="mb-6 text-sm text-[var(--color-practice-ink-soft)]">
+          Six to earn. Deliberately few — a wall of participation badges is worth less than a short list you had to work for.
+        </p>
+
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {P.earned.map((t) => (
-            <Trophy key={t.name} name={t.name} hint={t.hint} earned />
-          ))}
-          {P.locked.map((t) => (
-            <Trophy key={t.name} name={t.name} hint={t.hint} />
-          ))}
+          {earned.map(trophy => <TrophyCard key={trophy.code} trophy={trophy} earned />)}
+          {locked.map(trophy => <TrophyCard key={trophy.code} trophy={trophy} />)}
+          {!trophies.length && <p className="text-sm text-[var(--color-practice-ink-mute)]">Trophies load once you are signed in.</p>}
         </div>
       </section>
+
+      {!profile.is_premium && (
+        <section className="rounded-[var(--radius-panel)] bg-[var(--color-practice-sunken)] p-7">
+          <h2 className="text-xl font-bold">Premium</h2>
+          <ul className="mt-4 space-y-2">
+            {PREMIUM_BENEFITS.map(benefit => (
+              <li key={benefit} className="flex gap-2.5 text-sm text-[var(--color-practice-ink-soft)]">
+                <span className="shrink-0 text-[var(--color-practice-pass)]">✓</span>{benefit}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4 text-xs text-[var(--color-practice-ink-mute)]">
+            Premium changes how fast you earn and how much of each report you see. It never buys XP —
+            the leaderboard stays a measure of practice, not spending.
+          </p>
+          {!BILLING_ENABLED && (
+            /* An honest label beats a button that does nothing. Payments are
+               not wired yet; the entitlement plumbing behind them is. */
+            <p className="mt-4 inline-flex rounded-full bg-[var(--color-practice-surface)] px-4 py-2 text-xs font-semibold text-[var(--color-practice-ink-soft)]">
+              Coming soon — payments are not live yet.
+            </p>
+          )}
+        </section>
+      )}
     </PracticeShell>
   );
 }
 
-function Tile({ label, value, tone }:
-  { label: string; value: string; tone: 'pass' | 'xp' | 'gem' }) {
-  const c = tone === 'pass' ? 'var(--color-practice-pass)'
-          : tone === 'xp'   ? 'var(--color-practice-xp)'
-          :                   'var(--color-practice-gem)';
+function TrophyCard({ trophy, earned = false }: { trophy: Trophy; earned?: boolean }) {
   return (
-    <div className="rounded-[var(--radius-control)] p-4 bg-[var(--color-practice-bg)]">
-      <div className="text-[11px] tracking-wide text-[var(--color-practice-ink-mute)] mb-1">
-        {label}
+    <div className={`rounded-[var(--radius-card)] border p-5 ${earned ? 'border-[var(--color-practice-xp)] bg-[var(--color-practice-sunken)]' : 'border-[var(--color-practice-border)] opacity-70'}`}>
+      <div className="flex items-start justify-between gap-2">
+        <b className="text-sm">{trophy.name}</b>
+        <span className="shrink-0 text-lg">{earned ? '🏆' : '🔒'}</span>
       </div>
-      <div className="text-xl font-extrabold" style={{ color: c }}>{value}</div>
+      <p className="mt-1.5 text-xs leading-5 text-[var(--color-practice-ink-soft)]">
+        {earned ? trophy.description : trophy.hint}
+      </p>
+      <p className="mt-2 text-[11px] font-semibold text-[var(--color-practice-ink-mute)]">
+        {earned && trophy.earned_at
+          ? `Earned ${new Date(trophy.earned_at).toLocaleDateString()}`
+          : `+${trophy.xp_reward} XP · +${trophy.gem_reward} gems`}
+      </p>
     </div>
   );
 }
 
-/** Locked trophies keep their unlock condition visible — a greyed badge with a
- *  hidden requirement tells you nothing you can act on. */
-function Trophy({ name, hint, earned }:
-  { name: string; hint: string; earned?: boolean }) {
+function Metric({ label, value, tone }: { label: string; value: string; tone?: 'xp' | 'gem' }) {
+  const color = tone === 'xp' ? 'var(--color-practice-xp)' : tone === 'gem' ? 'var(--color-practice-gem)' : 'inherit';
   return (
-    <div className={`rounded-[var(--radius-card)] p-5 border ${
-      earned
-        ? 'bg-[var(--color-practice-sunken)] border-transparent'
-        : 'bg-[var(--color-practice-bg)] border-dashed border-[var(--color-practice-border)]'
-    }`}>
-      <div className={`w-10 h-10 rounded-full grid place-items-center mb-3 ${
-        earned
-          ? 'bg-[var(--color-practice-xp)] text-white'
-          : 'bg-[var(--color-practice-sunken)] text-[var(--color-practice-ink-mute)]'
-      }`}>
-        {earned ? '★' : '🔒'}
-      </div>
-      <div className={`font-bold text-sm mb-1 ${
-        earned ? '' : 'text-[var(--color-practice-ink-mute)]'}`}>
-        {name}
-      </div>
-      <div className="text-xs text-[var(--color-practice-ink-mute)]">{hint}</div>
+    <div className="rounded-[var(--radius-card)] bg-[var(--color-practice-sunken)] p-4">
+      <p className="text-xs text-[var(--color-practice-ink-mute)]">{label}</p>
+      <p className="mt-1 text-xl font-extrabold" style={{ color }}>{value}</p>
     </div>
   );
 }

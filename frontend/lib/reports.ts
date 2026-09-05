@@ -155,3 +155,64 @@ export async function queryCandidateReports(query:ReportQuery):Promise<RankedRep
     return {...nested,matched_score:Number(item.score),matched_metric:String(item.competency_name)};
   });
 }
+
+/* ------------------------------------------------- skill-path (DSA) reports --- */
+
+export interface DsaReportLike {
+  session_id: string;
+  candidate_name: string;
+  question_title: string;
+  overall_score: number;
+  band: string;
+  feedback: string;
+  strengths: string[];
+  improvements: string[];
+  competencies: { name: string; score: number; weight: number }[];
+}
+
+/**
+ * Persist a skill-path interview as a normal report row.
+ *
+ * The DSA flow used to keep its report in sessionStorage only, which meant it
+ * vanished on close and - more importantly - there was no row for the XP award
+ * to read. The alternative was letting that flow post its own score, which
+ * would have handed every client the ability to mint XP. Writing the same
+ * `interview_reports` row every other interview writes keeps one code path,
+ * one shape, and one place where a score can come from.
+ *
+ * `panel_id` is null: a skill path is not a recruiter's panel. The repeat-decay
+ * in award_interview_xp groups by panel_id, so retakes of the skill path
+ * correctly count as retakes of the same thing.
+ */
+export async function saveDsaReport(report: DsaReportLike, language = 'en-US'): Promise<string> {
+  const now = new Date().toISOString();
+  const interviewReport: InterviewReport = {
+    session_id: report.session_id,
+    candidate_name: report.candidate_name || '',
+    candidate_ref: generateCandidateRef(),
+    panel_name: `DSA skill path — ${report.question_title}`,
+    language,
+    started_at: now,
+    finished_at: now,
+    completed: true,
+    totals: {
+      overall_score: report.overall_score,
+      band: report.band,
+      competencies_total: report.competencies.length,
+      competencies_covered: report.competencies.filter(item => item.score >= 0.7).length,
+      coverage_rate: report.competencies.length
+        ? report.competencies.filter(item => item.score >= 0.7).length / report.competencies.length
+        : 0,
+      knowledge_coverage: null,
+      questions_answered: 1,
+      flags: {},
+    },
+    competencies: report.competencies.map(item => ({
+      name: item.name, score: item.score, threshold: 0.7, weight: item.weight,
+      covered: item.score >= 0.7, checked_by: ['Skill path'], used_default_rule: false,
+    })),
+    agents: [],
+    transcript: [],
+  };
+  return saveReport(interviewReport, null, 'DSA skill path');
+}

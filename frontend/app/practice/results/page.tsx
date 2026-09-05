@@ -1,7 +1,8 @@
 'use client';
 
 import { PracticeShell } from '@/components/practice/PracticeShell';
-import { RESULT, USER } from '@/lib/mockData';
+import { usePlayer } from '@/hooks/usePlayer';
+import { RESULT } from '@/lib/mockData';
 
 const BAR: Record<string, string> = {
   pass:   'var(--color-practice-pass)',
@@ -10,16 +11,18 @@ const BAR: Record<string, string> = {
 };
 
 export default function ResultsPage() {
+  const { profile } = usePlayer();
+  const firstName = (profile.display_name?.trim() || 'there').split(' ')[0];
   const r = RESULT;
   // Circumference of the score ring, r=54.
   const C = 2 * Math.PI * 54;
 
   return (
-    <PracticeShell user={USER}>
+    <PracticeShell>
       <section className="rounded-[var(--radius-panel)] bg-[var(--color-practice-sunken)]
                           p-8 mb-6 flex flex-col md:flex-row md:items-center gap-8">
         <div className="flex-1">
-          <h1 className="text-3xl font-extrabold mb-3">Great job, {USER.name.split(' ')[0]}.</h1>
+          <h1 className="text-3xl font-extrabold mb-3">Great job, {firstName}.</h1>
           <p className="text-[var(--color-practice-ink-soft)] max-w-[56ch] mb-6">
             You handled that one well. Your technical communication is sharper than last
             time — keep the momentum going.
