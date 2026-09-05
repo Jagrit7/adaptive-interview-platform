@@ -129,6 +129,20 @@ class SessionState(BaseModel):
     # Per-specialist target used to choose the next bank item. It begins at the
     # configured band midpoint and moves one level after strong/weak answers.
     adaptive_difficulty: dict[str, int] = Field(default_factory=dict)
+    # Interviewers who have already introduced themselves to this candidate.
+    #
+    # Every handoff used to introduce the incoming agent unconditionally, and an
+    # agent can be handed back to - `maxVisits` allows it and the host uses it -
+    # so a returning interviewer greeted the candidate and stated its role again
+    # as though they had never met.
+    introduced_agent_ids: list[str] = Field(default_factory=list)
+    # Breaks the candidate has taken, and when the current one ends.
+    #
+    # Bounded on purpose: a real interview allows a pause, not an indefinite
+    # one, and an unbounded break is also a way to stop the clock on a timed
+    # task and go and look the answer up.
+    breaks_taken: int = 0
+    break_until: str | None = None
 
     def get_agent_state(self, agent_id: str) -> AgentSessionState:
         if agent_id not in self.agent_states:

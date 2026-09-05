@@ -26,7 +26,9 @@ DSA_PANEL = Panel.model_validate({
                 "one important issue if needed, and close with a short thank-you. Do not ask another question."
             ),
             "greetingMessage": (
-                "Hi, I'm Ari, your DSA interviewer. Before we begin, what should I call you today?"
+                "Hi, I'm Ari, your DSA interviewer - and I should mention upfront that I'm an AI "
+                "interviewer, though this is a real conversation about how you think. "
+                "Before we begin, what should I call you today?"
             ),
             "fallbackMessage": "Take your time. I did not quite catch that; could you say it once more?",
             "scenarioBrief": "One selected timed DSA problem followed by one verbal complexity question.",

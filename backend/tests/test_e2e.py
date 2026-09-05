@@ -401,6 +401,247 @@ assert "copy-vad-assets" in _pkg["scripts"].get("prebuild", ""), \
     "prebuild no longer copies the VAD model - it would 404 in production"
 ok("barge-in is enabled server-side, wired client-side, and its model ships")
 
+print("\n=== 10d. Feedback quotes the transcript it came from ===")
+from app.reports.store import presentation as _presentation
+from app.schemas.report import (
+    InterviewReport as _Rep, TranscriptEntry as _Turn,
+    ReportTotals as _Totals, CompetencyResult as _Comp,
+)
+
+_comp = lambda n, s, c: _Comp(name=n, score=s, covered=c, weight=0.5, threshold=0.6)
+_report = _Rep(
+    session_id="s", candidate_name="Jagrit", candidate_ref="AIP-1", panel_name="SDE Panel",
+    language="en-US", started_at="2026-09-05T10:00:00", finished_at="2026-09-05T10:30:00",
+    completed=True,
+    totals=_Totals(overall_score=0.55, band="Developing", competencies_total=2,
+                   competencies_covered=1, coverage_rate=0.5, knowledge_coverage=0.5,
+                   questions_answered=2, flags={"vague": 1}),
+    competencies=[_comp("Architecture", 0.82, True), _comp("Product sense", 0.31, False)],
+    agents=[],
+    transcript=[
+        _Turn(turn=2, speaker="candidate", agent_id="a", agent_name="Maya",
+              text="I would shard by tenant id and put a read-through cache in front.",
+              flags=[], coverage=0.9, knowledge_item_id="k1", question_score=0.88),
+        _Turn(turn=4, speaker="candidate", agent_id="b", agent_name="Devan",
+              text="Um, it depends I guess.",
+              flags=["vague"], coverage=0.1, knowledge_item_id="k2", question_score=0.2),
+    ],
+)
+_view = _presentation(_report, "Backend Engineer")
+# A score on its own is a grade, not feedback. Each line must point at the turn
+# it came from, or a candidate cannot act on it and a recruiter cannot check it.
+assert "shard by tenant id" in _view["strengths"][0], _view["strengths"]
+assert "turn 2" in _view["strengths"][0]
+assert "Um, it depends" in _view["growth"][0], _view["growth"]
+assert "vague" in _view["growth"][0] and "turn 4" in _view["growth"][0]
+ok("strengths and growth areas quote the answer and name the interviewer")
+
+# Evidence has to belong to the competency it is offered for, and no turn may be
+# quoted twice. Both mechanisms are exercised by cases that only one of them can
+# satisfy: Maya holds the two best answers in the interview, so
+#   - without the owner filter, Ari's competency would quote Maya's third answer,
+#     which outscores Ari's;
+#   - without the used-turn set, Maya's two competencies would quote turn 2 twice.
+from app.schemas.report import AgentReport as _Agent
+_agent = lambda aid, name, comps: _Agent(
+    agent_id=aid, name=name, role="Technical", visits=1, questions_answered=1,
+    satisfaction=0.7, force_closed=False, competencies=comps)
+_answer = lambda n, aid, name, text, score, flags: _Turn(
+    turn=n, speaker="candidate", agent_id=aid, agent_name=name, text=text,
+    flags=flags, coverage=score, knowledge_item_id=f"k{n}", question_score=score)
+_multi = _report.model_copy(update={
+    "competencies": [_comp("Architecture", 0.95, True),
+                     _comp("Scalability", 0.85, True),
+                     _comp("Complexity analysis", 0.70, True),
+                     _comp("Product sense", 0.20, False)],
+    "agents": [_agent("sd", "Maya", ["Architecture", "Scalability"]),
+               _agent("dsa", "Ari", ["Complexity analysis"]),
+               _agent("pm", "Devan", ["Product sense"])],
+    "transcript": [
+        _answer(2, "sd", "Maya", "Shard by tenant id with a read-through cache.", 0.95, []),
+        _answer(4, "sd", "Maya", "Back-pressure the writers before the queue fills.", 0.85, []),
+        # Outranks Ari's answer, so a whole-transcript search would hand it to
+        # Ari's competency. Only the owner filter keeps it with Maya.
+        _answer(5, "sd", "Maya", "Partition the index by shard key.", 0.80, []),
+        _answer(6, "dsa", "Ari", "It is O(n log n) because the sort dominates.", 0.70, []),
+        _answer(8, "pm", "Devan", "Um, it depends I guess.", 0.15, ["vague"]),
+    ],
+})
+_mv = _presentation(_multi, "Backend Engineer")
+# Maya's two competencies must quote her two different answers, not turn 2 twice.
+assert "Shard by tenant" in _mv["strengths"][0], _mv["strengths"]
+assert "Back-pressure" in _mv["strengths"][1], _mv["strengths"]
+# Ari's competency must quote Ari, not Maya's leftovers.
+assert "Ari" in _mv["strengths"][2] and "O(n log n)" in _mv["strengths"][2], _mv["strengths"]
+_quoted = re.findall(r"\(turn (\d+)\)", " ".join(_mv["strengths"] + _mv["growth"]))
+assert len(set(_quoted)) == len(_quoted), f"a turn was quoted more than once: {_quoted}"
+ok("each competency quotes its own interviewer, and no turn is quoted twice")
+
+# The same sentences are produced in the browser for the self-serve path, and a
+# report must not read differently depending on which side wrote the row.
+_ts = open(str(PROJECT / "frontend" / "lib" / "reports.ts"), encoding="utf-8").read()
+assert "function evidenceFor(" in _ts, "the client no longer builds transcript evidence"
+for _fragment in ("scored their strongest answer here", "flagged this exchange"):
+    assert _fragment in _ts, f"client evidence wording drifted: {_fragment!r}"
+ok("client and server produce the same evidence sentences")
+
+print("\n=== 10e. Silence prompts reach the host, not just panel agents ===")
+# The host holds the floor during intake and is not one of panel.agents, so a
+# lookup there returns None. That refused every prompt during the opening
+# exchange - the phase where a candidate is most likely to freeze.
+_live = sessions_route.SESSIONS[sid]
+_state = _live["state"]
+_state.is_finished = False
+_state.host_phase = "intake"
+_state.floor = "candidate_speaking"
+_state.current_agent_id = sessions_route.HOST_AGENT_ID
+_live["turn_busy"] = False
+_live["agent_uids"].setdefault(sessions_route.HOST_AGENT_ID, "1")
+_live["voices"].setdefault(sessions_route.HOST_AGENT_ID, "voice-host")
+_live["agora_sessions"].setdefault(sessions_route.HOST_AGENT_ID, FakeAgoraSession())
+
+for _stage in ("nudge", "repeat"):
+    _r = client.post(f"/sessions/{sid}/silence-prompt", json={
+        "question_revision": _state.question_revision, "stage": _stage,
+    })
+    assert _r.status_code == 200, (_stage, _r.status_code, _r.text)
+    assert _r.json()["current_agent_id"] == sessions_route.HOST_AGENT_ID, _r.json()
+    _state.floor = "candidate_speaking"          # the agent spoke; floor returns
+
+# A revision that has moved on must still be refused, so a late timer cannot
+# interrupt the next question.
+assert client.post(f"/sessions/{sid}/silence-prompt", json={
+    "question_revision": _state.question_revision - 1, "stage": "nudge",
+}).status_code == 409
+# And an unknown speaker must still be refused - the host tolerance must not
+# have turned into "accept anything".
+_state.current_agent_id = "not-a-real-agent"
+assert client.post(f"/sessions/{sid}/silence-prompt", json={
+    "question_revision": _state.question_revision, "stage": "nudge",
+}).status_code == 409
+ok("host intake is prompted; stale revisions and unknown speakers are refused")
+
+print("\n=== 10f. Breaks are bounded, reachable, and actually pause the work ===")
+# The room cannot offer a break it does not know it has. This was returned only
+# by the break endpoint itself, so the control never appeared and the feature
+# was unreachable.
+assert sessions_route.StartSessionResponse.model_fields["breaks_remaining"].default \
+    == sessions_route.BREAK_MAX_COUNT, "the start response no longer carries the break budget"
+
+_state.current_agent_id = "tech"
+_state.is_finished = False
+_live["state"].breaks_taken = 0
+_live["state"].break_until = None
+
+_taken = []
+for _i in range(sessions_route.BREAK_MAX_COUNT):
+    # Re-read rather than caching: a refused submit-code rolls the session back
+    # to its snapshot, which swaps the state object, so a held reference goes
+    # stale and writes to it are silently lost.
+    _state = _live["state"]
+    # Ending a break hands the floor back to the interviewer, which the client
+    # returns via candidate-ready before the candidate can act again.
+    _state.floor = "candidate_speaking"
+    _r = client.post(f"/sessions/{sid}/break", json={"action": "start"})
+    assert _r.status_code == 200, (_i, _r.status_code, _r.text)
+    _taken.append(_r.json()["breaks_remaining"])
+    # While paused, nothing that costs the candidate time may proceed.
+    assert client.post(f"/sessions/{sid}/next", json={"answer_text": "still here"}).status_code == 409
+    # Assert the REASON, not just the status. Both of these already refuse with
+    # 409 "not a coding question" in this session, so checking the code alone
+    # passed happily with the break guard deleted and proved nothing.
+    for _endpoint in ("run-code", "submit-code"):
+        _blocked = client.post(f"/sessions/{sid}/{_endpoint}", json={
+            "code": "print(1)", "language": "python"})
+        assert _blocked.status_code == 409, (_endpoint, _blocked.text)
+        assert "paused for a break" in _blocked.json()["detail"], (_endpoint, _blocked.text)
+    assert client.post(f"/sessions/{sid}/break", json={"action": "end"}).status_code == 200
+assert _taken == list(range(sessions_route.BREAK_MAX_COUNT - 1, -1, -1)), _taken
+
+# The cap is the point: an unbounded pause is a way to stop a timed task and go
+# and look the answer up.
+_state = _live["state"]
+_state.floor = "candidate_speaking"
+_refused = client.post(f"/sessions/{sid}/break", json={"action": "start"})
+assert _refused.status_code == 409, _refused.text
+assert "breaks" in _refused.json()["detail"], _refused.text
+assert client.post(f"/sessions/{sid}/next", json={"answer_text": "back"}).status_code != 409
+ok("break budget is spent down, enforced, and blocks answering and code while paused")
+
+# A break may only be taken when the floor is the candidate's. Starting one
+# takes the floor and bumps question_revision, and the closing statement is
+# confirmed with the revision the client already held - so a break during the
+# sign-off left candidate-ready rejecting every attempt and the interview could
+# never finish or produce a report.
+_state = _live["state"]
+_state.breaks_taken = 0
+_state.break_until = None
+_state.host_phase = "closing"
+_state.current_agent_id = sessions_route.HOST_AGENT_ID
+_state.floor = "agent_speaking"
+_rev = _state.question_revision
+assert client.post(f"/sessions/{sid}/break", json={"action": "start"}).status_code == 409
+
+# Each guard is exercised on its own, because during the sign-off both apply and
+# either one alone would hide the loss of the other.
+_state = _live["state"]
+_state.breaks_taken = 0
+_state.floor = "candidate_speaking"          # only host_phase blocks this one
+_only_phase = client.post(f"/sessions/{sid}/break", json={"action": "start"})
+assert _only_phase.status_code == 409, _only_phase.text
+assert "finishing" in _only_phase.json()["detail"], _only_phase.text
+
+_state.host_phase = "interview"
+_state.floor = "agent_speaking"              # only the floor blocks this one
+_only_floor = client.post(f"/sessions/{sid}/break", json={"action": "start"})
+assert _only_floor.status_code == 409, _only_floor.text
+assert "finished speaking" in _only_floor.json()["detail"], _only_floor.text
+
+_state.host_phase = "closing"
+_state.floor = "agent_speaking"
+assert _state.question_revision == _rev, "a refused break must not move the question on"
+_done = client.post(f"/sessions/{sid}/candidate-ready", json={"question_revision": _rev})
+assert _done.status_code == 200, _done.text
+assert _state.is_finished, "the interview must still be able to finish"
+ok("a break cannot be taken during the sign-off, so the interview can still finish")
+
+print("\n=== 10g. The room's timing mechanisms are still wired ===")
+# These are presence checks, not behaviour tests, and they are here because this
+# project has no frontend test runner. They catch a mechanism being deleted;
+# they cannot catch it being subtly wrong. Every defect below was found by
+# reading and reproduced by hand, and each would pass a type check and a lint
+# run unchanged - which is exactly why they are worth pinning.
+_room = open(str(PROJECT / "frontend" / "app" / "interview-room" / "InterviewRoomLive.tsx"),
+             encoding="utf-8").read()
+_dsa = open(str(PROJECT / "frontend" / "components" / "dsa-interview" / "DsaInterviewRoom.tsx"),
+            encoding="utf-8").read()
+
+for _label, _src, _needle in [
+    # Prompting hands the floor to the agent and back, which re-runs the effect;
+    # per-run flags reset and nudged forever without ever re-asking.
+    ("silence escalation survives the effect re-run", _room, "silenceStageRef"),
+    ("silence escalation stops after two stages", _room, "stage >= 2"),
+    # Host intake carries no current_question, so keying on the question id
+    # alone silently stopped prompting after the first field.
+    ("silence escalation resets when an answer is given", _room,
+     "silenceStageRef.current = { questionId: null, stage: 0 }"),
+    # applyTurn rebuilds writtenQuestion on every response, so a recomputed
+    # deadline handed back the full time - a break reset a coding clock.
+    ("task deadline is per task, not per effect run", _room, "taskDeadlineRef.current?.id !== taskId"),
+    ("task clock does not run during a break", _room, "breakEndsAtRef.current !== null"),
+    # A failed end left the pause in place forever, freezing the task clock and
+    # retrying once a second.
+    ("automatic break end fires once", _room, "breakEndingRef"),
+    ("a passed deadline releases the pause even if ending failed", _room,
+     "Date.now() >= breakEndsAtRef.current"),
+    # Counting from the phase start interrupted Ari's own greeting.
+    ("dsa silence waits for the interviewer to stop", _dsa, "if (isAgentSpeaking) return;"),
+    ("dsa silence resets on candidate speech", _dsa, "lastCandidateAtRef"),
+    ("dsa silence escalates per phase", _dsa, "silenceStageRef"),
+]:
+    assert _needle in _src, f"{_label}: {_needle!r} is gone"
+ok("all ten room timing mechanisms are present in both interview rooms")
+
 print("\n=== 11. A pre-change saved panel still runs ===")
 legacy = {
     "projectName": "Old Panel",

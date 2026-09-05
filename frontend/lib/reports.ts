@@ -37,10 +37,57 @@ const normalizedKey = (value:string) => value.trim().toLowerCase().replace(/[^a-
  * must produce the same sentences: the reports table and the report page cannot
  * tell you which side wrote a row, and should not need to.
  */
+/** Longest quotation to lift out of an answer. Enough to recognise what was
+ *  said; short enough that a report stays readable. */
+const EVIDENCE_QUOTE_CHARS=160;
+
+/**
+ * A sentence of transcript evidence to sit behind a score.
+ *
+ * "Architecture needs improvement (48/100)" is a grade, not feedback: it tells
+ * a candidate nothing about what they said and gives a recruiter nothing to
+ * check the judgement against. This finds the answer that most supports the
+ * claim and quotes it, so every line points at the moment it came from.
+ *
+ * Mirrored in backend/app/reports/store.py - see the note on presentation().
+ */
+function evidenceFor(report:InterviewReport, competency:string, strong:boolean, used:Set<number>):string {
+  // Competencies are owned by the interviewers that assess them. Searching the
+  // whole transcript quoted the single best and worst answer of the interview
+  // against every line, which misattributed evidence to claims it did not
+  // support. See the note in backend/app/reports/store.py.
+  const owners=new Set(report.agents.filter(a=>a.competencies.includes(competency)).map(a=>a.agent_id));
+  const answers=report.transcript.filter(t=>
+    t.speaker==='candidate' && typeof t.question_score==='number' && t.text.trim()
+    && !used.has(t.turn) && (owners.size===0 || owners.has(t.agent_id)));
+  if(!answers.length) return '';
+  let pick:TranscriptEntry; let lead:string;
+  if(strong){
+    pick=answers.reduce((best,t)=>(t.question_score??0)>(best.question_score??0)?t:best);
+    if((pick.question_score??0)<0.6) return '';
+    lead=`${pick.agent_name} scored their strongest answer here`;
+  } else {
+    // A flagged answer explains a low score better than the lowest number,
+    // which may just be a question they never reached.
+    const flagged=answers.filter(t=>t.flags.length);
+    const pool=flagged.length?flagged:answers;
+    pick=pool.reduce((worst,t)=>(t.question_score??0)<(worst.question_score??0)?t:worst);
+    if((pick.question_score??0)>0.75) return '';
+    const reason=pick.flags.length?` (${pick.flags.join(', ').replace(/_/g,' ')})`:'';
+    lead=`${pick.agent_name} flagged this exchange${reason}`;
+  }
+  used.add(pick.turn);
+  const raw=pick.text.trim();
+  const quote=raw.length>EVIDENCE_QUOTE_CHARS?`${raw.slice(0,EVIDENCE_QUOTE_CHARS).trimEnd()}...`:raw;
+  return ` ${lead} (turn ${pick.turn}): "${quote}"`;
+}
+
 export function presentation(report:InterviewReport, roleName?:string) {
   const sorted=[...report.competencies].sort((a,b)=>b.score-a.score);
-  const strengths=sorted.filter(item=>item.covered).slice(0,3).map(item=>`${item.name} was a demonstrated strength (${scoreText(item.score)}).`);
-  const growth=[...sorted].reverse().filter(item=>!item.covered).slice(0,3).map(item=>`${item.name} needs further evidence or improvement (${scoreText(item.score)}).`);
+  // One shared set, so no turn is quoted twice across the report.
+  const quoted=new Set<number>();
+  const strengths=sorted.filter(item=>item.covered).slice(0,3).map(item=>`${item.name} was a demonstrated strength (${scoreText(item.score)}).${evidenceFor(report,item.name,true,quoted)}`);
+  const growth=[...sorted].reverse().filter(item=>!item.covered).slice(0,3).map(item=>`${item.name} needs further evidence or improvement (${scoreText(item.score)}).${evidenceFor(report,item.name,false,quoted)}`);
   const recommendation=recommendationFor(report.totals.band);
   const role=roleName?.trim() || report.panel_name;
   return {

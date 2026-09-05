@@ -22,6 +22,16 @@ import type { PanelConfig } from '@/lib/panels';
 const APP_ID = '02bcecea17334c6dad96219c276fbd38';
 const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? 'http://localhost:8000';
 const STALL_NOTICE_MS = 90_000;
+// A verbal question left unanswered gets a gentle check-in, and only if the
+// silence continues, the question again. A real interviewer does neither
+// instantly and neither never; sitting in silence is what made the room feel
+// dead, and re-asking on the first pause talks over someone who is thinking.
+//
+// Each stage waits this long, so the re-ask lands after roughly twenty seconds
+// of the CANDIDATE being quiet. The gap is measured per stage rather than from
+// one absolute start because the check-in itself is spoken by the interviewer,
+// and the candidate is not being silent while someone else is talking.
+const SILENCE_NUDGE_MS = 10_000;
 
 type WrittenQuestion = {
   id: string;
@@ -33,6 +43,8 @@ type WrittenQuestion = {
   starter_code?: string | null;
   constraints?: string[];
   test_cases?: Array<{ id: string; label: string; input_display: string; expected_display: string }>;
+  /** Seconds allowed on this task; null for untimed verbal questions. */
+  time_limit_seconds?: number | null;
 };
 
 type Awaiting = 'agent' | 'candidate' | 'workspace' | 'evaluation' | 'finished';
@@ -54,6 +66,8 @@ type TurnResponse = {
   question_revision: number;
   agent_uid?: string | null;
   voice_id?: string | null;
+  breaks_remaining?: number | null;
+  break_seconds_remaining?: number;
   agent_uids?: Record<string, string>;
   host_agent_id?: string;
 };
@@ -132,6 +146,22 @@ export default function InterviewRoomLive({
   // Arena UI state. None of it reaches the backend yet — the code pane is a
   // scratchpad until the answer payload carries it.
   const [scratch, setScratch] = useState('');
+  const [breaksRemaining, setBreaksRemaining] = useState<number | null>(null);
+  const [breakEndsAt, setBreakEndsAt] = useState<number | null>(null);
+  const [breakTimeLeft, setBreakTimeLeft] = useState<string | null>(null);
+  // Read by the task clock, which must not tick while the interview is paused.
+  const breakEndsAtRef = useRef<number | null>(null);
+  // Latches the automatic end so a pending request is not re-sent every tick.
+  const breakEndingRef = useRef(false);
+  // Escalation state for the silence prompts, tracked per question.
+  const silenceStageRef = useRef<{ questionId: string | null; stage: number }>(
+    { questionId: null, stage: 0 },
+  );
+  // The pad's current contents, readable from a timer without making the
+  // countdown a dependency of every keystroke. Written only from the places
+  // that change the pad, never from an effect.
+  const scratchRef = useRef('');
+  const writeScratch = (next: string) => { scratchRef.current = next; setScratch(next); };
   const [codeLanguage, setCodeLanguage] = useState('Python');
   const [micOn, setMicOn] = useState(true);
   const [cameraOn, setCameraOn] = useState(true);
@@ -235,6 +265,13 @@ export default function InterviewRoomLive({
   }, [isAgentSpeaking]);
 
   const applyTurn = (data: TurnResponse) => {
+    if (typeof data.breaks_remaining === 'number') setBreaksRemaining(data.breaks_remaining);
+    if (typeof data.break_seconds_remaining === 'number' && data.break_seconds_remaining > 0) {
+      // The server owns the deadline, so a reloaded tab resumes the same break
+      // rather than starting a fresh one.
+      breakEndsAtRef.current = Date.now() + data.break_seconds_remaining * 1000;
+      setBreakEndsAt(breakEndsAtRef.current);
+    }
     if (data.current_agent_id) setActiveSpeakerId(data.current_agent_id);
     if (data.agent_uid) {
       setAgentUid(data.agent_uid);
@@ -294,7 +331,7 @@ export default function InterviewRoomLive({
     // candidate-ready returns the same question after the spoken introduction;
     // do not erase work or results when only the speaking floor changes.
     if (isNewQuestion) {
-      setScratch(next?.starter_code ?? '');
+      writeScratch(next?.starter_code ?? '');
       setRunSummary(null);
       setRunResults([]);
     }
@@ -332,6 +369,12 @@ export default function InterviewRoomLive({
     if (!text) return;                       // never submit an empty turn
 
     turnInFlightRef.current = true;
+    // A new answer means a new question is coming, so the silence escalation
+    // starts again. Keying it on the question id alone was not enough: host
+    // intake carries no `current_question`, so the key stayed null for the
+    // whole opening exchange and the prompts stopped after the first field -
+    // the phase where a candidate is most likely to freeze.
+    silenceStageRef.current = { questionId: null, stage: 0 };
     acceptingVoiceRef.current = false;
     setAwaiting('evaluation');
     setAudibleAgentUid(null);
@@ -393,6 +436,142 @@ export default function InterviewRoomLive({
     } catch (error) { setRunSummary(error instanceof Error ? error.message : String(error)); }
     finally { setWorkspaceBusy(false); }
   };
+
+  /**
+   * Cuts the interviewer off and takes the floor.
+   *
+   * Shared by the microphone button and by barge-in, because they are the same
+   * act: stop the agent, tell the orchestrator the candidate is speaking now,
+   * and adopt whatever turn it returns. Two copies of this would be two things
+   * to keep in step, and the sequence is not obvious enough to survive that.
+   *
+   * Returns whether the floor actually moved.
+   */
+  const takeFloorFromAgent = useCallback(async (): Promise<boolean> => {
+    if (!sessionId) return false;
+    setAudibleAgentUid(null);
+    if (agentUidRef.current) await interruptAgent(agentUidRef.current);
+    if (hostUidRef.current && hostUidRef.current !== agentUidRef.current) {
+      await interruptAgent(hostUidRef.current);
+    }
+    const response = await fetch(`${BACKEND_URL}/sessions/${sessionId}/candidate-ready`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question_revision: questionRevisionRef.current }),
+    });
+    const data = await response.json() as TurnResponse & { detail?: string };
+    if (!response.ok) {
+      // 409 only means the orchestrator had already moved on, which is not an
+      // error worth showing mid-interview.
+      if (response.status !== 409) setStatus(`Error: ${data.detail ?? 'Could not interrupt the interviewer'}`);
+      return false;
+    }
+    handledAgentTurnRef.current = agentTurnFinishedSequence;
+    applyTurn(data);
+    return data.awaiting === 'candidate';
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, agentTurnFinishedSequence]);
+
+  /**
+   * Barge-in: the candidate starts talking over the interviewer.
+   *
+   * Driven by local voice-activity detection, which knows a human started
+   * speaking within about a quarter of a second. The previous trigger was the
+   * arrival of a transcript segment - a full speech-to-text round trip later,
+   * by which point the interviewer had been talking over the candidate for
+   * roughly a second.
+   */
+  const handleBargeIn = useCallback(() => {
+    if (!sessionId || isFinished) return;
+    if (awaitingRef.current !== 'agent') return;   // the floor is not the agent's to take
+    if (turnInFlightRef.current || bargeInFlightRef.current) return;
+    bargeInFlightRef.current = true;
+    void (async () => {
+      try {
+        console.info('[vad] barge-in: candidate started speaking over the interviewer');
+        const moved = await takeFloorFromAgent();
+        if (!moved) return;
+        // The words that triggered this are still arriving. Without clearing
+        // the guard they would be discarded as playback echo, and the
+        // candidate would have to repeat the sentence they just interrupted
+        // with.
+        echoGuardUntilRef.current = 0;
+        await setMicrophoneEnabled(true);
+        setMicOn(true);
+        acceptingVoiceRef.current = true;
+        setActiveSpeakerId('user');
+      } finally {
+        bargeInFlightRef.current = false;
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, isFinished, takeFloorFromAgent, setMicrophoneEnabled]);
+
+  // The detector owns these refs and keeps them current, so nothing here has to
+  // mirror its state into a ref of its own.
+  const { speakingRef: candidateSpeakingRef, readyRef: vadReadyRef } = useSpeechDetector({
+    track: localAudioTrack?.getMediaStreamTrack() ?? null,
+    enabled: isConnected && !isFinished,
+    onSpeechStart: handleBargeIn,
+  });
+
+  // Verbal silence: nudge, then repeat.
+  //
+  // Only while the floor is genuinely the candidate's, only for spoken
+  // questions - a written or coding task has its own timer and is on screen to
+  // read - and only while nothing has been said yet. Any speech, or the
+  // question changing, cancels it.
+  useEffect(() => {
+    if (!sessionId || isFinished) return;
+    if (awaiting !== 'candidate') return;
+    if (writtenQuestion && writtenQuestion.kind !== 'verbal') return;
+
+    const startedAt = Date.now();
+    const revision = questionRevisionRef.current;
+
+    const send = async (stage: 'nudge' | 'repeat') => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/sessions/${sessionId}/silence-prompt`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ question_revision: revision, stage }),
+        });
+        if (!response.ok) return;   // 409 just means the moment has passed
+        applyTurn(await response.json() as TurnResponse);
+      } catch {
+        // A missed nudge is not worth interrupting the interview over.
+      }
+    };
+
+    const timer = setInterval(() => {
+      // Anything said, or being said, means they are answering.
+      if (pendingAnswerRef.current.size > 0 || candidateSpeakingRef.current) return;
+      if (turnInFlightRef.current || questionRevisionRef.current !== revision) return;
+
+      // How far the escalation has got, tracked against the QUESTION rather
+      // than this effect run.
+      //
+      // Prompting hands the floor to the agent and then takes it back, which
+      // re-runs this effect. Local flags therefore reset every time, so the
+      // first stage fired over and over roughly every ten seconds and the
+      // re-ask was unreachable - the opposite of nudge-then-repeat.
+      const progress = silenceStageRef.current;
+      if (progress.questionId !== activeQuestionIdRef.current) {
+        silenceStageRef.current = { questionId: activeQuestionIdRef.current, stage: 0 };
+      }
+      const stage = silenceStageRef.current.stage;
+      // Two stages only. Past that the candidate has heard the question twice
+      // and repeating it again is nagging, not helping.
+      if (stage >= 2 || Date.now() - startedAt < SILENCE_NUDGE_MS) return;
+      silenceStageRef.current = {
+        questionId: activeQuestionIdRef.current,
+        stage: stage + 1,
+      };
+      void send(stage === 0 ? 'nudge' : 'repeat');
+    }, 500);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [awaiting, questionRevision, sessionId, isFinished, writtenQuestion]);
 
   useEffect(() => {
     if (!isConnected || isFinished || !sessionId) return;
@@ -517,7 +696,26 @@ export default function InterviewRoomLive({
     const waitForCompleteAnswer = () => {
       if (!acceptingVoiceRef.current || awaiting !== 'candidate') return;
       const now = Date.now();
-      if (inputVolumeRef.current > SPEAKING_VOLUME_THRESHOLD) {
+      // Is the candidate still talking?
+      //
+      // This used to be `inputVolume > 0.025`, a raw loudness reading. Room
+      // tone, a fan, or breathing all sit above that, so the quiet clock was
+      // reset forever and the answer was never submitted. Muting was the only
+      // thing that reliably satisfied it, because muting drives the meter to
+      // exactly zero - which is why the interview appeared to be driven by the
+      // mute button rather than by the voice.
+      //
+      // Silero tells speech apart from noise, which a volume number cannot. If
+      // the model is unavailable this falls back to the old meter, so the room
+      // still works - it just needs a quiet environment, as before.
+      const stillSpeaking = vadReadyRef.current
+        ? candidateSpeakingRef.current
+        : inputVolumeRef.current > SPEAKING_VOLUME_THRESHOLD;
+      // Speech-to-text has already declared the turn complete, and its
+      // endpointing is better informed than anything measurable here, so the
+      // local check is not allowed to hold a finished answer hostage.
+      const allTurnsFinal = [...pendingAnswerRef.current.values()].every(seg => seg.complete);
+      if (stillSpeaking && !allTurnsFinal) {
         answerQuietSinceRef.current = 0;
       } else if (answerQuietSinceRef.current === 0) {
         answerQuietSinceRef.current = now;
@@ -703,6 +901,11 @@ export default function InterviewRoomLive({
           try { await beginInterview(startData.session_id); }
           catch { /* signed out, or the progression schema is not installed */ }
         }
+        // Seeded here rather than waiting for a break response, which is what
+        // the control needs before it can be shown at all.
+        if (typeof startData.breaks_remaining === 'number') {
+          setBreaksRemaining(startData.breaks_remaining);
+        }
         setHostAgentId(startData.host_agent_id ?? '__host__');
         hostUidRef.current = String(startData.agent_uids?.[startData.host_agent_id ?? '__host__'] ?? '1');
         setAgentUid(String(startData.agent_uid ?? '1'));
@@ -716,7 +919,7 @@ export default function InterviewRoomLive({
         const firstQuestion = startData.current_question ?? null;
         setWrittenQuestion(firstQuestion);
         activeQuestionIdRef.current = firstQuestion?.id ?? null;
-        setScratch(firstQuestion?.starter_code ?? '');
+        writeScratch(firstQuestion?.starter_code ?? '');
         setQuestionsAsked(startData.questions_asked ?? 0);
         setQuestionsTotal(startData.questions_total ?? 0);
         setAwaiting(startData.awaiting ?? 'agent');
@@ -924,81 +1127,128 @@ export default function InterviewRoomLive({
     router.push(exitHref);
   };
 
-  /**
-   * Cuts the interviewer off and takes the floor.
-   *
-   * Shared by the microphone button and by barge-in, because they are the same
-   * act: stop the agent, tell the orchestrator the candidate is speaking now,
-   * and adopt whatever turn it returns. Two copies of this would be two things
-   * to keep in step, and the sequence is not obvious enough to survive that.
-   *
-   * Returns whether the floor actually moved.
-   */
-  const takeFloorFromAgent = useCallback(async (): Promise<boolean> => {
-    if (!sessionId) return false;
-    setAudibleAgentUid(null);
-    if (agentUidRef.current) await interruptAgent(agentUidRef.current);
-    if (hostUidRef.current && hostUidRef.current !== agentUidRef.current) {
-      await interruptAgent(hostUidRef.current);
-    }
-    const response = await fetch(`${BACKEND_URL}/sessions/${sessionId}/candidate-ready`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ question_revision: questionRevisionRef.current }),
-    });
-    const data = await response.json() as TurnResponse & { detail?: string };
-    if (!response.ok) {
-      // 409 only means the orchestrator had already moved on, which is not an
-      // error worth showing mid-interview.
-      if (response.status !== 409) setStatus(`Error: ${data.detail ?? 'Could not interrupt the interviewer'}`);
-      return false;
-    }
-    handledAgentTurnRef.current = agentTurnFinishedSequence;
-    applyTurn(data);
-    return data.awaiting === 'candidate';
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, agentTurnFinishedSequence]);
 
-  /**
-   * Barge-in: the candidate starts talking over the interviewer.
-   *
-   * Driven by local voice-activity detection, which knows a human started
-   * speaking within about a quarter of a second. The previous trigger was the
-   * arrival of a transcript segment - a full speech-to-text round trip later,
-   * by which point the interviewer had been talking over the candidate for
-   * roughly a second.
-   */
-  const handleBargeIn = useCallback(() => {
-    if (!sessionId || isFinished) return;
-    if (awaitingRef.current !== 'agent') return;   // the floor is not the agent's to take
-    if (turnInFlightRef.current || bargeInFlightRef.current) return;
-    bargeInFlightRef.current = true;
-    void (async () => {
-      try {
-        console.info('[vad] barge-in: candidate started speaking over the interviewer');
-        const moved = await takeFloorFromAgent();
-        if (!moved) return;
-        // The words that triggered this are still arriving. Without clearing
-        // the guard they would be discarded as playback echo, and the
-        // candidate would have to repeat the sentence they just interrupted
-        // with.
-        echoGuardUntilRef.current = 0;
-        await setMicrophoneEnabled(true);
-        setMicOn(true);
-        acceptingVoiceRef.current = true;
-        setActiveSpeakerId('user');
-      } finally {
-        bargeInFlightRef.current = false;
+  // The clock on a written or coding task.
+  //
+  // Starts when the task is handed over and submits whatever is in the pad when
+  // it expires, because a timed assessment that silently never ends is not
+  // timed. The deadline is derived from the question, so a slow render or a
+  // paused tab cannot extend it.
+  const [taskTimeLeft, setTaskTimeLeft] = useState<string | null>(null);
+  // Survives the re-runs caused by unrelated turn responses; see the note in
+  // the tick below.
+  const taskDeadlineRef = useRef<{ id: string; at: number } | null>(null);
+  useEffect(() => {
+    const limit = writtenQuestion?.time_limit_seconds;
+    const taskId = writtenQuestion?.id ?? null;
+    if (!limit || !taskId || awaiting !== 'workspace' || isFinished) return;
+    const revision = questionRevisionRef.current;
+    let submitted = false;
+    let lastTick = Date.now();
+    const tick = () => {
+      const now = Date.now();
+      // One deadline per task.
+      //
+      // `applyTurn` rebuilds writtenQuestion from JSON on every response, so
+      // this effect re-runs whenever anything else happens during the task -
+      // and a freshly computed deadline handed back the full time. Taking a
+      // break was therefore a way to reset a coding clock, which is precisely
+      // what bounding breaks was meant to prevent.
+      if (taskDeadlineRef.current?.id !== taskId) {
+        taskDeadlineRef.current = { id: taskId, at: now + limit * 1000 };
       }
-    })();
+      // A paused interview must not spend the candidate's time.
+      if (breakEndsAtRef.current !== null) {
+        taskDeadlineRef.current = {
+          id: taskId,
+          at: taskDeadlineRef.current.at + (now - lastTick),
+        };
+      }
+      lastTick = now;
+      const remaining = Math.max(0, taskDeadlineRef.current.at - now);
+      const total = Math.round(remaining / 1000);
+      setTaskTimeLeft(`${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`);
+      if (remaining > 0 || submitted) return;
+      submitted = true;
+      if (questionRevisionRef.current !== revision || turnInFlightRef.current) return;
+      // Whatever they have written is the answer; an empty pad is scored as an
+      // unanswered question rather than silently skipped.
+      void handleNextTurn(
+        scratchRef.current.trim() || "I ran out of time on this question.",
+        `${writtenQuestion?.id}:${revision}:timeout`,
+      );
+    };
+    // Deliberately not run synchronously here: a setState in the effect body
+    // triggers a cascading render. One second of no clock is not worth that.
+    const timer = setInterval(tick, 1000);
+    return () => { clearInterval(timer); setTaskTimeLeft(null); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionId, isFinished, takeFloorFromAgent, setMicrophoneEnabled]);
+  }, [writtenQuestion, awaiting, isFinished]);
 
-  useSpeechDetector({
-    track: localAudioTrack?.getMediaStreamTrack() ?? null,
-    enabled: isConnected && !isFinished,
-    onSpeechStart: handleBargeIn,
-  });
+  /**
+   * A short, bounded pause.
+   *
+   * The microphone is unpublished for the duration - this is the one moment in
+   * the interview where the candidate genuinely should not be heard - and the
+   * server holds the deadline, so closing the tab does not extend it.
+   */
+  const requestBreak = useCallback(async (action: 'start' | 'end') => {
+    if (!sessionId) return;
+    try {
+      const response = await fetch(`${BACKEND_URL}/sessions/${sessionId}/break`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      const data = await response.json() as TurnResponse & { detail?: string };
+      if (!response.ok) {
+        setStatus(data.detail ?? 'That break could not be started.');
+        // The server holds the deadline, and once it has passed the interview
+        // is no longer paused there whatever this call returned. Leaving the
+        // local pause in place froze the task countdown for the rest of the
+        // interview - unlimited time on a timed question - and retried the
+        // call once a second forever.
+        if (action === 'end' && breakEndsAtRef.current !== null
+            && Date.now() >= breakEndsAtRef.current) {
+          breakEndsAtRef.current = null;
+          setBreakEndsAt(null);
+        }
+        return;
+      }
+      if (action === 'start') {
+        breakEndingRef.current = false;
+        acceptingVoiceRef.current = false;
+        await setMicrophoneEnabled(false);
+        setMicOn(false);
+      } else {
+        breakEndsAtRef.current = null;
+        setBreakEndsAt(null);
+      }
+      applyTurn(data);
+    } catch (err) {
+      setStatus(err instanceof Error ? err.message : String(err));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId, setMicrophoneEnabled]);
+
+  // Counts the break down and ends it automatically, so an unattended tab
+  // cannot leave the interview paused indefinitely.
+  useEffect(() => {
+    if (breakEndsAt === null) return;
+    const tick = () => {
+      const remaining = Math.max(0, breakEndsAt - Date.now());
+      const total = Math.round(remaining / 1000);
+      setBreakTimeLeft(`${Math.floor(total / 60)}:${String(total % 60).padStart(2, '0')}`);
+      // Once, not once a second: the state change that stops this tick is
+      // asynchronous, so without a latch every tick queues another request.
+      if (remaining <= 0 && !breakEndingRef.current) {
+        breakEndingRef.current = true;
+        void requestBreak('end');
+      }
+    };
+    const timer = setInterval(tick, 1000);
+    return () => { clearInterval(timer); setBreakTimeLeft(null); };
+  }, [breakEndsAt, requestBreak]);
 
   // Checked before the form, not after the session-start request fails. The
   // backend rejects an opener-less panel with a 400, but by then the candidate
@@ -1113,7 +1363,7 @@ export default function InterviewRoomLive({
       panelists={panelists}
       agentState={awaiting === 'agent' ? 'speaking' : awaiting === 'evaluation' ? 'thinking' : 'listening'}
       code={scratch}
-      onCodeChange={setScratch}
+      onCodeChange={writeScratch}
       language={codeLanguage}
       onLanguageChange={setCodeLanguage}
       micOn={micOn}
@@ -1129,6 +1379,10 @@ export default function InterviewRoomLive({
       workspaceVisible={awaiting === 'workspace'}
       onRunCode={() => void runCode(false)}
       onSubmitCode={() => void runCode(true)}
+      timeLeft={taskTimeLeft}
+      breaksRemaining={breaksRemaining}
+      breakTimeLeft={breakTimeLeft}
+      onBreak={() => void requestBreak(breakEndsAt === null ? 'start' : 'end')}
       onSubmitWritten={() => void handleNextTurn(scratch, `${writtenQuestion?.id}:${questionRevision}:written`)}
       onGiveUp={() => void handleNextTurn("I don't know; please move on.", `${writtenQuestion?.id}:${questionRevision}:gave-up`)}
       runSummary={runSummary}

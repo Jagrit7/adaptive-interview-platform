@@ -96,9 +96,37 @@ DSA_VERBAL_QUESTIONS = [
 ]
 
 
+# Difficulty per question, so the adaptive selector has something to select on.
+#
+# Every one of these was previously created with difficulty=3, which made
+# `abs(difficulty - target)` identical for all forty - so the ranking was a
+# no-op and a candidate who was sailing through, or drowning, was asked exactly
+# the same spread either way.
+_DSA_VERBAL_DIFFICULTY = {
+    # Foundations: a junior candidate should reach these.
+    "array-vs-linked": 2, "dynamic-array": 2, "stack-uses": 2, "queue-uses": 2,
+    "visited-graph": 2, "tree-traversals": 2, "bst-invariant": 2, "stable-sort": 2,
+    "two-pointers": 2, "prefix-sum": 2, "edge-cases": 2,
+    # Working knowledge: the middle of a normal interview.
+    "hash-collision": 3, "hash-resize": 3, "monotonic-stack": 3, "heap-vs-sort": 3,
+    "bfs-vs-dfs": 3, "topological-sort": 3, "trie-tradeoff": 3,
+    "binary-search-invariant": 3, "merge-vs-quick": 3, "counting-sort": 3,
+    "sliding-window": 3, "difference-array": 3, "recursion-stack": 3,
+    "memoization-tabulation": 3, "overflow": 3, "space-complexity": 3,
+    "testing-algorithms": 3,
+    # Depth: these separate a strong candidate from a competent one.
+    "heap-complexity": 4, "dijkstra-limits": 4, "union-find": 4, "balanced-trees": 4,
+    "binary-search-answer": 4, "dp-state": 4, "greedy-proof": 4,
+    "backtracking-pruning": 4, "bit-mask": 4, "complexity-amortized": 4,
+    "lower-bound": 4, "cache-locality": 4,
+}
+
+
 def _dsa_verbal_items() -> list[KnowledgeItem]:
     return [KnowledgeItem(id=f"dsa-verbal-{slug}", question=question, idealAnswer=answer,
-                          tags=["DSA", "Verbal"], difficulty=3, kind="verbal", domain="dsa")
+                          tags=["DSA", "Verbal"],
+                          difficulty=_DSA_VERBAL_DIFFICULTY.get(slug, 3),
+                          kind="verbal", domain="dsa")
             for slug, question, answer in DSA_VERBAL_QUESTIONS]
 
 

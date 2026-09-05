@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import os
 import re
@@ -108,6 +108,11 @@ class StartSessionRequest(BaseModel):
     candidate_ref: str = Field(default="", max_length=120)
 
 
+# A pause, not an escape hatch: long enough to get water or handle a doorbell,
+# short enough that it cannot be used to stop the clock and research an answer.
+BREAK_MAX_COUNT = 2
+BREAK_SECONDS = 120
+
 class StartSessionResponse(BaseModel):
     session_id: str
     agent_id: str            # which PanelAgent is speaking (e.g. "tech-dsa")
@@ -124,6 +129,11 @@ class StartSessionResponse(BaseModel):
     questions_total: int = 0
     agent_uids: dict[str, str] = Field(default_factory=dict)
     host_agent_id: str = HOST_AGENT_ID
+    # Sent once, at the start. The break control cannot be shown until the room
+    # knows the budget, and the budget was only ever returned by the break
+    # endpoint itself - so the button never appeared and the break could never
+    # be taken.
+    breaks_remaining: int = BREAK_MAX_COUNT
 
 
 class WrittenQuestion(BaseModel):
@@ -137,6 +147,11 @@ class WrittenQuestion(BaseModel):
     constraints: list[str] = Field(default_factory=list)
     test_cases: list[dict] = Field(default_factory=list)
     language: str | None = None
+    # How long the candidate gets on this task. A written round with no clock is
+    # not an assessment, it is a test of patience - and the flow's
+    # durationMinutes was only ever display text and an idle timeout, never
+    # enforced against a question.
+    time_limit_seconds: int | None = None
 
 
 class NextTurnRequest(BaseModel):
@@ -180,6 +195,10 @@ class NextTurnResponse(BaseModel):
     voice_id: str | None = None
     # Per-agent satisfaction levels so the frontend can show progress
     agent_satisfactions: dict[str, float] = Field(default_factory=dict)
+    # Break budget, so the room can show what is left rather than letting the
+    # candidate discover the limit by being refused.
+    breaks_remaining: int | None = None
+    break_seconds_remaining: int = 0
 
 
 def _written_question(item: KnowledgeItem | None, session_data: dict | None = None) -> WrittenQuestion | None:
@@ -193,6 +212,7 @@ def _written_question(item: KnowledgeItem | None, session_data: dict | None = No
             difficulty=item.difficulty, kind="coding", title=public["title"],
             starter_code=public["starter_code"], constraints=public["constraints"],
             test_cases=public["test_cases"], language=public["language"],
+            time_limit_seconds=CODING_TIME_LIMIT_SECONDS,
         )
     searchable = " ".join([item.question, *item.tags]).lower()
     coding_markers = (
@@ -212,6 +232,9 @@ def _written_question(item: KnowledgeItem | None, session_data: dict | None = No
         tags=item.tags,
         difficulty=item.difficulty,
         kind=inferred_kind,
+        time_limit_seconds=(
+            WRITTEN_TIME_LIMIT_SECONDS if inferred_kind == "written" else None
+        ),
     )
 
 
@@ -457,6 +480,56 @@ def _record_turn(state: SessionState, *, speaker: str, agent_id: str, text: str,
     ))
 
 
+# Coding needs room to think and type; a short written answer does not.
+CODING_TIME_LIMIT_SECONDS = 20 * 60
+WRITTEN_TIME_LIMIT_SECONDS = 8 * 60
+
+
+def _reject_if_on_break(session_data: dict) -> None:
+    """Refuses work while the interview is paused.
+
+    A break stops the clock, so it has to stop the work too. Guarding only the
+    spoken turn left the code endpoints open: a candidate could pause a timed
+    task, keep typing, and submit - with the countdown frozen for the whole of
+    it, which is exactly the abuse bounding breaks was meant to prevent.
+    """
+    if _break_seconds_remaining(session_data["state"]) > 0:
+        raise HTTPException(status_code=409, detail="The interview is paused for a break.")
+
+
+def _break_seconds_remaining(state: SessionState) -> int:
+    """Seconds left on the current break; 0 when not on one.
+
+    Derived from the stored deadline rather than counted down, so a client that
+    closes its tab, sleeps, or simply never calls back cannot extend a break.
+    """
+    if not state.break_until:
+        return 0
+    ends = datetime.fromisoformat(state.break_until)
+    return max(0, int((ends - datetime.now(timezone.utc)).total_seconds()))
+
+
+def _repeat_question_instruction(on_screen: bool, *, preamble: str) -> str:
+    """How an interviewer restates the question it already asked.
+
+    Shared by the candidate asking for a repeat and by the silence re-ask, so
+    the two cannot drift into giving different amounts away.
+    """
+    return (
+        preamble + " "
+        + (
+            "It is a written or coding task and the full text is already on their "
+            "screen, so tell them briefly that it is displayed in front of them and "
+            "give a one-sentence summary of what it asks. Do not read it out in full."
+            if on_screen else
+            "Say it again, in full, clearly and at a slightly slower pace. You may "
+            "rephrase for clarity but must not change what is being asked, add a hint, "
+            "or reveal any part of the answer."
+        )
+        + " Do not treat this as an answer and do not comment on their performance."
+    )
+
+
 def _last_candidate_answer(state: SessionState) -> str:
     """The candidate's most recent spoken turn, for the agent to react to."""
     for turn in reversed(state.transcript):
@@ -517,6 +590,15 @@ def _ask_from_bank(session_data: dict, agent: Agent, state: SessionState,
 
     agent_state.mark_asked(item.id)
     remember_question(state.panel_project_name, agent.id, item.id)
+
+    # An interviewer introduces itself once per interview. Callers ask for an
+    # introduction at every handoff because they cannot know whether this agent
+    # has spoken before; only the session state knows, so the decision is made
+    # here rather than at each call site.
+    if introduce_agent and agent.id in state.introduced_agent_ids:
+        introduce_agent = False
+    if introduce_agent:
+        state.introduced_agent_ids.append(agent.id)
 
     profile: SpecialistProfile = session_data["profiles"][agent.id]
     validate_specialist_question(profile, item)
@@ -730,6 +812,7 @@ async def next_turn(session_id: str, body: NextTurnRequest):
         previous = session_data.get("last_response")
         if previous:
             return NextTurnResponse.model_validate(previous)
+    _reject_if_on_break(session_data)
     if contains_injected_directive(body.answer_text):
         # Never reaches the scorer or the transcript. See the note on
         # contains_injected_directive: this can only come from a client that is
@@ -767,6 +850,187 @@ async def next_turn(session_id: str, body: NextTurnRequest):
         raise
     finally:
         session_data["turn_busy"] = False
+
+
+class BreakRequest(BaseModel):
+    action: Literal["start", "end"]
+
+
+@router.post("/sessions/{session_id}/break", response_model=NextTurnResponse)
+def interview_break(session_id: str, body: BreakRequest):
+    """Start or end a short, bounded break."""
+    session_data = SESSIONS.get(session_id)
+    if session_data is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    state: SessionState = session_data["state"]
+    if state.is_finished:
+        raise HTTPException(status_code=409, detail="The interview has finished.")
+    agent = next((a for a in session_data["panel"].agents if a.id == state.current_agent_id), None)
+    if agent is None:
+        agent_id = HOST_AGENT_ID
+    else:
+        agent_id = agent.id
+
+    if body.action == "start":
+        # Only when the floor is actually the candidate's.
+        #
+        # Starting a break bumps question_revision and takes the floor, and the
+        # closing statement is confirmed with the revision the client already
+        # held - so a break taken while the host was signing off left
+        # candidate-ready rejecting every attempt, the session never finishing,
+        # and the candidate never receiving a report. There is also nothing to
+        # take a break from once the interview is wrapping up.
+        if state.host_phase in {"closing", "finished"}:
+            raise HTTPException(status_code=409, detail="The interview is already finishing.")
+        if state.floor not in {"candidate_speaking", "workspace"}:
+            raise HTTPException(
+                status_code=409,
+                detail="You can take a break once the interviewer has finished speaking.",
+            )
+        if _break_seconds_remaining(state) > 0:
+            raise HTTPException(status_code=409, detail="A break is already running.")
+        if state.breaks_taken >= BREAK_MAX_COUNT:
+            raise HTTPException(
+                status_code=409,
+                detail="You have used all your breaks in this interview.",
+            )
+        if session_data.get("turn_busy"):
+            raise HTTPException(status_code=409, detail="An answer is being evaluated.")
+        state.breaks_taken += 1
+        state.break_until = (
+            datetime.now(timezone.utc) + timedelta(seconds=BREAK_SECONDS)
+        ).isoformat()
+        state.question_revision += 1
+        state.floor = "agent_speaking"
+        _record_turn(state, speaker="agent", agent_id=agent_id,
+                     text=f"Candidate took a break ({state.breaks_taken} of {BREAK_MAX_COUNT}).")
+        _inject(
+            session_data, agent_id,
+            f"The candidate is taking a short break of about {BREAK_SECONDS // 60} minutes. In one "
+            "warm sentence tell them to take their time and that you will pick up exactly where "
+            "you left off. Do not ask anything and do not continue the interview.",
+            replace_pending=True,
+        )
+    else:
+        if not state.break_until:
+            raise HTTPException(status_code=409, detail="No break is running.")
+        state.break_until = None
+        state.question_revision += 1
+        state.floor = "agent_speaking"
+        item = _pending_question(agent, state) if agent else None
+        rendered = _written_question(item, session_data)
+        on_screen = rendered is not None and rendered.kind in {"coding", "written"}
+        _inject(
+            session_data, agent_id,
+            _repeat_question_instruction(
+                on_screen,
+                preamble="The candidate is back from their break. Welcome them back in a few words.",
+            ) if item is not None else
+            "The candidate is back from their break. Welcome them back in one short sentence and "
+            "carry on from where you left off.",
+            replace_pending=True,
+        )
+
+    item = _pending_question(agent, state) if agent else None
+    return NextTurnResponse(
+        action=ActionType.FOLLOW_UP, current_agent_id=agent_id, is_finished=False,
+        questions_asked=len(state.get_agent_state(agent_id).asked_item_ids) if agent else 0,
+        questions_total=_question_total(agent) if agent else 0,
+        current_question=_written_question(item, session_data),
+        question_status="pending", awaiting="agent",
+        question_revision=state.question_revision,
+        agent_uid=session_data["agent_uids"][agent_id],
+        voice_id=session_data["voices"][agent_id],
+        breaks_remaining=BREAK_MAX_COUNT - state.breaks_taken,
+        break_seconds_remaining=_break_seconds_remaining(state),
+    )
+
+
+class SilencePromptRequest(BaseModel):
+    question_revision: int
+    stage: Literal["nudge", "repeat"]
+
+
+@router.post("/sessions/{session_id}/silence-prompt", response_model=NextTurnResponse)
+def silence_prompt(session_id: str, body: SilencePromptRequest):
+    """The candidate has gone quiet on a verbal question; say something.
+
+    A real interviewer does not sit in silence, and it also does not repeat the
+    question the moment someone pauses to think. So this has two stages: a short
+    nudge first, and only if the silence continues, the question again.
+
+    The floor is handed to the agent and returned the usual way, so this cannot
+    race with an answer that is already being scored.
+    """
+    session_data = SESSIONS.get(session_id)
+    if session_data is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    state: SessionState = session_data["state"]
+    if state.is_finished:
+        raise HTTPException(status_code=409, detail="The interview has finished.")
+    if body.question_revision != state.question_revision:
+        raise HTTPException(status_code=409, detail="That silence belongs to an older question.")
+    if state.floor != "candidate_speaking":
+        # The floor is not the candidate's, so the silence is expected.
+        raise HTTPException(status_code=409, detail="It is not the candidate's turn.")
+    if session_data.get("turn_busy"):
+        raise HTTPException(status_code=409, detail="An answer is already being evaluated.")
+
+    # The host holds the floor during intake, and it is not one of the panel's
+    # agents - so looking it up there found nothing and every prompt during the
+    # opening exchange was refused. That is the phase where a candidate is most
+    # likely to freeze, which made the feature dead exactly where it was needed.
+    agent = next((a for a in session_data["panel"].agents if a.id == state.current_agent_id), None)
+    if agent is None and state.current_agent_id != HOST_AGENT_ID:
+        raise HTTPException(status_code=409, detail="No interviewer holds the floor.")
+    item = _pending_question(agent, state)
+    written = _written_question(item, session_data)
+    on_screen = written is not None and written.kind in {"coding", "written"}
+
+    if agent is None:
+        # Intake: the host asked for a detail, not a bank question, so there is
+        # nothing to re-read - it restates what it asked for instead.
+        instruction = (
+            "HOST INTAKE. The candidate has gone quiet. "
+            + ("Gently ask again for the detail you were after, in different words, and offer to "
+               "move on if they would rather. Keep it to one sentence."
+               if body.stage == "repeat" else
+               "In one short, warm sentence let them know there is no rush. Do not ask anything "
+               "new and do not move on.")
+        )
+    elif body.stage == "repeat" and item is not None:
+        instruction = _repeat_question_instruction(
+            on_screen,
+            preamble="The candidate has gone quiet for a while and may not have caught the question.",
+        )
+    else:
+        instruction = (
+            "The candidate has been silent for a few seconds. In one short, warm sentence, let "
+            "them know there is no rush and offer to repeat the question if it would help. Do not "
+            "answer it, do not hint at the answer, do not ask a different question, and do not "
+            "comment on how they are doing."
+        )
+
+    agent_id = agent.id if agent else HOST_AGENT_ID
+    state.question_revision += 1
+    state.floor = "agent_speaking"
+    _record_turn(
+        state, speaker="agent", agent_id=agent_id,
+        text=("Repeated the question after a long silence." if body.stage == "repeat"
+              else "Checked in after a pause."),
+        knowledge_item_id=item.id if item else None,
+    )
+    _inject(session_data, agent_id, instruction, replace_pending=True)
+    print(f"[silence {session_id[:8]}] stage={body.stage} agent={agent_id}")
+    return NextTurnResponse(
+        action=ActionType.FOLLOW_UP, current_agent_id=agent_id, is_finished=False,
+        questions_asked=len(state.get_agent_state(agent.id).asked_item_ids) if agent else 0,
+        questions_total=_question_total(agent) if agent else 0,
+        current_question=written, question_status="pending", awaiting="agent",
+        question_revision=state.question_revision,
+        agent_uid=session_data["agent_uids"][agent_id],
+        voice_id=session_data["voices"][agent_id],
+    )
 
 
 @router.post("/sessions/{session_id}/candidate-ready", response_model=NextTurnResponse)
@@ -947,18 +1211,8 @@ async def _process_turn(
             _inject(
                 session_data,
                 current_agent.id,
-                (
-                    "The candidate asked you to repeat the question. "
-                    + (
-                        "It is a written or coding task and the full text is already on their "
-                        "screen, so tell them briefly that it is displayed in front of them and "
-                        "give a one-sentence summary of what it asks. Do not read it out in full."
-                        if on_screen else
-                        "Say it again, in full, clearly and at a slightly slower pace. You may "
-                        "rephrase for clarity but must not change what is being asked, add a hint, "
-                        "or reveal any part of the answer."
-                    )
-                    + " Do not treat this as an answer and do not comment on their performance."
+                _repeat_question_instruction(
+                    on_screen, preamble="The candidate asked you to repeat the question.",
                 ),
                 replace_pending=True,
             )
@@ -1246,6 +1500,9 @@ def _run_enterprise_code(
     session_data = SESSIONS.get(session_id)
     if session_data is None:
         raise HTTPException(status_code=404, detail="Session not found")
+    # Both the run and the submit endpoints land here, so one guard covers the
+    # whole timed task.
+    _reject_if_on_break(session_data)
     state: SessionState = session_data["state"]
     if state.is_finished or not state.current_agent_id:
         raise HTTPException(status_code=409, detail="There is no active coding question")

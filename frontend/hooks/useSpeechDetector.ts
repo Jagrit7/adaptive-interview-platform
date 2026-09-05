@@ -36,6 +36,10 @@ export interface SpeechDetectorOptions {
 export function useSpeechDetector({ track, onSpeechStart, enabled = true }: SpeechDetectorOptions) {
   const [speaking, setSpeaking] = useState(false);
   const [ready, setReady] = useState(false);
+  // Exposed alongside the state so a polling loop can read the current value
+  // without re-subscribing. The hook owns and writes them; callers only read,
+  // which keeps ref mutation out of consumer effects.
+  const readyRef = useRef(false);
   const [error, setError] = useState<string | null>(null);
   // Held in a ref so changing the handler cannot tear down and reload the
   // model, which costs a fetch and a worklet restart.
@@ -98,6 +102,7 @@ export function useSpeechDetector({ track, onSpeechStart, enabled = true }: Spee
         await vad.start();
         detector = vad;
         setReady(true);
+        readyRef.current = true;
         setError(null);
       } catch (err) {
         // A VAD failure must not take the interview down with it. Without it
@@ -105,17 +110,18 @@ export function useSpeechDetector({ track, onSpeechStart, enabled = true }: Spee
         // so this is reported and swallowed rather than thrown.
         const message = err instanceof Error ? err.message : String(err);
         console.warn(`[vad] speech detection unavailable, barge-in disabled: ${message}`);
-        if (!cancelled) { setError(message); setReady(false); }
+        if (!cancelled) { setError(message); setReady(false); readyRef.current = false; }
       }
     })();
 
     return () => {
       cancelled = true;
       setReady(false);
+      readyRef.current = false;
       setSpeakingSafe(false);
       try { detector?.destroy(); } catch { /* already torn down with the track */ }
     };
   }, [track, setSpeakingSafe]);
 
-  return { speaking, ready, error };
+  return { speaking, ready, error, speakingRef, readyRef };
 }
