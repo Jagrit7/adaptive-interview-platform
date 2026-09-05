@@ -17,7 +17,7 @@
 
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import { ConsoleCard } from '@/components/console/ConsoleShell';
-import type { ReportRecord } from '@/lib/reports';
+import type { ReportRecord, TranscriptEntry } from '@/lib/reports';
 
 export const percent = (value: number | null) => (value === null ? '—' : String(Math.round(value * 100)));
 export const initials = (name: string) =>
@@ -117,7 +117,71 @@ export function InterviewReportView({ record }: { record: ReportRecord }) {
           <div className="mt-10"><SkillRadar skills={skills} /></div>
         </ConsoleCard>
       </div>
+
+      <TranscriptSection turns={report.transcript} />
     </>
+  );
+}
+
+/**
+ * The conversation, as it happened.
+ *
+ * Every report has carried a full transcript since reports existed - it was
+ * simply never rendered, so a finished interview could not be read back. Both
+ * halves are shown: the question each interviewer put, and the answer given to
+ * it, in order, including the opening exchange with the host.
+ *
+ * The question text is the one the backend selected from the knowledge base.
+ * The interviewer rephrases it in its own voice when speaking, so this is a
+ * faithful record of what was asked, not a word-for-word capture of the audio.
+ */
+function TranscriptSection({ turns }: { turns: TranscriptEntry[] }) {
+  if (!turns.length) return null;
+  return (
+    <ConsoleCard className="mt-5 p-7">
+      <div className="flex items-baseline justify-between gap-4">
+        <h2 className="font-serif text-2xl font-bold">Transcript</h2>
+        <span className="text-sm text-[#747981]">{turns.length} turns</span>
+      </div>
+      <p className="mt-2 text-sm text-[#747981]">
+        Questions are shown as they were selected for the interviewer, who rephrases them
+        naturally when speaking.
+      </p>
+      <ol className="mt-6 space-y-5">
+        {turns.map(turn => {
+          const isAgent = turn.speaker === 'agent';
+          const who = isAgent ? turn.agent_name : 'Candidate';
+          return (
+            <li key={turn.turn} className="flex gap-4">
+              <div
+                className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                  isAgent ? 'bg-[#e2ecfb] text-[#1d4a86]' : 'bg-[#eceef1] text-[#50555d]'
+                }`}
+              >
+                {initials(who)}
+              </div>
+              <div className="min-w-0 flex-1 border-b border-[#e6e8eb] pb-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-semibold">{who}</span>
+                  {isAgent && <span className="text-xs text-[#747981]">asked</span>}
+                  {typeof turn.question_score === 'number' && (
+                    <StatusPillLocal tone={turn.question_score >= 0.7 ? 'green' : turn.question_score >= 0.4 ? 'blue' : 'amber'}>
+                      {percent(turn.question_score)}%
+                    </StatusPillLocal>
+                  )}
+                  {turn.flags.map(flag => (
+                    <span key={flag} className="rounded-md bg-[#fbf0dd] px-2 py-0.5 text-xs font-semibold text-[#7a5310]">
+                      {flag.replace(/_/g, ' ')}
+                    </span>
+                  ))}
+                </div>
+                <p className="mt-2 whitespace-pre-wrap text-[15px] leading-7 text-[#50555d]">{turn.text}</p>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+    </ConsoleCard>
   );
 }
 

@@ -294,12 +294,26 @@ ok("post-finish turns are no-ops; unknown session -> 404")
 print("\n=== 10. Transcript kept the grading provenance ===")
 state = sessions_route.SESSIONS[sid]["state"]
 turns = state.transcript
-assert len(turns) == 5, len(turns)
-assert turns[0].knowledge_item_id == ACTIVE_ITEMS[0]["id"]
-assert turns[0].coverage == 0.4
-assert turns[3].knowledge_item_id is None, "the llm-mode agent's turn has no bank item"
-assert turns[3].flags == ["vague"]
-ok("each turn records which bank question it answered, its coverage and its flags")
+answers = [t for t in turns if t.speaker == "candidate"]
+questions = [t for t in turns if t.speaker == "agent"]
+
+# Provenance lives on the candidate's turns, which is what gets graded.
+assert len(answers) == 5, len(answers)
+assert answers[0].knowledge_item_id == ACTIVE_ITEMS[0]["id"]
+assert answers[0].coverage == 0.4
+assert answers[3].knowledge_item_id is None, "the llm-mode agent's turn has no bank item"
+assert answers[3].flags == ["vague"]
+ok("each answer records which bank question it answered, its coverage and its flags")
+
+# Both halves of the conversation are stored, or the report renders answers with
+# no questions above them - which is how the transcript came to be unreadable.
+assert questions, "the interviewer's turns are missing from the transcript"
+assert [t.speaker for t in turns[:6]] == ["agent", "candidate"] * 3, [t.speaker for t in turns[:6]]
+assert questions[0].text == ACTIVE_ITEMS[0]["question"], questions[0].text
+assert all(t.coverage is None and not t.flags for t in questions), \
+    "interviewer turns must stay inert for grading"
+assert [t.turn_number for t in turns] == list(range(1, len(turns) + 1)), "turn numbers must be dense"
+ok("the transcript interleaves the question asked with the answer given")
 
 print("\n=== 11. A pre-change saved panel still runs ===")
 legacy = {

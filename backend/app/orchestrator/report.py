@@ -26,6 +26,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from app.orchestrator.agent_launcher import HOST_AGENT_ID
 from app.orchestrator.state import SessionState
 from app.schemas.panel import Panel
 from app.schemas.report import (
@@ -164,7 +165,11 @@ def build_report(state: SessionState, panel: Panel) -> InterviewReport:
             turn=t.turn_number,
             speaker=t.speaker,
             agent_id=t.agent_id,
-            agent_name=agents_by_id[t.agent_id].identity.name if t.agent_id in agents_by_id else t.agent_id,
+            agent_name=(
+                agents_by_id[t.agent_id].identity.name if t.agent_id in agents_by_id
+                else "Host" if t.agent_id == HOST_AGENT_ID
+                else t.agent_id
+            ),
             text=t.text,
             flags=t.flags,
             coverage=t.coverage,
@@ -191,7 +196,12 @@ def build_report(state: SessionState, panel: Panel) -> InterviewReport:
             competencies_covered=covered_count,
             coverage_rate=round(covered_count / len(competencies), 3) if competencies else 0.0,
             knowledge_coverage=kb_coverage,
-            questions_answered=sum(1 for t in state.transcript if t.speaker == "candidate"),
+            # Host intake turns are part of the transcript but are not questions
+            # the candidate was assessed on, so they are excluded from the count.
+            questions_answered=sum(
+                1 for t in state.transcript
+                if t.speaker == "candidate" and t.agent_id != HOST_AGENT_ID
+            ),
             flags=flag_counts,
         ),
         competencies=competencies,

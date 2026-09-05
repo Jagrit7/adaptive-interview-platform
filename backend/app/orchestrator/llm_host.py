@@ -83,8 +83,13 @@ def legal_host_actions(
         return [HostAction.HANDOFF], HostDecision(
             action=HostAction.HANDOFF, next_agent_id=triggered,
             transition_instruction=(
-                "Acknowledge one concrete point from the answer, then hand over naturally to the "
-                "next interviewer because their perspective is relevant."
+                # Spoken by the interviewer being handed TO, so it is written in
+                # their voice. Phrasing it as "hand over to the next
+                # interviewer" made the incoming agent announce a handoff that
+                # had already happened.
+                "Before anything else, give the candidate one sentence of genuine feedback on the "
+                "answer they just gave - name something specific they said and whether it landed - "
+                "so that topic is closed properly rather than dropped."
             ),
             reason="a configured cross-role handoff condition matched",
         )
