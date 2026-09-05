@@ -20,7 +20,7 @@ declare
   bob   uuid := gen_random_uuid();
   report_a uuid;
   report_b uuid;
-  result jsonb;
+  payload jsonb;
   got integer;
   got_text text;
   trophies text[];
@@ -70,12 +70,12 @@ begin
                       'user_metadata', json_build_object('full_name', 'Priya Sharma'))::text, true);
 
   --------------------------------------------------------- daily streak ----
-  result := public.touch_daily_activity();
-  assert (result->>'streak_days')::int = 1, 'first activity should start a 1-day streak';
-  assert (result->>'gems_awarded')::int = 5, 'free player should get 5 gems, not 10';
+  payload := public.touch_daily_activity();
+  assert (payload->>'streak_days')::int = 1, 'first activity should start a 1-day streak';
+  assert (payload->>'gems_awarded')::int = 5, 'free player should get 5 gems, not 10';
 
-  result := public.touch_daily_activity();
-  assert (result->>'gems_awarded')::int = 0, 'the daily gem must not pay twice in one day';
+  payload := public.touch_daily_activity();
+  assert (payload->>'gems_awarded')::int = 0, 'the daily gem must not pay twice in one day';
 
   select display_name into got_text from public.player_profiles where user_id = alice;
   assert got_text = 'Priya Sharma', format('profile should be seeded with a name, got %L', got_text);
@@ -90,14 +90,14 @@ begin
           true, '{"competencies":[]}'::jsonb, 'Priya', 'AIP-TEST1')
   returning id into report_a;
 
-  result := public.award_interview_xp(report_a);
+  payload := public.award_interview_xp(report_a);
   -- base 200 (not a design panel) * (0.4 + 0.6*0.9) * 1.0 = 188
-  assert (result->>'xp')::int = 188, format('expected 188 XP, got %s', result->>'xp');
-  assert (result->>'level')::int = public.level_for_xp((result->>'total_xp')::int), 'level should match total';
+  assert (payload->>'xp')::int = 188, format('expected 188 XP, got %s', payload->>'xp');
+  assert (payload->>'level')::int = public.level_for_xp((payload->>'total_xp')::int), 'level should match total';
 
   -- Idempotency: the client retries this on a flaky connection.
-  result := public.award_interview_xp(report_a);
-  assert (result->>'xp')::int = 0, 'awarding the same report twice must pay once';
+  payload := public.award_interview_xp(report_a);
+  assert (payload->>'xp')::int = 0, 'awarding the same report twice must pay once';
   select count(*) into got from public.xp_events
    where user_id = alice and source = 'interview' and ref_id = report_a::text;
   assert got = 1, format('expected exactly 1 interview xp_event, found %s', got);
@@ -107,16 +107,16 @@ begin
   assert flag, 'a banked report should mark its start banked';
 
   ---------------------------------------------------------- daily limit ----
-  result := public.daily_interview_allowance(alice);
-  assert (result->>'allowed')::boolean = false, 'free player should be blocked after one interview';
-  assert (result->>'used')::int = 1, format('expected used=1, got %s', result->>'used');
+  payload := public.daily_interview_allowance(alice);
+  assert (payload->>'allowed')::boolean = false, 'free player should be blocked after one interview';
+  assert (payload->>'used')::int = 1, format('expected used=1, got %s', payload->>'used');
 
-  result := public.begin_interview('sess-2');
-  assert (result->>'started')::boolean = false, 'begin_interview must refuse past the daily limit';
+  payload := public.begin_interview('sess-2');
+  assert (payload->>'started')::boolean = false, 'begin_interview must refuse past the daily limit';
 
   -- Re-entering the SAME session must not cost a second attempt.
-  result := public.begin_interview('sess-1');
-  assert (result->>'resumed')::boolean = true, 'resuming a started session should not consume an attempt';
+  payload := public.begin_interview('sess-1');
+  assert (payload->>'resumed')::boolean = true, 'resuming a started session should not consume an attempt';
 
   -- A second report today earns nothing, but is still stored.
   insert into public.interview_reports
@@ -125,28 +125,28 @@ begin
   values (alice, null, 'sess-2', 'Backend technical', 'en-US', 0.95, 'Strong',
           true, '{"competencies":[]}'::jsonb, 'Priya', 'AIP-TEST2')
   returning id into report_b;
-  result := public.award_interview_xp(report_b);
-  assert (result->>'limit_reached')::boolean = true, 'second interview of the day should hit the limit';
+  payload := public.award_interview_xp(report_b);
+  assert (payload->>'limit_reached')::boolean = true, 'second interview of the day should hit the limit';
 
   ---------------------------------------------------------------- premium ----
   perform public.grant_premium(alice, 30);
   assert public.is_premium_active(alice), 'premium should be active after a grant';
-  result := public.daily_interview_allowance(alice);
-  assert (result->>'allowed')::boolean = true, 'premium should lift the daily limit';
-  assert result->>'limit' is null, 'premium should report no limit';
+  payload := public.daily_interview_allowance(alice);
+  assert (payload->>'allowed')::boolean = true, 'premium should lift the daily limit';
+  assert payload->>'limit' is null, 'premium should report no limit';
 
   update public.player_profiles set premium_until = now() - interval '1 day' where user_id = alice;
   assert not public.is_premium_active(alice), 'an expired premium_until must deactivate premium';
 
   ------------------------------------------------------------------ gems ----
   update public.player_profiles set gems = 50 where user_id = alice;
-  result := public.spend_gems('spend_retry', 'r1');
-  assert (result->>'ok')::boolean = true, 'a spend within balance should succeed';
-  assert (result->>'gems')::int = 30, format('expected 30 gems left, got %s', result->>'gems');
+  payload := public.spend_gems('spend_retry', 'r1');
+  assert (payload->>'ok')::boolean = true, 'a spend within balance should succeed';
+  assert (payload->>'gems')::int = 30, format('expected 30 gems left, got %s', payload->>'gems');
 
   -- 40 gems against a 30-gem balance.
-  result := public.spend_gems('spend_premium_bank', 'r2');
-  assert (result->>'ok')::boolean = false, 'a spend beyond balance must be refused';
+  payload := public.spend_gems('spend_premium_bank', 'r2');
+  assert (payload->>'ok')::boolean = false, 'a spend beyond balance must be refused';
   select gems into got from public.player_profiles where user_id = alice;
   assert got = 30, 'a refused spend must not change the balance';
 
@@ -184,7 +184,7 @@ begin
   perform public.close_league_season(
     (select lc.season_id from public.league_cohorts lc
      join public.league_members lm on lm.cohort_id = lc.id where lm.user_id = alice));
-  select result into got_text from public.league_members where user_id = alice;
+  select lm.result into got_text from public.league_members lm where lm.user_id = alice;
   assert got_text = 'promoted', format('expected promoted, got %L', got_text);
 
   select count(*) into got from public.gem_events
