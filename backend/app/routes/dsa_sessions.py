@@ -9,7 +9,12 @@ from pydantic import BaseModel, Field
 from app.dsa.code_runner import UnsafeCodeError, run_candidate_code
 from app.dsa.evaluator import VerbalEvaluation, evaluate_verbal_answer
 from app.dsa.preset import DSA_PANEL
-from app.dsa.question_bank import QUESTION_BANK, public_question
+from app.dsa.question_bank import (
+    DEFAULT_FOLLOWUP,
+    DEFAULT_FOLLOWUPS_BY_TRIGGER,
+    QUESTION_BANK,
+    public_question,
+)
 from app.orchestrator.agent_launcher import AGENT_UID, inject_followup, start_session_agent
 
 
@@ -66,6 +71,9 @@ class TestRunResponse(BaseModel):
 
 class SubmitCodeRequest(RunCodeRequest):
     trigger: Literal["submitted", "expired"] = "submitted"
+    # The candidate said outright that they cannot answer. Distinct from an
+    # empty submission, which might just be a candidate who ran out of time.
+    gave_up: bool = False
 
 
 class FollowUpResponse(BaseModel):
@@ -170,6 +178,17 @@ def _build_report(session_id: str, session_data: dict) -> dict[str, Any]:
     test_run = session_data["test_run"]
     evaluation: VerbalEvaluation = session_data["verbal_evaluation"]
     code_score = test_run["passed"] / test_run["total"] if test_run["total"] else 0.0
+    if session_data.get("code_outcome") == "gave_up":
+        # A declared skip scores zero across the board. Letting the verbal
+        # component still earn marks would mean a candidate who says "I don't
+        # know" and then talks well outscores one who attempted the problem and
+        # partly solved it.
+        code_score = 0.0
+        evaluation = VerbalEvaluation(
+            complexity_score=0.0, clarity_score=0.0,
+            feedback="The candidate chose to skip this question.",
+            strengths=[], improvements=["Attempt the problem, even partially, before moving on."],
+        )
     overall = (code_score * 0.45) + (evaluation.complexity_score * 0.30) + (evaluation.clarity_score * 0.25)
     submitted_at: datetime | None = session_data.get("submitted_at")
     deadline: datetime | None = session_data.get("deadline")
@@ -207,6 +226,40 @@ def _build_report(session_id: str, session_data: dict) -> dict[str, Any]:
         "improvements": evaluation.improvements,
         "transcript": [item.model_dump() for item in session_data["transcript"]],
     }
+
+
+def _submission_trigger(code: str, starter: str, test_run: dict) -> str:
+    """Classify a submission so the follow-up can respond to it.
+
+    Compared against the starter code, not just emptiness: a candidate who
+    submits the untouched template has written nothing, and treating that as an
+    attempt is what produced "walk me through your complexity" for a blank
+    editor.
+    """
+    normalized = "".join(code.split())
+    if not normalized or normalized == "".join((starter or "").split()):
+        return "no_code"
+    total = test_run.get("total") or 0
+    passed = test_run.get("passed") or 0
+    if total == 0:
+        return "always"
+    if passed == 0:
+        return "none_passed"
+    return "all_passed" if passed >= total else "partial"
+
+
+def _followup_for(question: dict, trigger: str) -> str:
+    """The question's own prompt for this trigger, else the built-in one.
+
+    Falls back through the question's "always" entry before the built-ins, so an
+    author who wrote one deliberate follow-up still gets it used.
+    """
+    followups = question.get("followups") or []
+    by_key = {item.get("trigger_key", "always"): item.get("prompt", "") for item in followups}
+    for key in (trigger, "always"):
+        if by_key.get(key):
+            return by_key[key]
+    return DEFAULT_FOLLOWUPS_BY_TRIGGER.get(trigger, DEFAULT_FOLLOWUP)
 
 
 @router.post("/start", response_model=StartDsaSessionResponse)
@@ -278,7 +331,10 @@ def begin_coding(session_id: str):
     session_data["deadline"] = deadline
     session_data["question"] = question
     session_data["selection_metadata"] = selection_metadata
-    session_data["verbal_follow_up"] = question["followups"][0]["prompt"]
+    # Deliberately not chosen here any more. The follow-up now depends on what
+    # the candidate submits, which is not known until they submit; this is only
+    # the fallback for a session that somehow reaches scoring without one.
+    session_data["verbal_follow_up"] = _followup_for(question, "always")
     try:
         QUESTION_BANK.record_attempt(
             session_id=session_id, user_id=session_data.get("user_id"),
@@ -318,23 +374,47 @@ def submit_code(session_id: str, body: SubmitCodeRequest):
         "expired" if now >= deadline or body.trigger == "expired" else "submitted"
     )
     test_run = _execute(body.code, session_data["question"], include_hidden=True)
+    question = session_data["question"]
+    submission_trigger = "gave_up" if body.gave_up else _submission_trigger(
+        body.code, question.get("starter_code", ""), test_run,
+    )
+    follow_up = _followup_for(question, submission_trigger)
     session_data.update({
         "code": body.code, "language": body.language, "trigger": trigger,
         "submitted_at": now, "phase": "follow_up", "test_run": test_run,
+        "verbal_follow_up": follow_up, "code_outcome": submission_trigger,
     })
     QUESTION_BANK.update_attempt(session_id, {
         "submitted_at": now.isoformat(), "submission_trigger": trigger,
         "test_summary": {"passed": test_run["passed"], "total": test_run["total"]},
     })
+    # Tell the agent what it is looking at. Without this it praised solutions
+    # that failed every test, because the only thing it knew was the question.
+    outcome = {
+        "gave_up": "They said they do not know how to solve this and asked to move on. Accept that "
+                   "gracefully in one short sentence, without reassurance speeches, and do not ask "
+                   "them to attempt it anyway or explain what they would have done.",
+        "no_code": "They submitted no code at all. Do not congratulate them and do not ask about "
+                   "optimisation - there is nothing to optimise. Be warm and matter-of-fact.",
+        "none_passed": f"Their code passed 0 of {test_run['total']} tests. Do not call the solution "
+                       "correct or ask them to optimise it.",
+        "partial": f"Their code passed {test_run['passed']} of {test_run['total']} tests, so it is "
+                   "partially working. Acknowledge that honestly - neither congratulate a full "
+                   "solution nor dismiss it.",
+        "all_passed": f"Their code passed all {test_run['total']} tests.",
+        "always": "",
+    }[submission_trigger]
+
     inject_followup(
         session_data["agora_session"],
-        "The coding period is over. Ask exactly this one verbal follow-up. Listen to the "
-        "candidate's complete answer, then acknowledge one correct point, correct one important "
-        f"issue if necessary, and thank them without asking another question: {session_data['verbal_follow_up']}",
+        "The coding period is over. " + outcome + " Ask exactly this one verbal follow-up. Listen "
+        "to the candidate's complete answer, then acknowledge one correct point, correct one "
+        "important issue if necessary, and thank them without asking another question: "
+        f"{follow_up}",
     )
     return FollowUpResponse(
         session_id=session_id, phase="follow_up", trigger=trigger,
-        follow_up=session_data["verbal_follow_up"], test_run=TestRunResponse(**test_run),
+        follow_up=follow_up, test_run=TestRunResponse(**test_run),
     )
 
 

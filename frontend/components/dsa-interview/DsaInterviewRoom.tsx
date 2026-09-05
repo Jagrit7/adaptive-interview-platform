@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { saveDsaReport } from '@/lib/reports';
+import { awardInterviewXp, beginInterview } from '@/lib/gamification';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Bot, Camera, CameraOff, CheckCircle2, ChevronLeft, Clock3, Code2,
@@ -108,6 +110,10 @@ export function DsaInterviewRoom() {
   const [isFinishing, setIsFinishing] = useState(false);
   const [verbalAnswer, setVerbalAnswer] = useState('');
   const [report, setReport] = useState<DsaReport | null>(null);
+  const [xpAward, setXpAward] = useState<{ xp: number; level?: number; trophies?: string[]; reason?: string } | null>(null);
+  // Told at the start, not at the end: a free player who has used today's
+  // attempt should know before sitting a full round, not after.
+  const [allowanceNotice, setAllowanceNotice] = useState('');
   const [channel] = useState(() => `dsa-${Date.now()}`);
   const [uid] = useState(() => Math.floor(Math.random() * 1_000_000) + 100_000);
 
@@ -125,7 +131,7 @@ export function DsaInterviewRoom() {
   const {
     isConnected, messageList, currentInProgressMessage, isAgentSpeaking,
     isAgentListening, inputVolume, voiceError,
-    joinChannel, leaveChannel, setMicrophoneEnabled,
+    joinChannel, leaveChannel, setMicrophoneEnabled, setAudibleAgentUid,
   } = useAgoraVoiceClient();
 
   const microphoneStatus = voiceError
@@ -214,7 +220,31 @@ export function DsaInterviewRoom() {
         sessionIdRef.current = data.session_id;
         setSessionId(data.session_id);
         setAgentUid(String(data.agent_uid));
+        // Ari was audible to Agora and silent to the candidate.
+        //
+        // useAgoraVoiceClient plays a remote track only while its uid holds the
+        // acoustic floor (audibleAgentUidRef), and that ref starts null - so
+        // every subscribed track hit the `track.stop()` branch. The panel room
+        // grants the floor explicitly; this room never did, so the agent spoke
+        // into a muted subscription. The same ref also gates the
+        // agent-started/agent-finished events, so turn detection was dead too.
+        setAudibleAgentUid(String(data.agent_uid));
         setConnectionStatus('Ari is ready — answer out loud.');
+
+        // Claim one of the day's attempts. The interview is not blocked when
+        // the allowance is spent - the practice is still worth doing, and the
+        // report is still produced - but the player is told now that it will
+        // not earn XP, rather than discovering it on the results screen.
+        try {
+          const allowance = await beginInterview(data.session_id);
+          if (!allowance.allowed && !allowance.resumed) {
+            setAllowanceNotice(
+              'You have used today\u2019s free interview. This round still gives you a full report, but it will not earn XP.',
+            );
+          }
+        } catch {
+          /* signed out, or the progression schema is not installed yet */
+        }
       } catch (error) {
         await leaveChannel();
         setConnectionStatus(describeBootstrapError(error));
@@ -272,7 +302,14 @@ export function DsaInterviewRoom() {
     }
   }, [sessionId, setMicrophoneEnabled]);
 
-  const submitCode = useCallback(async (trigger: 'submitted' | 'expired' = 'submitted') => {
+  // `giveUp` submits whatever is in the editor and tells the backend not to
+  // dress it up: the round scores zero and Ari moves on rather than probing a
+  // solution the candidate has already said they do not have. Sitting in
+  // silence waiting out the timer is the worst version of that moment.
+  const submitCode = useCallback(async (
+    trigger: 'submitted' | 'expired' = 'submitted',
+    options: { giveUp?: boolean } = {},
+  ) => {
     if (!sessionId || submissionRef.current) return;
     submissionRef.current = true;
     try {
@@ -282,7 +319,7 @@ export function DsaInterviewRoom() {
       const response = await fetch(`${BACKEND_URL}/dsa/sessions/${sessionId}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, language: 'python', trigger }),
+        body: JSON.stringify({ code, language: 'python', trigger, gave_up: Boolean(options.giveUp) }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail ?? 'Could not submit the code.');
@@ -332,8 +369,20 @@ export function DsaInterviewRoom() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.detail ?? 'Could not generate the report.');
-      setReport(data.report as DsaReport);
-      sessionStorage.setItem(`dsa-report:${sessionId}`, JSON.stringify(data.report));
+      const finished = data.report as DsaReport;
+      setReport(finished);
+      sessionStorage.setItem(`dsa-report:${sessionId}`, JSON.stringify(finished));
+
+      // Store the report as a normal row, then bank the XP from it. Both are
+      // best-effort: a signed-out practice run, or a progression schema that is
+      // not installed yet, must still show the candidate their result. The
+      // sessionStorage copy above is what the screen renders either way.
+      try {
+        const reportId = await saveDsaReport(finished);
+        setXpAward(await awardInterviewXp(reportId));
+      } catch {
+        /* progression is an overlay on the product, not a gate in front of it */
+      }
       await setMicrophoneEnabled(false);
       setPhase('finished');
       setConnectionStatus('Interview complete. Your report is ready below.');
@@ -443,6 +492,7 @@ export function DsaInterviewRoom() {
           isRunning={isRunning}
           onRun={() => void runCode()}
           onSubmit={() => void submitCode('submitted')}
+          onGiveUp={() => void submitCode('submitted', { giveUp: true })}
         />
       )}
 
@@ -465,7 +515,12 @@ export function DsaInterviewRoom() {
         />
       )}
 
-      {phase === 'finished' && <FinishedStage report={report} onExit={() => void exit()} />}
+      {allowanceNotice && phase !== 'finished' && (
+        <div className="mx-6 mt-4 rounded-lg border border-amber-400/30 bg-amber-400/10 px-4 py-2.5 text-sm text-amber-200/90">
+          {allowanceNotice}
+        </div>
+      )}
+      {phase === 'finished' && <FinishedStage report={report} award={xpAward} onExit={() => void exit()} />}
     </div>
   );
 }
@@ -607,7 +662,7 @@ function IntroductionStage({
 
 function CodingStage({
   code, onCodeChange, question, time, cameraOn, micOn, onToggleCamera, onToggleMic,
-  testRun, isRunning, onRun, onSubmit,
+  testRun, isRunning, onRun, onSubmit, onGiveUp,
 }: {
   code: string;
   onCodeChange: (code: string) => void;
@@ -621,6 +676,7 @@ function CodingStage({
   isRunning: boolean;
   onRun: () => void;
   onSubmit: () => void;
+  onGiveUp: () => void;
 }) {
   return (
     <main className="flex-1 min-h-0 p-3 md:p-4 grid gap-4 lg:grid-cols-[minmax(260px,0.72fr)_minmax(400px,1.35fr)_240px]">
@@ -660,6 +716,16 @@ function CodingStage({
                          hover:text-white disabled:opacity-50 transition">
               {isRunning ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
               {isRunning ? 'Running...' : 'Run code'}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm('Skip this question?\n\nIt is scored zero and the interview moves on. This cannot be undone.')) onGiveUp();
+              }}
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--color-arena-line)]
+                         px-4 py-2.5 text-sm font-semibold text-[var(--color-arena-ink-soft)] hover:bg-white/5"
+            >
+              I don&apos;t know
             </button>
             <button type="button" onClick={onSubmit}
               className="inline-flex items-center gap-2 rounded-lg bg-[var(--color-arena-cyan)] px-5 py-2.5
@@ -865,7 +931,7 @@ function FollowUpStage({
   );
 }
 
-function FinishedStage({ report, onExit }: { report: DsaReport | null; onExit: () => void }) {
+function FinishedStage({ report, award, onExit }: { report: DsaReport | null; award: { xp: number; level?: number; trophies?: string[]; reason?: string } | null; onExit: () => void }) {
   return (
     <main className="flex-1 grid place-items-center p-6">
       <section className="w-full max-w-[860px] rounded-2xl border border-[var(--color-arena-line)]
@@ -877,6 +943,26 @@ function FinishedStage({ report, onExit }: { report: DsaReport | null; onExit: (
           <p className="font-mono text-[11px] tracking-[0.18em] text-emerald-300 mt-6">SESSION COMPLETE · REPORT READY</p>
           <h1 className="text-3xl font-extrabold mt-2">{report?.candidate_name ?? 'Your'} DSA report</h1>
         </div>
+
+        {award && (award.xp > 0 || award.reason === 'daily limit reached') && (
+          // Next to the result that earned it. A reward delivered later, on
+          // another screen, stops being connected to what the player just did.
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-5 py-3 text-center text-sm">
+            {award.xp > 0 ? (
+              <>
+                <span className="font-bold text-emerald-300">+{award.xp} XP</span>
+                {award.level !== undefined && <span className="text-emerald-200/80">Level {award.level}</span>}
+                {!!award.trophies?.length && (
+                  <span className="text-emerald-200/80">🏆 {award.trophies.join(', ').replace(/_/g, ' ')}</span>
+                )}
+              </>
+            ) : (
+              <span className="text-amber-200/90">
+                Daily free interview already used — this report is saved, but it earned no XP today.
+              </span>
+            )}
+          </div>
+        )}
 
         {report ? (
           <div className="mt-7 space-y-5">
