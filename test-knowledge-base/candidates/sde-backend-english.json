@@ -1,0 +1,95 @@
+{
+  "_comment": "Simulated candidate answers of known quality for the SDE English knowledge base. `band` is the ground truth this eval measures against - the claim being tested is that the scorer can separate these bands. `matches` steers the retriever to the right question when the answer alone is ambiguous.",
+  "answers": [
+    {
+      "band": "strong",
+      "matches": "URL shortener design",
+      "answer": "I'd take an auto-increment ID and base62-encode it to get a short key, which avoids collisions entirely rather than hashing and handling them. Key to long-URL goes in a KV store like Redis or DynamoDB. Redirects are overwhelmingly reads, so I'd cache aggressively and put a CDN in front. I'd also want custom aliases reserved in a separate namespace, TTL-based expiry, and analytics written asynchronously off the redirect path so they never slow it down."
+    },
+    {
+      "band": "partial",
+      "matches": "URL shortener design",
+      "answer": "You hash the long URL and store the hash as the short code in a database. When someone hits the short link you look it up and redirect them. You'd want to check for collisions on the hash."
+    },
+    {
+      "band": "weak",
+      "matches": "URL shortener design",
+      "answer": "You store the URLs in a database with a short code and then redirect. Probably use a hash map."
+    },
+    {
+      "band": "strong",
+      "matches": "100k redirects per second scale",
+      "answer": "Reads dominate completely, so the first move is caching: a CDN edge cache plus Redis in front of the store. The KV store shards cleanly on a hash of the key prefix. Redirects tolerate eventual consistency so replicas are fine. I'd separate the write path entirely from the read path. One trap: a 301 gets cached by browsers permanently, which kills your analytics, so I'd use 302 unless analytics don't matter."
+    },
+    {
+      "band": "partial",
+      "matches": "100k redirects per second scale",
+      "answer": "Add caching with Redis and scale horizontally by adding more servers behind a load balancer. Shard the database if one node can't handle it."
+    },
+    {
+      "band": "strong",
+      "matches": "process and thread difference",
+      "answer": "Processes each get their own isolated virtual address space, while threads live inside one process and share its memory. That makes thread creation and context switching much cheaper. The cost of sharing memory is that you need synchronisation - locks, atomics - to avoid races. And an unhandled fault in one thread typically takes the whole process down, whereas a crashed process leaves its siblings alone."
+    },
+    {
+      "band": "partial",
+      "matches": "process and thread difference",
+      "answer": "A process is a running program and a thread is a smaller unit inside it. Threads share memory and processes don't. Threads are lighter weight."
+    },
+    {
+      "band": "wrong",
+      "matches": "process and thread difference",
+      "answer": "They're basically the same thing, just different names depending on the operating system. Windows calls them processes and Linux calls them threads."
+    },
+    {
+      "band": "strong",
+      "matches": "database indexing when index hurts",
+      "answer": "An index is usually a B-tree holding the keys in sorted order with pointers to rows, so a lookup becomes logarithmic instead of a full scan. It isn't free: every write has to update the index too, and it costs storage. It actively hurts on write-heavy tables, on low-cardinality columns where the planner will just scan anyway, and on composite indexes when the query omits the leading column - the index simply won't be used."
+    },
+    {
+      "band": "partial",
+      "matches": "database indexing when index hurts",
+      "answer": "Indexes make queries faster by letting the database find rows without scanning the whole table. They slow down inserts and updates because the index has to be maintained."
+    },
+    {
+      "band": "strong",
+      "matches": "cycle in a linked list space complexity",
+      "answer": "Floyd's cycle detection - tortoise and hare. One pointer moves one node per step, the other two. If there's a cycle the fast one laps the slow one and they meet inside it. Time is O(n), space is O(1). You could also keep a hash set of visited nodes, which is simpler to explain but costs O(n) space."
+    },
+    {
+      "band": "weak",
+      "matches": "cycle in a linked list space complexity",
+      "answer": "You can loop through the list and keep track of the nodes you've seen. If you see one twice there's a cycle."
+    },
+    {
+      "band": "strong",
+      "matches": "p99 latency tripled p50 unchanged",
+      "answer": "p50 being flat tells me it isn't a general slowdown - something is hitting a subset of requests hard. My candidates would be GC pauses, a hot shard taking disproportionate traffic, connection pool exhaustion under burst, or a slow dependency triggering a retry storm. To separate them: GC shows up in runtime metrics, a hot shard shows as skew in per-shard latency, pool exhaustion shows as queue wait time. I'd look at what deployed or changed in traffic mix around when it started."
+    },
+    {
+      "band": "partial",
+      "matches": "p99 latency tripled p50 unchanged",
+      "answer": "I'd check the logs and the monitoring dashboards to see what changed. Maybe look at the database queries and see if any of them got slower, and check if there was a recent deploy."
+    },
+    {
+      "band": "strong",
+      "matches": "eventual consistency strong consistency",
+      "answer": "When availability and partition tolerance matter more than reading the very latest value, and the business genuinely tolerates a stale read. Follower counts, timelines, view counters, analytics - nobody is harmed by a few seconds of staleness. I wouldn't use it for account balances or inventory decrements unless there's a compensation mechanism, because the failure mode there is overselling or a negative balance."
+    },
+    {
+      "band": "weak",
+      "matches": "eventual consistency strong consistency",
+      "answer": "Eventual consistency is when the data becomes consistent eventually. You use it when you need the system to be fast and available."
+    },
+    {
+      "band": "strong",
+      "matches": "HTTPS connection private",
+      "answer": "The handshake uses asymmetric crypto to agree on a shared symmetric key, then the actual session traffic is encrypted symmetrically because that's far cheaper per byte. The server's certificate, chained up to a root CA the client already trusts, is what proves the server is who it claims to be. Worth being precise though: that proves identity, not trustworthiness - a phishing site can hold a perfectly valid certificate."
+    },
+    {
+      "band": "wrong",
+      "matches": "HTTPS connection private",
+      "answer": "HTTPS encrypts the data with a password that only the server knows, so nobody can read it. The S stands for secure so it's safe by default."
+    }
+  ]
+}

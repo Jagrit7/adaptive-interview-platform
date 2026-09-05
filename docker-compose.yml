@@ -1,0 +1,49 @@
+# Local stack: FastAPI backend + Next.js frontend.
+#
+# Supabase is hosted rather than a local service. The browser uses its public key;
+# FastAPI uses a server-only service role for protected question content.
+#
+#   cp .env.example .env      (then fill it in)
+#   docker compose up --build
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: adaptive-interview-backend
+    ports:
+      - "8000:8000"
+    environment:
+      AGORA_APP_ID: ${AGORA_APP_ID:?set AGORA_APP_ID in .env}
+      AGORA_APP_CERTIFICATE: ${AGORA_APP_CERTIFICATE:?set AGORA_APP_CERTIFICATE in .env}
+      AGORA_CUSTOMER_ID: ${AGORA_CUSTOMER_ID:-}
+      AGORA_CUSTOMER_SECRET: ${AGORA_CUSTOMER_SECRET:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:?set GROQ_API_KEY in .env}
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SECRET_KEY: ${SUPABASE_SECRET_KEY:-}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:-}
+      # Which browser origin may call this API. The backend reads it in main.py;
+      # hardcoded localhost:3000 would break the moment this is deployed anywhere.
+      CORS_ALLOW_ORIGINS: ${CORS_ALLOW_ORIGINS:-http://localhost:3000}
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      # Build args, not environment. NEXT_PUBLIC_* is baked into the bundle at
+      # build time - changing these requires `docker compose build frontend`,
+      # not just a restart.
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?set it in .env}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:-}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
+        NEXT_PUBLIC_AGORA_APP_ID: ${NEXT_PUBLIC_AGORA_APP_ID:?set it in .env}
+        NEXT_PUBLIC_BACKEND_URL: ${NEXT_PUBLIC_BACKEND_URL:-http://localhost:8000}
+    image: adaptive-interview-frontend
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped

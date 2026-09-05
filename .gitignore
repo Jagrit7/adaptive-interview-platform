@@ -30,3 +30,24 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Design assets and decks. Kept locally, not in the repo: they are exports and
+# slides rather than source, they change as whole binaries so every revision is
+# stored in full, and frontend-improv alone was 31MB - a third of it duplicate
+# .zip copies of folders sitting right next to them.
+frontend-improv/
+*.pptx
+*.zip
+
+# Working notes and loose knowledge-base copies, kept locally only.
+# Paths are anchored to the repo root on purpose: backend/knowledge-bases/ and
+# backend/sample-knowledge-base.csv are the copies the image and the tests
+# actually use, and a bare *.csv rule would take those out too.
+/APPLY.md
+/MIGRATION.md
+/PROJECT_CONTEXT.md
+/PROJECT_CONTEXT_UPDATE_2.md
+/dsa-easy-knowledge-base.csv
+/sde-backend-english.csv
+/sde-backend-hindi.csv
+/product-manager.json
