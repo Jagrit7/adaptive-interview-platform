@@ -55,3 +55,6 @@ frontend-improv/
 # Silero VAD model and ONNX runtime, copied from node_modules by
 # scripts/copy-vad-assets.mjs on predev/prebuild. Build inputs, not source.
 frontend/public/vad/
+
+# Local planning notes, deliberately not shared.
+FUTURE_GOALS.md

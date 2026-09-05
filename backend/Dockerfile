@@ -24,6 +24,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Application code.
 COPY app/ ./app/
+# The DSA question bank, read at import time by app/dsa/question_bank.py via
+# Path(__file__).parents[2]. Omit it and `import app.main` raises
+# FileNotFoundError, so the container never starts and the healthcheck never
+# passes - a boot failure, not a missing feature.
+COPY data/ ./data/
 COPY recipes/ ./recipes/
 COPY knowledge-bases/ ./knowledge-bases/
 COPY sample-knowledge-base.csv ./
